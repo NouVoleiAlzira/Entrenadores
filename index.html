@@ -65,6 +65,20 @@
       justify-content: space-between;
     }
 
+    .header-title-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .header-logo {
+      height: 32px;
+      width: auto;
+      object-fit: contain;
+    }
+
     header h1 {
       font-size: 1rem;
       font-weight: 700;
@@ -72,7 +86,6 @@
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       text-align: center;
-      flex: 1;
     }
 
     .btn-header-icon {
@@ -693,7 +706,10 @@
   <!-- ENCABEZADO -->
   <header>
     <button class="btn-header-icon btn-back" id="btnBack" onclick="goBack()">← Volver</button>
-    <h1>NOU VOLEI ALZIRA</h1>
+    <div class="header-title-container">
+      <img src="LOGO NVA.png" alt="Logo Nou Volei Alzira" class="header-logo">
+      <h1>NOU VOLEI ALZIRA</h1>
+    </div>
     <button class="btn-header-icon" title="Opciones (Propietario)" onclick="promptOwnerPassword()">⚙️</button>
   </header>
 
