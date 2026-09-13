@@ -463,7 +463,7 @@
       background: #fff;
       resize: vertical;
       min-height: 28px;
-      max-height: 70px;
+      /*max-height: 70px;*/
     }
 
     .comment-input-long:focus {
@@ -2579,21 +2579,21 @@
     goBack();
   }
 
-  /**
+
+ function saveQueriesToLocalStorage() {
+  // 1. Guardar inmediatamente en localStorage
+  localStorage.setItem("NVA_QUERIES_DATA", JSON.stringify(queriesData));
+ }
+
+
+ /**
  * Unificación de guardado de consultas/encuestas en GitHub.
  * Utiliza un único archivo de origen/destino ('Consultas.json') 
  * y gestiona correctamente la codificación UTF-8 y el SHA del archivo.
  */
  async function saveQueriesToGitHub() {
-    // 1. Guardar inmediatamente en localStorage
-    localStorage.setItem("NVA_QUERIES_DATA", JSON.stringify(queriesData));
+    saveQueriesToLocalStorage(); // Guarda localmente primero
 
-    // 2. Enviar actualización a GitHub (si la configuración está activa)
-    if (ghSettings.user && ghSettings.repo && ghSettings.token) {
-    // Código de envío mediante GitHub API (fetch/PUT)
-    }
- 
- 
     if (!ghSettings.user || !ghSettings.repo) {
     console.warn("GitHub no está configurado (falta usuario o repositorio).");
     return;
