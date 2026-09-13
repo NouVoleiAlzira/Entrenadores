@@ -2602,6 +2602,7 @@
     localStorage.setItem("NVA_QUERIES_DATA", JSON.stringify(queriesData));
   }
 
+  /* REQUISITO 1: Carga y verifica Consultas sin finalizar restaurando en el Tablón de Anuncios si fue borrada */
   async function fetchQueriesFromGitHub() {
     if (!ghSettings.user || !ghSettings.repo) return;
     const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/Consultas.json`;
@@ -2614,17 +2615,101 @@
       if (res.ok) {
         const json = await res.json();
         queriesData = JSON.parse(b64_to_utf8(json.content));
-        saveQueriesToLocalStorage();
+
+        // Verificar si existen consultas sin finalizar
+        let tablonUpdated = false;
+        queriesData.forEach(q => {
+          let isFinished = true;
+          q.teams.forEach(teamKey => {
+            const players = getPlayersForTeamKey(teamKey);
+            players.forEach(p => {
+              if (!q.responses || !q.responses[p]) isFinished = false;
+            });
+          });
+
+          // Si la consulta no está finalizada, nos aseguramos de que esté en el tablón
+          if (!isFinished) {
+            const colorTag = q.color === '#0284c7' ? '🔵' : (q.color === '#7e22ce' ? '🟣' : '🟠');
+            const queryNotice = `${colorTag} CONSULTA: ${q.text}`;
+
+            if (!appData.tablonText || !appData.tablonText.includes(queryNotice.trim())) {
+              appData.tablonText = appData.tablonText ? `${queryNotice}\n${appData.tablonText}` : queryNotice;
+              tablonUpdated = true;
+            }
+          }
+        });
+
+        if (tablonUpdated) {
+          const tablonEl = document.getElementById("tablonTextarea");
+          if (tablonEl) {
+            tablonEl.value = appData.tablonText;
+            autoResizeTablon(tablonEl);
+          }
+          saveDataAndSyncGitHub();
+        }
       }
     } catch (e) { console.error("No hay Consultas.json previo o hubo error:", e); }
   }
 
   async function saveQueriesToGitHub() {
-    saveQueriesToLocalStorage();
-    if (ghSettings.user && ghSettings.repo && ghSettings.token) {
-      await writeGitHubFile("Consultas.json", queriesData, "Actualizar consultas");
+    saveQueriesToLocalStorage(); // Guarda localmente primero
+
+    if (!ghSettings.user || !ghSettings.repo) {
+    console.warn("GitHub no está configurado (falta usuario o repositorio).");
+    return;
+    }
+
+    const fileName = "Consultas.json";
+    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${fileName}`;
+
+    const headers = {
+    "Accept": "application/vnd.github.v3+json",
+    "Content-Type": "application/json"
+    };
+    if (ghSettings.token) {
+    headers["Authorization"] = `token ${ghSettings.token}`;
+    }
+
+    try {
+    // 1. Obtener el SHA actual del archivo si existe en GitHub para evitar conflictos
+    let sha = null;
+    const getRes = await fetch(url, { headers });
+    if (getRes.ok) {
+        const getData = await getRes.json();
+        sha = getData.sha;
+    }
+
+    // 2. Convertir los datos de las consultas a texto JSON en formato UTF-8 / Base64
+    const jsonString = JSON.stringify(queriesData, null, 2);
+    const contentBase64 = utf8_to_b64(jsonString);
+
+    // 3. Preparar el cuerpo de la petición
+    const body = {
+        message: `Actualizar ${fileName} [Automático]`,
+        content: contentBase64
+    };
+    if (sha) {
+        body.sha = sha;
+    }
+
+    // 4. Guardar/Actualizar en GitHub
+    const putRes = await fetch(url, {
+        method: "PUT",
+        headers,
+        body: JSON.stringify(body)
+    });
+
+    if (putRes.ok) {
+        console.log(`✅ ${fileName} guardado correctamente en GitHub.`);
+    } else {
+        const errData = await putRes.json();
+        console.error(`❌ Error al guardar ${fileName} en GitHub:`, errData);
+    }
+    } catch (error) {
+    console.error(`❌ Error de red al intentar guardar ${fileName}:`, error);
     }
   }
+
 </script>
 </body>
 </html>
