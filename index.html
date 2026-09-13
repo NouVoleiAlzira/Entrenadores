@@ -1268,6 +1268,7 @@
 
   document.addEventListener("DOMContentLoaded", () => {
     resetToTodayDate();
+    queriesData = JSON.parse(localStorage.getItem("NVA_QUERIES_DATA")) || [];
     renderCoachTeamSelection();
     loadGitHubSettingsUI();
     setupColorPickers();
@@ -2616,6 +2617,30 @@
       alert("Atención: No hay token/repo configurado. Solo guardado localmente.");
     }
     goBack();
+  }
+
+  async function saveQueriesToGitHubConsultas() {
+    localStorage.setItem("NVA_QUERIES_DATA", JSON.stringify(queriesData));
+    if (ghSettings.user && ghSettings.repo && ghSettings.token) {
+      await writeGitHubFile("consultas.json", queriesData, "Actualizar consultas del club");
+    }
+  }
+
+  async function fetchQueriesFromGitHubConsultas() {
+    if (!ghSettings.user || !ghSettings.repo) return;
+    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/consultas.json`;
+    
+    const headers = {};
+    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
+
+    try {
+      const res = await fetch(url, { headers });
+      if (res.ok) {
+        const json = await res.json();
+        queriesData = JSON.parse(b64_to_utf8(json.content));
+        localStorage.setItem("NVA_QUERIES_DATA", JSON.stringify(queriesData));
+      }
+    } catch (e) { console.error("Error al obtener consultas de GitHub:", e); }
   }
 </script>
 
