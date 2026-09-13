@@ -20,6 +20,7 @@
       --text-dark: #1e293b;
       --gray-light: #f8fafc;
       --gray-border: #cbd5e1;
+      --rojo: #fc0341;
     }
 
     * {
@@ -92,25 +93,26 @@
 
     /* REQUISITO 2: Logo del club más grande */
     .header-logo {
-      height: 48px;
+      height: 60px;
       width: auto;
       object-fit: contain;
     }
 
     /* REQUISITO 2: Encabezado más grande y con BOLD */
     header h1 {
-      font-size: 1.25rem;
-      font-weight: 800;
+      font-size: 2rem;
+      font-weight: 1500;
       letter-spacing: 0.5px;
       background: linear-gradient(90deg, #38bdf8, var(--rosa-brand));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       text-align: center;
+      -webkit-text-stroke: 0.25px #ffffff;
     }
 
     .btn-header-icon {
-      background: rgba(255, 255, 255, 0.12);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       color: white;
       height: 34px;
       padding: 0 10px;
@@ -120,6 +122,7 @@
       display: flex;
       align-items: center;
       gap: 4px;
+      box-shadow: 2px 2px 4px #000000;
     }
 
     .btn-back { display: none; }
@@ -136,7 +139,28 @@
       font-size: 0.8rem;
       cursor: pointer;
       margin-bottom: 8px;
-      box-shadow: 0 4px 12px rgba(126, 34, 206, 0.3);
+      /*box-shadow: 0 4px 12px rgba(126, 34, 206, 0.3);*/
+      box-shadow: 2px 2px 4px #000000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-pdf-mode2 {
+      width: 100%;
+      background: linear-gradient(135deg, #035efc, #581c87);
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      cursor: pointer;
+      margin-bottom: 8px;
+      /*box-shadow: 0 4px 12px rgba(126, 34, 206, 0.3);*/
+      box-shadow: 2px 2px 4px #000000;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -145,7 +169,7 @@
     }
 
     .pdf-mode-banner {
-      background: #0284c7;
+      background: linear-gradient(135deg, #ba6a09, #ba091e);
       color: white;
       padding: 8px 12px;
       border-radius: 8px;
@@ -176,10 +200,14 @@
 
     .section-title {
       color: white;
-      font-size: 1.05rem;
+      font-size: 1.2rem;
       margin-bottom: 12px;
-      font-weight: 600;
+      font-weight: 800;
       text-align: center;
+      background: linear-gradient(90deg, #38bdf8, var(--rosa-brand));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      -webkit-text-stroke: 0.25px #000000;
     }
 
     /* Pantalla 1: Selección Entrenador y Equipo */
@@ -199,12 +227,14 @@
       justify-content: space-between;
       align-items: center;
       transition: all 0.2s ease;
+      box-shadow: 2px 2px 4px #000000;
     }
 
     .coach-btn.selected {
       background: linear-gradient(135deg, var(--morado-accent), var(--azul-primary));
       border-color: var(--rosa-brand);
-      box-shadow: 0 4px 12px rgba(126, 34, 206, 0.4);
+      /*box-shadow: 0 4px 12px rgba(126, 34, 206, 0.4);*/
+      box-shadow: 2px 2px 4px #000000;
     }
 
     .teams-container {
@@ -230,7 +260,8 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      /*box-shadow: 0 2px 6px rgba(0,0,0,0.2);*/
+      box-shadow: 2px 2px 4px #000000;
     }
 
     /* Cabecera Fecha e Historial */
@@ -274,7 +305,8 @@
       font-size: 0.8rem;
       font-weight: 700;
       cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      /*box-shadow: 0 2px 6px rgba(0,0,0,0.2);*/
+      box-shadow: 2px 2px 4px #000000;
       white-space: nowrap;
     }
 
@@ -285,7 +317,8 @@
       padding: 8px 10px;
       margin-bottom: 8px;
       border-left: 4px solid var(--morado-accent);
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+      /*box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);*/
+      box-shadow: 2px 2px 4px #000000;
       display: flex;
       flex-direction: column;
       gap: 6px;
@@ -614,7 +647,7 @@
 
     .btn-save-session {
       width: 100%;
-      background: linear-gradient(135deg, var(--rosa-brand), var(--morado-accent));
+      background: linear-gradient(135deg, var(--rojo), var(--morado-accent));
       color: white;
       border: none;
       padding: 8px 12px;
@@ -623,6 +656,7 @@
       font-size: 0.8rem;
       cursor: pointer;
       margin-top: 8px;
+      box-shadow: 2px 2px 4px #000000;
     }
 
     .badge { font-size: 0.68rem; padding: 2px 5px; border-radius: 4px; background: #e0e7ff; color: var(--azul-primary); font-weight: 600; }
@@ -814,25 +848,25 @@
       <button onclick="togglePdfMode()" style="background:none; border:none; color:white; font-weight:700; cursor:pointer;">✕ Cancelar</button>
     </div>
 
-    <div class="section-title">Selecciona Entrenador y Equipo</div>
+    <div class="section-title">Entrenadores y Equipos</div>
     <div id="coachTeamList"></div>
     
     <!-- REQUISITO 4 y 5: Botón CREAR PDF con degradado morado claro a oscuro y misma altura -->
     <button class="btn-pdf-mode" id="btnPdfMode" onclick="togglePdfMode()" style="margin-top:10px;">📄 CREAR PDF</button>
 
-    <div class="section-title" style="margin-top:20px;">Tablón de Anuncios y Noticias</div>
+    <div class="section-title" style="margin-top:20px;">Tablón de Consultas y Pendientes</div>
     <textarea id="tablonTextarea" class="comment-input-long" placeholder="Escribe aquí las noticias del club..." oninput="autoResizeTablon(this)" onchange="updateTablon(this.value)"></textarea>
     <button class="btn-save-session" onclick="saveTablon()">Guardar Tablón</button>
 
     <div class="section-title" style="margin-top:20px;">Dirección NVA</div>
     <button class="coach-btn" id="btnDireccionNVA" onclick="toggleDireccionNVA()">
-      <span>🏢 Gestión y Avisos (Dirección)</span> <span id="iconDireccionNVA">►</span>
+      <span>🏢 Gestión y Avisos Individuales</span> <span id="iconDireccionNVA">►</span>
     </button>
     <div id="direccionTeamsContainer" class="teams-container" style="display: none;"></div>
 
     <!-- REQUISITO 4 y 5: Botones "Crear Consulta" y "Consulta PDF" con degradado morado claro a oscuro y misma altura -->
-    <button class="btn-pdf-mode" style="margin-top: 10px;" onclick="openCreateQueryModal()">❓ Crear Consulta</button>
-    <button class="btn-pdf-mode" style="margin-top: 4px;" onclick="openSelectQueryPdfModal()">📄 Consulta PDF</button>
+    <button class="btn-pdf-mode2" style="margin-top: 10px;" onclick="openCreateQueryModal()">❓ Crear Consulta</button>
+    <button class="btn-pdf-mode" style="margin-top: 4px;" onclick="openSelectQueryPdfModal()">📄 Crear PDF de Consulta</button>
   </div>
 
   <!-- PANTALLA 2: REGISTRO DE ENTRENAMIENTO -->
@@ -2560,6 +2594,7 @@
     } else {
       alert("Atención: No hay token/repo configurado. Solo guardado localmente.");
     }
+    goBack();
   }
 </script>
 
