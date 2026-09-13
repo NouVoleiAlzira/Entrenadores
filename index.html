@@ -284,6 +284,7 @@
       max-width: 55%;
     }
 
+    /* REQUISITO 1: Cápsula adaptada a la longitud de Nombre + Warning sin truncamiento forzado */
     .warning-capsule {
       color: white;
       padding: 4px 8px;
@@ -293,9 +294,8 @@
       display: inline-flex;
       align-items: center;
       white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 45%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
 
     /* Capsula Consulta en Tarjeta */
@@ -309,6 +309,7 @@
       align-items: center;
       gap: 4px;
       margin-left: 4px;
+      flex-shrink: 0;
     }
 
     .query-btn {
@@ -329,6 +330,7 @@
       border-radius: 6px;
       padding: 2px;
       gap: 2px;
+      flex-shrink: 0;
     }
 
     .attendance-btn {
@@ -412,6 +414,17 @@
 
     .comment-input-long:focus {
       border-color: var(--morado-accent);
+    }
+
+    /* REQUISITO 5: Textarea del Tablón de Anuncios con min-height de 4 líneas y auto-ajuste de altura */
+    #tablonTextarea {
+      width: 100%;
+      font-size: 0.9rem;
+      min-height: 5.6em; /* Aprox 4 líneas de texto */
+      height: auto;
+      resize: none;
+      overflow-y: hidden;
+      box-sizing: border-box;
     }
 
     /* Selector de Colores */
@@ -776,7 +789,6 @@
 
   <!-- PANTALLA 1: SELECCIÓN UNIFICADA (ENTRENADOR Y EQUIPO) + DIRECCIÓN + TABLÓN -->
   <div class="screen active" id="screenCoachTeam">
-    <button class="btn-pdf-mode" id="btnPdfMode" onclick="togglePdfMode()">📄 CREAR PDF</button>
     <div id="pdfModeBanner" class="pdf-mode-banner" style="display: none;">
       <span>📌 Modo PDF Activo: Selecciona Entrenador y Equipo</span>
       <button onclick="togglePdfMode()" style="background:none; border:none; color:white; font-weight:700; cursor:pointer;">✕ Cancelar</button>
@@ -785,22 +797,24 @@
     <div class="section-title">Selecciona Entrenador y Equipo</div>
     <div id="coachTeamList"></div>
     
-    <!-- NUEVA SECCIÓN: DIRECCIÓN NVA -->
+    <!-- REQUISITO 3: El botón CREAR PDF de la parte superior ahora está situado debajo de los entrenadores -->
+    <button class="btn-pdf-mode" id="btnPdfMode" onclick="togglePdfMode()" style="margin-top:10px;">📄 CREAR PDF</button>
+
+    <!-- REQUISITO 4: La sección "Tablón de Anuncios y Noticias" ahora va PRIMERO -->
+    <div class="section-title" style="margin-top:20px;">Tablón de Anuncios y Noticias</div>
+    <textarea id="tablonTextarea" class="comment-input-long" placeholder="Escribe aquí las noticias del club..." oninput="autoResizeTablon(this)" onchange="updateTablon(this.value)"></textarea>
+    <button class="btn-save-session" style="margin-top: 8px; padding: 8px; font-size: 0.8rem;" onclick="saveTablon()">Guardar Tablón</button>
+
+    <!-- REQUISITO 4: La sección "Dirección NVA" está ahora DEBAJO de "Tablón de Anuncios" -->
     <div class="section-title" style="margin-top:20px;">Dirección NVA</div>
     <button class="coach-btn" id="btnDireccionNVA" onclick="toggleDireccionNVA()">
       <span>🏢 Gestión y Avisos (Dirección)</span> <span id="iconDireccionNVA">►</span>
     </button>
     <div id="direccionTeamsContainer" class="teams-container" style="display: none;"></div>
 
-    <!-- BOTÓN CREAR CONSULTA Y CONSULTA PDF DIRECCIÓN -->
+    <!-- BOTÓN CREAR CONSULTA Y CONSULTA PDF DIRECCIÓN EN PÁGINA PRINCIPAL -->
     <button class="btn-pdf-mode" style="background: linear-gradient(135deg, #0284c7, #0f172a); margin-top: 10px; margin-bottom: 6px;" onclick="openCreateQueryModal()">❓ Crear Consulta</button>
     <button class="btn-pdf-mode" style="background: linear-gradient(135deg, #7e22ce, #a855f7); margin-top: 4px;" onclick="openSelectQueryPdfModal()">📄 Consulta PDF</button>
-
-    <!-- NUEVA SECCIÓN: TABLÓN DE ANUNCIOS -->
-    <div class="section-title" style="margin-top:20px;">Tablón de Anuncios y Noticias</div>
-    <textarea id="tablonTextarea" class="comment-input-long" style="width:100%; min-height:80px; font-size:0.9rem;" placeholder="Escribe aquí las noticias del club..." onchange="updateTablon(this.value)"></textarea>
-    <button class="btn-save-session" style="margin-top: 8px; padding: 8px; font-size: 0.8rem;" onclick="saveTablon()">Guardar Tablón</button>
-
   </div>
 
   <!-- PANTALLA 2: REGISTRO DE ENTRENAMIENTO -->
@@ -823,7 +837,7 @@
   <div class="screen" id="screenWarnings">
     <div class="section-title" id="warningTeamTitle">Dirección NVA - Equipo</div>
     <div id="warningPlayersContainer"></div>
-    <button class="btn-save-session" onclick="openCreateQueryModal()" style="background: linear-gradient(135deg, #0284c7, #0f172a); margin-bottom: 8px;">❓ Crear Consulta</button>
+    <!-- REQUISITO 2: Se eliminó el botón 'Crear Consulta' de esta pantalla para que solo quede en la principal -->
     <button class="btn-save-session" onclick="saveWarningsToGitHub()">Guardar Warning en GitHub</button>
   </div>
 
@@ -1208,7 +1222,9 @@
     setupColorPickers();
 
     if (appData.tablonText) {
-      document.getElementById("tablonTextarea").value = appData.tablonText;
+      const tablonEl = document.getElementById("tablonTextarea");
+      tablonEl.value = appData.tablonText;
+      autoResizeTablon(tablonEl);
     }
     
     if (ghSettings.user && ghSettings.repo && ghSettings.token) {
@@ -1222,6 +1238,13 @@
   function resetToTodayDate() {
     const today = new Date().toISOString().split('T')[0];
     document.getElementById("sessionDatePicker").value = today;
+  }
+
+  /* --- REQUISITO 5: AUTO-RESIZE PARA EL TEXTAREA DEL TABLÓN --- */
+  function autoResizeTablon(element) {
+    if (!element) return;
+    element.style.height = 'auto';
+    element.style.height = element.scrollHeight + 'px';
   }
 
   /* --- CONFIGURACIÓN SELECTOR DE COLORES --- */
@@ -1413,7 +1436,9 @@
     const colorTag = tempQueryColor === '#0284c7' ? '🔵' : (tempQueryColor === '#7e22ce' ? '🟣' : '🟠');
     const queryNotice = `${colorTag} CONSULTA: ${tempQueryText}`;
     appData.tablonText = appData.tablonText ? `${appData.tablonText}\n${queryNotice}` : queryNotice;
-    document.getElementById("tablonTextarea").value = appData.tablonText;
+    const tablonEl = document.getElementById("tablonTextarea");
+    tablonEl.value = appData.tablonText;
+    autoResizeTablon(tablonEl);
 
     closeQueryTeamsModal();
     saveQueriesToGitHub();
@@ -1445,7 +1470,9 @@
       let lines = (appData.tablonText || "").split('\n');
       lines = lines.filter(l => l.trim() !== queryNotice.trim());
       appData.tablonText = lines.join('\n');
-      document.getElementById("tablonTextarea").value = appData.tablonText;
+      const tablonEl = document.getElementById("tablonTextarea");
+      tablonEl.value = appData.tablonText;
+      autoResizeTablon(tablonEl);
       saveDataAndSyncGitHub();
     }
 
@@ -1941,8 +1968,9 @@
       const warningText = hasWarning ? (typeof wObj === 'string' ? wObj : wObj.reason) : "";
       const warningColor = hasWarning ? (wObj.color || "#ef4444") : "#ef4444";
 
+      // REQUISITO 1: Cápsula adapta su longitud al nombre + warning
       const nameHtml = hasWarning 
-        ? `<div class="warning-capsule" style="background:${warningColor};" title="${player.name} - ${warningText}">${player.name} (${warningText})</div>`
+        ? `<div class="warning-capsule" style="background:${warningColor};" title="${player.name} (${warningText})">${player.name} (${warningText})</div>`
         : `<div class="player-name" title="${player.name}">${player.name}</div>`;
 
       // Verifica si hay consulta pendiente para esta jugadora en su equipo
@@ -1960,7 +1988,7 @@
 
       card.innerHTML = `
         <div class="card-row-1">
-          <div style="display:flex; align-items:center; flex:1; overflow:hidden;">
+          <div style="display:flex; align-items:center; gap:4px; flex:1; min-width:0; overflow:hidden;">
             ${nameHtml}
             ${queryHtml}
           </div>
@@ -2385,7 +2413,9 @@
         localStorage.setItem("NVA_APP_DATA", JSON.stringify(appData));
         renderCoachTeamSelection();
         if (appData.tablonText) {
-          document.getElementById("tablonTextarea").value = appData.tablonText;
+          const tablonEl = document.getElementById("tablonTextarea");
+          tablonEl.value = appData.tablonText;
+          autoResizeTablon(tablonEl);
         }
         if (!silent) alert("¡Configuración sincronizada desde GitHub!");
       }
