@@ -20,7 +20,6 @@
       --text-dark: #1e293b;
       --gray-light: #f8fafc;
       --gray-border: #cbd5e1;
-      --rojo: #fc0341;
     }
 
     * {
@@ -129,25 +128,6 @@
     .btn-pdf-mode {
       width: 100%;
       background: linear-gradient(135deg, #a855f7, #581c87);
-      color: white;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 10px;
-      font-weight: 700;
-      font-size: 0.8rem;
-      cursor: pointer;
-      margin-bottom: 8px;
-      box-shadow: 0 4px 12px rgba(126, 34, 206, 0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      transition: all 0.2s ease;
-    }
-
-    .btn-pdf-mode2 {
-      width: 100%;
-      background: linear-gradient(135deg, #035efc, #581c87);
       color: white;
       border: none;
       padding: 8px 12px;
@@ -634,7 +614,7 @@
 
     .btn-save-session {
       width: 100%;
-      background: linear-gradient(135deg, var(--rojo), var(--morado-accent));
+      background: linear-gradient(135deg, var(--rosa-brand), var(--morado-accent));
       color: white;
       border: none;
       padding: 8px 12px;
@@ -851,7 +831,7 @@
     <div id="direccionTeamsContainer" class="teams-container" style="display: none;"></div>
 
     <!-- REQUISITO 4 y 5: Botones "Crear Consulta" y "Consulta PDF" con degradado morado claro a oscuro y misma altura -->
-    <button class="btn-pdf-mode2" style="margin-top: 10px;" onclick="openCreateQueryModal()">❓ Crear Consulta</button>
+    <button class="btn-pdf-mode" style="margin-top: 10px;" onclick="openCreateQueryModal()">❓ Crear Consulta</button>
     <button class="btn-pdf-mode" style="margin-top: 4px;" onclick="openSelectQueryPdfModal()">📄 Consulta PDF</button>
   </div>
 
@@ -2580,7 +2560,6 @@
     } else {
       alert("Atención: No hay token/repo configurado. Solo guardado localmente.");
     }
-    goBack();
   }
 </script>
 
