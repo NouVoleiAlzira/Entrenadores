@@ -272,7 +272,6 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 6px;
     }
 
     .player-name {
@@ -282,11 +281,10 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 50%;
+      max-width: 55%;
     }
 
     .warning-capsule {
-      background: #ef4444;
       color: white;
       padding: 4px 8px;
       border-radius: 12px;
@@ -297,8 +295,33 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 55%;
+      max-width: 45%;
     }
+
+    /* Capsula Consulta en Tarjeta */
+    .query-capsule {
+      color: white;
+      padding: 3px 6px;
+      border-radius: 12px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-left: 4px;
+    }
+
+    .query-btn {
+      border: none;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      cursor: pointer;
+      color: white;
+      background: rgba(0,0,0,0.25);
+    }
+    .query-btn:hover { background: rgba(0,0,0,0.4); }
 
     .attendance-btn-group {
       display: flex;
@@ -306,7 +329,6 @@
       border-radius: 6px;
       padding: 2px;
       gap: 2px;
-      flex-shrink: 0;
     }
 
     .attendance-btn {
@@ -390,6 +412,28 @@
 
     .comment-input-long:focus {
       border-color: var(--morado-accent);
+    }
+
+    /* Selector de Colores */
+    .color-picker-container {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin: 10px 0 14px 0;
+    }
+
+    .color-circle {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 3px solid transparent;
+      transition: transform 0.15s ease;
+    }
+
+    .color-circle.selected {
+      border-color: #0f172a;
+      transform: scale(1.18);
     }
 
     /* Modales */
@@ -616,53 +660,6 @@
       border-radius: 0;
     }
 
-    /* ESTILOS DE SELECTOR DE COLORES Y CÁPSULAS DE CONSULTA */
-    .color-btn {
-      flex: 1;
-      padding: 8px 4px;
-      border-radius: 8px;
-      border: 2px solid #cbd5e1;
-      font-weight: 700;
-      font-size: 0.78rem;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-    }
-
-    .color-btn.active {
-      border-color: #0f172a !important;
-      box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.25);
-      transform: scale(1.03);
-    }
-
-    .consulta-capsule {
-      padding: 3px 8px;
-      border-radius: 12px;
-      font-size: 0.72rem;
-      font-weight: 700;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      max-width: 55%;
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-    }
-
-    .btn-vx {
-      border: none;
-      border-radius: 4px;
-      padding: 2px 6px;
-      font-weight: bold;
-      font-size: 0.7rem;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-
     /* Área Oculta para Renderizar el PDF (MODERNIZADO) */
     #pdfReportExportArea {
       position: absolute;
@@ -747,6 +744,21 @@
       margin-bottom: 10px;
       font-weight: 700;
     }
+
+    /* PDF DE CONSULTAS */
+    #pdfQueryExportArea {
+      position: absolute;
+      left: -9999px;
+      top: -9999px;
+      width: 800px;
+      min-height: 1131px; 
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(241, 245, 249, 0.95) 100%);
+      padding: 35px;
+      color: #0f172a;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
   </style>
 </head>
 <body>
@@ -766,7 +778,7 @@
   <div class="screen active" id="screenCoachTeam">
     <button class="btn-pdf-mode" id="btnPdfMode" onclick="togglePdfMode()">📄 CREAR PDF</button>
     <div id="pdfModeBanner" class="pdf-mode-banner" style="display: none;">
-      <span>📌 Modo PDF Activo: Selecciona Entrenador y Equipo o Consulta</span>
+      <span>📌 Modo PDF Activo: Selecciona Entrenador y Equipo</span>
       <button onclick="togglePdfMode()" style="background:none; border:none; color:white; font-weight:700; cursor:pointer;">✕ Cancelar</button>
     </div>
 
@@ -779,6 +791,10 @@
       <span>🏢 Gestión y Avisos (Dirección)</span> <span id="iconDireccionNVA">►</span>
     </button>
     <div id="direccionTeamsContainer" class="teams-container" style="display: none;"></div>
+
+    <!-- BOTÓN CREAR CONSULTA Y CONSULTA PDF DIRECCIÓN -->
+    <button class="btn-pdf-mode" style="background: linear-gradient(135deg, #0284c7, #0f172a); margin-top: 10px; margin-bottom: 6px;" onclick="openCreateQueryModal()">❓ Crear Consulta</button>
+    <button class="btn-pdf-mode" style="background: linear-gradient(135deg, #7e22ce, #a855f7); margin-top: 4px;" onclick="openSelectQueryPdfModal()">📄 Consulta PDF</button>
 
     <!-- NUEVA SECCIÓN: TABLÓN DE ANUNCIOS -->
     <div class="section-title" style="margin-top:20px;">Tablón de Anuncios y Noticias</div>
@@ -807,70 +823,72 @@
   <div class="screen" id="screenWarnings">
     <div class="section-title" id="warningTeamTitle">Dirección NVA - Equipo</div>
     <div id="warningPlayersContainer"></div>
+    <button class="btn-save-session" onclick="openCreateQueryModal()" style="background: linear-gradient(135deg, #0284c7, #0f172a); margin-bottom: 8px;">❓ Crear Consulta</button>
     <button class="btn-save-session" onclick="saveWarningsToGitHub()">Guardar Warning en GitHub</button>
   </div>
 
   <!-- MODALES DE LA APLICACIÓN -->
-  <!-- MODAL: WARNINGS CON SELECCIÓN DE 4 COLORES -->
+  <!-- MODAL: WARNINGS CON COLOR -->
   <div class="modal-backdrop" id="modalWarning">
-    <div class="modal-box" style="max-width: 380px;">
+    <div class="modal-box" style="max-width: 360px;">
       <div class="modal-header">
         <div class="modal-title">Motivo del Aviso</div>
         <button class="btn-close-modal" onclick="closeWarningModal()">✕</button>
       </div>
-      <input type="text" id="warningReasonInput" class="app-input" value="NO PAGADO" style="margin-bottom: 12px; font-weight:bold; color:#ef4444;">
+      <input type="text" id="warningReasonInput" class="app-input" value="NO PAGADO" style="margin-bottom: 8px; font-weight:bold; color:red;">
       
-      <label style="font-size: 0.78rem; font-weight: 700; color: var(--azul-dark); margin-bottom: 6px; display: block;">Selecciona Color del Aviso:</label>
-      <div style="display: flex; gap: 6px; margin-bottom: 14px;" id="warningColorGroup">
-        <button type="button" class="color-btn active" data-color="ROJO" onclick="selectWarningColor('ROJO')" style="background:#ef4444; color:white; border-color:#ef4444;">🔴 Rojo</button>
-        <button type="button" class="color-btn" data-color="AZUL" onclick="selectWarningColor('AZUL')" style="background:#2563eb; color:white; border-color:#cbd5e1;">🔵 Azul</button>
-        <button type="button" class="color-btn" data-color="VERDE" onclick="selectWarningColor('VERDE')" style="background:#22c55e; color:white; border-color:#cbd5e1;">🟢 Verde</button>
-        <button type="button" class="color-btn" data-color="AMARILLO" onclick="selectWarningColor('AMARILLO')" style="background:#eab308; color:black; border-color:#cbd5e1;">🟡 Am.</button>
+      <div style="font-size:0.75rem; color:#64748b; text-align:center; font-weight:600;">Selecciona un color de aviso:</div>
+      <div class="color-picker-container" id="warningColorPicker">
+        <div class="color-circle selected" data-color="#ef4444" style="background:#ef4444;" title="Rojo"></div>
+        <div class="color-circle" data-color="#0284c7" style="background:#0284c7;" title="Azul"></div>
+        <div class="color-circle" data-color="#22c55e" style="background:#22c55e;" title="Verde"></div>
+        <div class="color-circle" data-color="#eab308" style="background:#eab308;" title="Amarillo"></div>
       </div>
 
       <button class="btn-save-session" onclick="confirmWarningReason()">Guardar Motivo</button>
     </div>
   </div>
 
-  <!-- MODAL: CREAR PETICIÓN DE CONTESTACIÓN (CONSULTA) -->
-  <div class="modal-backdrop" id="modalCreateConsulta">
-    <div class="modal-box" style="max-width: 420px;">
+  <!-- MODAL: CREAR CONSULTA -->
+  <div class="modal-backdrop" id="modalCreateQuery">
+    <div class="modal-box" style="max-width: 380px;">
       <div class="modal-header">
-        <div class="modal-title">✉️ Crear Petición de Contestación</div>
-        <button class="btn-close-modal" onclick="closeCreateConsultaModal()">✕</button>
+        <div class="modal-title">❓ Crear Consulta</div>
+        <button class="btn-close-modal" onclick="closeCreateQueryModal()">✕</button>
+      </div>
+      <textarea id="createQueryText" class="comment-input-long" style="min-height:70px; margin-bottom:10px;" placeholder="Escribe aquí la consulta o pregunta..."></textarea>
+      
+      <div style="font-size:0.75rem; color:#64748b; text-align:center; font-weight:600;">Color distintivo de la consulta:</div>
+      <div class="color-picker-container" id="queryColorPicker">
+        <div class="color-circle selected" data-color="#0284c7" style="background:#0284c7;" title="Azul"></div>
+        <div class="color-circle" data-color="#7e22ce" style="background:#7e22ce;" title="Morado"></div>
+        <div class="color-circle" data-color="#f97316" style="background:#f97316;" title="Naranja"></div>
       </div>
 
-      <label style="font-size: 0.78rem; font-weight: 700; color: var(--azul-dark); margin-bottom: 4px; display: block;">Texto de la Consulta:</label>
-      <textarea id="consultaTextInput" class="comment-input-long" style="width:100%; min-height:70px; margin-bottom:10px; font-size:0.85rem;" placeholder="Escribe aquí la consulta para los entrenadores/jugadoras..."></textarea>
-
-      <label style="font-size: 0.78rem; font-weight: 700; color: var(--azul-dark); margin-bottom: 6px; display: block;">Selecciona Color del Icono/Cápsula:</label>
-      <div style="display: flex; gap: 6px; margin-bottom: 12px;" id="consultaColorGroup">
-        <button type="button" class="color-btn active" data-color="AZUL" onclick="selectConsultaColor('AZUL')" style="background:#2563eb; color:white; border-color:#2563eb;">🔵 Azul</button>
-        <button type="button" class="color-btn" data-color="VERDE" onclick="selectConsultaColor('VERDE')" style="background:#22c55e; color:white; border-color:#cbd5e1;">🟢 Verde</button>
-        <button type="button" class="color-btn" data-color="AMARILLO" onclick="selectConsultaColor('AMARILLO')" style="background:#eab308; color:black; border-color:#cbd5e1;">🟡 Am.</button>
-        <button type="button" class="color-btn" data-color="ROJO" onclick="selectConsultaColor('ROJO')" style="background:#ef4444; color:white; border-color:#cbd5e1;">🔴 Rojo</button>
-      </div>
-
-      <label style="font-size: 0.78rem; font-weight: 700; color: var(--azul-dark); margin-bottom: 6px; display: block;">Equipos Afectados:</label>
-      <div style="margin-bottom:6px; font-size:0.75rem; color:#64748b; display:flex; justify-content:space-between; align-items:center;">
-        <span>Selecciona los equipos que deben responder:</span>
-        <button type="button" style="background:none; border:none; color:var(--morado-accent); font-weight:bold; cursor:pointer;" onclick="toggleAllConsultaTeams(this)">Seleccionar Todos</button>
-      </div>
-      <div id="consultaTeamsList" style="max-height:140px; overflow-y:auto; border:1px solid var(--gray-border); padding:8px; border-radius:6px; margin-bottom:12px; display:flex; flex-direction:column; gap:4px; background:#f8fafc;"></div>
-
-      <button class="btn-save-session" onclick="saveNewConsulta()">Guardar y Publicar Consulta</button>
+      <button class="btn-save-session" onclick="openQueryTeamsSelection()">Siguiente: Seleccionar Equipos</button>
     </div>
   </div>
 
-  <!-- MODAL: SELECCIÓN DE CONSULTA PARA GENERAR PDF -->
-  <div class="modal-backdrop" id="modalSelectConsultaPdf">
-    <div class="modal-box" style="max-width: 420px;">
+  <!-- MODAL: SELECCIÓN DE EQUIPOS PARA CONSULTA -->
+  <div class="modal-backdrop" id="modalQueryTeams">
+    <div class="modal-box" style="max-width: 380px;">
       <div class="modal-header">
-        <div class="modal-title">📄 Seleccionar Consulta para PDF</div>
-        <button class="btn-close-modal" onclick="closeSelectConsultaPdfModal()">✕</button>
+        <div class="modal-title">Seleccionar Equipos Destino</div>
+        <button class="btn-close-modal" onclick="closeQueryTeamsModal()">✕</button>
       </div>
-      <p style="font-size: 0.78rem; color: #64748b; margin-bottom: 10px;">Selecciona una consulta de Dirección NVA para generar el informe PDF:</p>
-      <div id="consultaPdfListContainer" style="max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;"></div>
+      <div id="queryTeamsCheckboxes" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; max-height: 200px; overflow-y: auto;"></div>
+      <button class="btn-save-session" onclick="confirmSaveQuery()">Publicar Consulta en Tablón</button>
+    </div>
+  </div>
+
+  <!-- MODAL: ELEGIR CONSULTA PARA PDF -->
+  <div class="modal-backdrop" id="modalSelectQueryPdf">
+    <div class="modal-box" style="max-width: 380px;">
+      <div class="modal-header">
+        <div class="modal-title">📄 Seleccionar Consulta PDF</div>
+        <button class="btn-close-modal" onclick="closeSelectQueryPdfModal()">✕</button>
+      </div>
+      <div id="queryListPdfContainer" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; max-height: 240px; overflow-y: auto;"></div>
     </div>
   </div>
 
@@ -1042,7 +1060,7 @@
 
 </div>
 
-<!-- CONTENEDOR OCULTO PARA EXPORTACIÓN A PDF (ENTRENAMIENTOS) -->
+<!-- CONTENEDOR OCULTO PARA EXPORTACIÓN A PDF ENTRENAMIENTO -->
 <div id="pdfReportExportArea">
   <img src="LOGO NVA.png" alt="Marca de Agua" class="pdf-watermark">
 
@@ -1087,51 +1105,34 @@
   </div>
 </div>
 
-<!-- CONTENEDOR OCULTO PARA EXPORTACIÓN A PDF (CONSULTAS / PETICIONES) -->
-<div id="pdfConsultaExportArea" style="position: absolute; left: -9999px; top: -9999px; width: 800px; min-height: 1131px; background: white; padding: 35px; color: #0f172a; font-family: -apple-system, sans-serif; box-sizing: border-box;">
-  <img src="LOGO NVA.png" alt="Marca de Agua" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 380px; opacity: 0.1; pointer-events: none;">
-
-  <div style="position: relative; z-index: 1;">
-    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #0052d4; padding-bottom: 12px; margin-bottom: 18px;">
-      <img src="LOGO NVA.png" alt="Logo" style="height: 65px; width: auto;">
-      <h1 style="font-size: 24px; color: #0052d4; flex: 1; text-align: center; font-weight: 800; margin: 0 10px;">Club Nou Vòlei Alzira</h1>
-    </div>
-
-    <div style="text-align: center; margin-bottom: 25px; background: #f8fafc; padding: 15px; border-radius: 10px; border: 1px solid #cbd5e1;">
-      <h2 style="font-size: 20px; color: #0f172a; margin-bottom: 8px; font-weight: 800;">Informe de Petición / Consulta</h2>
-      <div id="pdfConsultaTextHeader" style="font-size: 16px; color: #1e293b; font-weight: 700; margin-top: 6px;"></div>
-    </div>
-
-    <div id="pdfConsultaTeamsContainer"></div>
+<!-- CONTENEDOR OCULTO PARA EXPORTACIÓN A PDF CONSULTAS -->
+<div id="pdfQueryExportArea">
+  <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #7e22ce; padding-bottom: 12px; margin-bottom: 18px;">
+    <img src="LOGO NVA.png" alt="Logo" style="height: 65px; width: auto;">
+    <h1 style="font-size: 24px; color: #7e22ce; flex: 1; text-align: center; font-weight: 800; margin: 0 10px;">Club Nou Vòlei Alzira</h1>
   </div>
+
+  <div style="text-align: center; margin-bottom: 20px; background: #f8fafc; padding: 14px; border-radius: 10px; border: 1px solid #cbd5e1;">
+    <h3 style="font-size: 16px; color: #64748b; margin-bottom: 4px; font-weight: 700;">Consulta / Petición de Dirección</h3>
+    <h2 id="pdfQueryTextHeader" style="font-size: 20px; color: #0f172a; font-weight: 800;">-</h2>
+  </div>
+
+  <div id="pdfQueryTeamsContent"></div>
 </div>
 
 <script>
-  // Opciones y Mapas de Color Globales (ROJO, AZUL, VERDE, AMARILLO)
-  const COLOR_OPTIONS = {
-    ROJO: { name: 'ROJO', hex: '#ef4444', text: '#ffffff', icon: '🔴' },
-    AZUL: { name: 'AZUL', hex: '#2563eb', text: '#ffffff', icon: '🔵' },
-    VERDE: { name: 'VERDE', hex: '#22c55e', text: '#ffffff', icon: '🟢' },
-    AMARILLO: { name: 'AMARILLO', hex: '#eab308', text: '#000000', icon: '🟡' }
-  };
-
   // Datos iniciales
   const defaultData = {
     coaches: [
-      { id: 1, name: "Carlos Martínez", teams: ["Cadete Femenino A (Cadete)", "Juvenil Femenino (Juvenil)"] },
-      { id: 2, name: "Eneritz", teams: ["Infantil Femenino B (Infantil)", "Senior Femenino (Senior)"] }
-    ],
+      { id: 1, name: "Mourinho", teams: ["NVA A (Infantil)", "NVA A (Cadete)", "NVA (Juvenil)"] }
+   ],
     teams: [
-      { name: "Cadete Femenino A", category: "Cadete" },
-      { name: "Juvenil Femenino", category: "Juvenil" },
-      { name: "Infantil Femenino B", category: "Infantil" },
-      { name: "Senior Femenino", category: "Senior" }
+      { name: "NVA A", category: "Infantil" },
+      { name: "NVA A", category: "Cadete" },
+      { name: "NVA A", category: "Juvenil" }
     ],
     players: {
-      "Cadete Femenino A (Cadete)": ["Sofia López", "Lucía Gómez", "Martina Pérez", "Elena Sanz", "Vega Ruiz"],
-      "Juvenil Femenino (Juvenil)": ["Paula Torres", "Alba Vidal", "Carla Ferrer"],
-      "Infantil Femenino B (Infantil)": ["Ainhoa Mas", "Maria Calvo", "Noelia Cano"],
-      "Senior Femenino (Senior)": ["Rocío Belda", "Patricia Gil", "Marta Soler"]
+      "NVA A (Infantil)": ["Aitana", "Lola Indigo", "Ana Mena", "Rosalia"]
     },
     tablonText: ""
   };
@@ -1148,15 +1149,16 @@
   let sessionData = [];
   let allTrainingLogs = []; 
 
-  // Estado de Warnings y Consultas
+  // Estado del Tablón, Warnings y Consultas
   let isDireccionExpanded = false;
-  let warningsData = {}; // Guarda { "Nombre Jugadora": { reason: "Motivo", color: "ROJO" } }
+  let warningsData = {}; // Guarda { "Nombre Jugadora": { reason: "Motivo", color: "#color" } }
   let currentWarningPlayer = null;
-  let selectedWarningColor = 'ROJO';
+  let selectedWarningColor = "#ef4444";
 
-  let consultasData = JSON.parse(localStorage.getItem("NVA_CONSULTAS_DATA")) || [];
-  let selectedConsultaColor = 'AZUL';
-  let tempConsultaResponses = {}; // Respuestas temporales durante la toma de asistencia
+  let queriesData = []; // Array de consultas { id, text, color, teams: [], responses: { "Jugadora": "V"|"X" } }
+  let tempQueryColor = "#0284c7";
+  let tempQueryText = "";
+  let selectedQueryPdfId = null;
 
   // Estado de Modo PDF y Calendario
   let isPdfMode = false;
@@ -1199,19 +1201,11 @@
     return appData.players[teamKey];
   }
 
-  function getPlayerWarning(playerName) {
-    const w = warningsData[playerName];
-    if (!w) return null;
-    if (typeof w === 'string') {
-      return { reason: w, color: 'ROJO' };
-    }
-    return w;
-  }
-
   document.addEventListener("DOMContentLoaded", () => {
     resetToTodayDate();
     renderCoachTeamSelection();
     loadGitHubSettingsUI();
+    setupColorPickers();
 
     if (appData.tablonText) {
       document.getElementById("tablonTextarea").value = appData.tablonText;
@@ -1221,7 +1215,7 @@
       syncConfigFromGitHub(true);
       fetchTrainingLogsFromGitHub();
       fetchWarningsFromGitHub();
-      fetchConsultasFromGitHub();
+      fetchQueriesFromGitHub();
     }
   });
 
@@ -1230,7 +1224,28 @@
     document.getElementById("sessionDatePicker").value = today;
   }
 
-  /* --- MODO DIRECCIÓN NVA, TABLÓN Y WARNINGS --- */
+  /* --- CONFIGURACIÓN SELECTOR DE COLORES --- */
+  function setupColorPickers() {
+    const wPicker = document.getElementById("warningColorPicker");
+    wPicker.querySelectorAll(".color-circle").forEach(c => {
+      c.onclick = () => {
+        wPicker.querySelectorAll(".color-circle").forEach(x => x.classList.remove("selected"));
+        c.classList.add("selected");
+        selectedWarningColor = c.dataset.color;
+      };
+    });
+
+    const qPicker = document.getElementById("queryColorPicker");
+    qPicker.querySelectorAll(".color-circle").forEach(c => {
+      c.onclick = () => {
+        qPicker.querySelectorAll(".color-circle").forEach(x => x.classList.remove("selected"));
+        c.classList.add("selected");
+        tempQueryColor = c.dataset.color;
+      };
+    });
+  }
+
+  /* --- MODO DIRECCIÓN NVA, TABLÓN Y WARNINGS CON COLOR --- */
 
   function toggleDireccionNVA() {
     isDireccionExpanded = !isDireccionExpanded;
@@ -1240,20 +1255,6 @@
     
     if (isDireccionExpanded) {
       container.innerHTML = "";
-
-      // Botones de acción en Dirección NVA
-      const actionsDiv = document.createElement("div");
-      actionsDiv.style.display = "flex";
-      actionsDiv.style.flexDirection = "column";
-      actionsDiv.style.gap = "6px";
-      actionsDiv.style.marginBottom = "8px";
-
-      actionsDiv.innerHTML = `
-        <button class="btn-history" style="background: linear-gradient(135deg, #7e22ce, #1e3c72); width:100%; padding:10px; text-align:center; font-size:0.85rem;" onclick="openCreateConsultaModal()">✉️ Crear Petición de Contestación</button>
-        <button class="btn-history" style="background: linear-gradient(135deg, #0284c7, #0f172a); width:100%; padding:10px; text-align:center; font-size:0.85rem;" onclick="openSelectConsultaPdfModal()">📄 PDF de Consulta (Dirección)</button>
-      `;
-      container.appendChild(actionsDiv);
-
       appData.teams.forEach(team => {
         const displayName = `${team.name} (${team.category})`;
         const teamKey = getTeamKey(team);
@@ -1289,22 +1290,21 @@
     const players = getPlayersForTeamKey(currentTeam);
 
     players.forEach(playerName => {
-      const warn = getPlayerWarning(playerName);
-      const hasWarning = !!warn;
-      const reason = warn ? warn.reason : "";
-      const colorKey = warn ? warn.color : "ROJO";
-      const colorObj = COLOR_OPTIONS[colorKey] || COLOR_OPTIONS.ROJO;
-
+      const wObj = warningsData[playerName];
+      const hasWarning = !!wObj;
+      const reason = hasWarning ? (typeof wObj === 'string' ? wObj : wObj.reason) : "";
+      const color = hasWarning ? (wObj.color || "#ef4444") : "#ef4444";
+      
       const card = document.createElement("div");
       card.className = "player-card";
-      if (hasWarning) card.style.borderLeft = `4px solid ${colorObj.hex}`;
-
+      if (hasWarning) card.style.borderLeft = `4px solid ${color}`;
+      
       card.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center;">
-          <div style="${hasWarning ? `color:${colorObj.hex}; font-weight:bold;` : ''} max-width:60%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${playerName} ${hasWarning ? `(${reason})` : ''}">
+          <div style="${hasWarning ? `color:${color}; font-weight:bold; max-width:60%;` : 'max-width:60%;'} overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${playerName} ${hasWarning ? `(${reason})` : ''}">
             ${playerName} <span style="font-size:0.75rem; color:#64748b;">${hasWarning ? `(${reason})` : ''}</span>
           </div>
-          <button style="background:${hasWarning ? 'transparent' : '#e2e8f0'}; color:${hasWarning ? colorObj.hex : '#64748b'}; border:${hasWarning ? `1px solid ${colorObj.hex}` : 'none'}; padding:4px 8px; border-radius:4px; font-weight:bold; font-size:0.75rem; cursor:pointer;" 
+          <button style="background:${hasWarning ? 'transparent' : '#e2e8f0'}; color:${hasWarning ? color : '#64748b'}; border:${hasWarning ? `1px solid ${color}` : 'none'}; padding:4px 8px; border-radius:4px; font-weight:bold; font-size:0.75rem; cursor:pointer;" 
                   onclick="toggleWarningPlayer('${playerName}')">
             ${hasWarning ? 'Quitar' : 'Marcar Warning'}
           </button>
@@ -1321,22 +1321,13 @@
     } else {
       currentWarningPlayer = playerName;
       document.getElementById("warningReasonInput").value = "NO PAGADO";
-      selectWarningColor('ROJO');
+      selectedWarningColor = "#ef4444";
+      const wPicker = document.getElementById("warningColorPicker");
+      wPicker.querySelectorAll(".color-circle").forEach(x => x.classList.remove("selected"));
+      wPicker.querySelector('[data-color="#ef4444"]').classList.add("selected");
+      
       document.getElementById("modalWarning").classList.add("active");
     }
-  }
-
-  function selectWarningColor(colorKey) {
-    selectedWarningColor = colorKey;
-    const group = document.getElementById("warningColorGroup");
-    if (!group) return;
-    group.querySelectorAll(".color-btn").forEach(btn => {
-      if (btn.getAttribute("data-color") === colorKey) {
-        btn.classList.add("active");
-      } else {
-        btn.classList.remove("active");
-      }
-    });
   }
 
   function confirmWarningReason() {
@@ -1344,7 +1335,7 @@
     if (currentWarningPlayer) {
       warningsData[currentWarningPlayer] = {
         reason: reason,
-        color: selectedWarningColor || 'ROJO'
+        color: selectedWarningColor
       };
     }
     document.getElementById("modalWarning").classList.remove("active");
@@ -1355,146 +1346,208 @@
     document.getElementById("modalWarning").classList.remove("active"); 
   }
 
-  /* --- PETICIONES DE CONTESTACIÓN (CONSULTAS) --- */
-
-  function openCreateConsultaModal() {
-    document.getElementById("consultaTextInput").value = "";
-    selectConsultaColor('AZUL');
-    renderConsultaTeamsList();
-    document.getElementById("modalCreateConsulta").classList.add("active");
+  /* ------------------- GESTIÓN DE CONSULTAS ------------------- */
+  function openCreateQueryModal() {
+    document.getElementById("createQueryText").value = "";
+    tempQueryColor = "#0284c7";
+    const qPicker = document.getElementById("queryColorPicker");
+    qPicker.querySelectorAll(".color-circle").forEach(x => x.classList.remove("selected"));
+    qPicker.querySelector('[data-color="#0284c7"]').classList.add("selected");
+    
+    document.getElementById("modalCreateQuery").classList.add("active");
   }
 
-  function closeCreateConsultaModal() {
-    document.getElementById("modalCreateConsulta").classList.remove("active");
+  function closeCreateQueryModal() {
+    document.getElementById("modalCreateQuery").classList.remove("active");
   }
 
-  function selectConsultaColor(colorKey) {
-    selectedConsultaColor = colorKey;
-    const group = document.getElementById("consultaColorGroup");
-    if (!group) return;
-    group.querySelectorAll(".color-btn").forEach(btn => {
-      if (btn.getAttribute("data-color") === colorKey) {
-        btn.classList.add("active");
-      } else {
-        btn.classList.remove("active");
-      }
-    });
-  }
+  function openQueryTeamsSelection() {
+    tempQueryText = document.getElementById("createQueryText").value.trim();
+    if (!tempQueryText) {
+      alert("Por favor introduce una consulta o pregunta.");
+      return;
+    }
+    closeCreateQueryModal();
 
-  function renderConsultaTeamsList() {
-    const container = document.getElementById("consultaTeamsList");
+    const container = document.getElementById("queryTeamsCheckboxes");
     container.innerHTML = "";
 
     appData.teams.forEach(t => {
       const key = getTeamKey(t);
       const label = document.createElement("label");
-      label.style.fontSize = "0.8rem";
+      label.style.fontSize = "0.85rem";
       label.style.display = "flex";
       label.style.alignItems = "center";
-      label.style.gap = "6px";
-      label.innerHTML = `<input type="checkbox" class="consulta-team-checkbox" value="${key}"> ${t.name} (${t.category})`;
+      label.style.gap = "8px";
+      label.innerHTML = `<input type="checkbox" class="query-team-check" value="${key}"> ${t.name} (${t.category})`;
       container.appendChild(label);
     });
+
+    document.getElementById("modalQueryTeams").classList.add("active");
   }
 
-  function toggleAllConsultaTeams(btn) {
-    const checkboxes = document.querySelectorAll(".consulta-team-checkbox");
-    const anyUnchecked = Array.from(checkboxes).some(cb => !cb.checked);
-    checkboxes.forEach(cb => cb.checked = anyUnchecked);
-    btn.innerText = anyUnchecked ? "Desmarcar Todos" : "Seleccionar Todos";
+  function closeQueryTeamsModal() {
+    document.getElementById("modalQueryTeams").classList.remove("active");
   }
 
-  function saveNewConsulta() {
-    const text = document.getElementById("consultaTextInput").value.trim();
-    if (!text) {
-      alert("Por favor escribe el texto de la consulta.");
-      return;
-    }
-
+  function confirmSaveQuery() {
     const selectedTeams = [];
-    document.querySelectorAll(".consulta-team-checkbox:checked").forEach(cb => {
-      selectedTeams.push(cb.value);
-    });
+    document.querySelectorAll(".query-team-check:checked").forEach(cb => selectedTeams.push(cb.value));
 
     if (selectedTeams.length === 0) {
-      alert("Por favor selecciona al menos un equipo.");
+      alert("Selecciona al menos un equipo.");
       return;
     }
 
-    const colorObj = COLOR_OPTIONS[selectedConsultaColor] || COLOR_OPTIONS.AZUL;
-
-    const newConsulta = {
-      id: "c_" + Date.now(),
-      text: text,
-      color: selectedConsultaColor || 'AZUL',
+    const newQuery = {
+      id: Date.now(),
+      text: tempQueryText,
+      color: tempQueryColor,
       teams: selectedTeams,
-      responses: {},
-      completed: false
+      responses: {}
     };
 
-    consultasData.push(newConsulta);
-    saveConsultasToGitHub();
+    queriesData.push(newQuery);
 
-    // Añadir al Tablón de Anuncios con icono del color seleccionado
-    const icon = colorObj.icon;
-    const currentTablon = document.getElementById("tablonTextarea").value;
-    const newTablonText = currentTablon ? `${currentTablon}\n${icon} ${text}` : `${icon} ${text}`;
+    // Añadir al tablón de anuncios con icono del color
+    const colorTag = tempQueryColor === '#0284c7' ? '🔵' : (tempQueryColor === '#7e22ce' ? '🟣' : '🟠');
+    const queryNotice = `${colorTag} CONSULTA: ${tempQueryText}`;
+    appData.tablonText = appData.tablonText ? `${appData.tablonText}\n${queryNotice}` : queryNotice;
+    document.getElementById("tablonTextarea").value = appData.tablonText;
 
-    document.getElementById("tablonTextarea").value = newTablonText;
-    appData.tablonText = newTablonText;
+    closeQueryTeamsModal();
+    saveQueriesToGitHub();
     saveDataAndSyncGitHub();
-
-    closeCreateConsultaModal();
-    alert("Consulta creada y añadida al tablón de anuncios.");
+    alert("Consulta creada y publicada en el tablón de anuncios.");
   }
 
-  function setConsultaAnswer(playerName, consultaId, val) {
-    const key = playerName + '_' + consultaId;
-    if (tempConsultaResponses[key] === val) {
-      delete tempConsultaResponses[key];
-    } else {
-      tempConsultaResponses[key] = val;
+  function answerQuery(queryId, playerName, option) {
+    const q = queriesData.find(x => x.id === queryId);
+    if (!q) return;
+
+    if (!q.responses) q.responses = {};
+    q.responses[playerName] = option;
+
+    // Verificar si todas las jugadoras de los equipos seleccionados han contestado
+    let allAnswered = true;
+    q.teams.forEach(teamKey => {
+      const players = getPlayersForTeamKey(teamKey);
+      players.forEach(p => {
+        if (!q.responses[p]) allAnswered = false;
+      });
+    });
+
+    if (allAnswered) {
+      // Eliminar el texto de la consulta del tablón de anuncios
+      const colorTag = q.color === '#0284c7' ? '🔵' : (q.color === '#7e22ce' ? '🟣' : '🟠');
+      const queryNotice = `${colorTag} CONSULTA: ${q.text}`;
+      
+      let lines = (appData.tablonText || "").split('\n');
+      lines = lines.filter(l => l.trim() !== queryNotice.trim());
+      appData.tablonText = lines.join('\n');
+      document.getElementById("tablonTextarea").value = appData.tablonText;
+      saveDataAndSyncGitHub();
     }
+
+    saveQueriesToGitHub();
     renderPlayersMain();
   }
 
-  function checkAndCleanCompletedConsultas() {
-    let tablonChanged = false;
+  /* --- MODAL SELECTOR CONSULTA PDF --- */
+  function openSelectQueryPdfModal() {
+    const container = document.getElementById("queryListPdfContainer");
+    container.innerHTML = "";
 
-    consultasData.forEach(c => {
-      let allAnswered = true;
-      c.teams.forEach(tKey => {
-        const teamPlayers = getPlayersForTeamKey(tKey);
-        teamPlayers.forEach(pName => {
-          const respKey = pName + '|' + tKey;
-          if (!c.responses || !c.responses[respKey]) {
-            allAnswered = false;
-          }
-        });
+    if (queriesData.length === 0) {
+      container.innerHTML = `<p style="font-size:0.8rem; color:#64748b; text-align:center;">No hay consultas creadas.</p>`;
+    } else {
+      queriesData.forEach(q => {
+        const btn = document.createElement("button");
+        btn.className = "team-btn";
+        btn.style.borderLeft = `4px solid ${q.color}`;
+        btn.innerHTML = `<span>${q.text}</span> <span style="font-size:0.75rem; color:#64748b;">Generar PDF →</span>`;
+        btn.onclick = () => {
+          closeSelectQueryPdfModal();
+          generateQueryPDF(q.id);
+        };
+        container.appendChild(btn);
       });
-
-      if (allAnswered && !c.completed) {
-        c.completed = true;
-        const colorObj = COLOR_OPTIONS[c.color] || COLOR_OPTIONS.AZUL;
-        const targetText = `${colorObj.icon} ${c.text}`;
-
-        if (appData.tablonText) {
-          let lines = appData.tablonText.split('\n');
-          lines = lines.filter(line => line.trim() !== targetText.trim() && line.trim() !== c.text.trim());
-          appData.tablonText = lines.join('\n').trim();
-          document.getElementById("tablonTextarea").value = appData.tablonText;
-          tablonChanged = true;
-        }
-      }
-    });
-
-    if (tablonChanged) {
-      saveDataAndSyncGitHub();
     }
+
+    document.getElementById("modalSelectQueryPdf").classList.add("active");
   }
 
-  /* --- MODO PDF Y SELECCIÓN DE RANGO / CONSULTAS --- */
+  function closeSelectQueryPdfModal() {
+    document.getElementById("modalSelectQueryPdf").classList.remove("active");
+  }
 
+  async function generateQueryPDF(queryId) {
+    const q = queriesData.find(x => x.id === queryId);
+    if (!q) return;
+
+    document.getElementById("pdfQueryTextHeader").innerText = q.text;
+    const container = document.getElementById("pdfQueryTeamsContent");
+    container.innerHTML = "";
+
+    q.teams.forEach(teamKey => {
+      const players = getPlayersForTeamKey(teamKey);
+      
+      const teamBox = document.createElement("div");
+      teamBox.style.marginBottom = "20px";
+
+      let rowsHtml = "";
+      players.forEach(p => {
+        const resp = q.responses ? q.responses[p] : null;
+        let badge = `<span style="color:#64748b; font-weight:bold;">Pendiente</span>`;
+        if (resp === 'V') badge = `<span style="color:#22c55e; font-weight:bold;">✔ (V)</span>`;
+        if (resp === 'X') badge = `<span style="color:#ef4444; font-weight:bold;">✖ (X)</span>`;
+
+        rowsHtml += `
+          <tr>
+            <td style="font-weight:600; padding:6px 10px; border-bottom:1px solid #cbd5e1;">${p}</td>
+            <td style="text-align:center; padding:6px 10px; border-bottom:1px solid #cbd5e1;">${badge}</td>
+          </tr>
+        `;
+      });
+
+      teamBox.innerHTML = `
+        <h4 style="font-size:16px; color:#1e3c72; margin-bottom:8px; border-bottom:2px solid ${q.color}; padding-bottom:4px;">${teamKey}</h4>
+        <table class="pdf-table" style="margin-top:0; margin-bottom:10px;">
+          <thead>
+            <tr>
+              <th>Jugadora</th>
+              <th style="text-align:center;">Respuesta</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      `;
+      container.appendChild(teamBox);
+    });
+
+    const exportArea = document.getElementById("pdfQueryExportArea");
+
+    setTimeout(async () => {
+      try {
+        const canvas = await html2canvas(exportArea, { scale: 2, useCORS: true });
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+
+        const imgData = canvas.toDataURL('image/png');
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, (canvas.height * pdfWidth) / canvas.width);
+        pdf.save(`Consulta_${q.id}.pdf`);
+      } catch (e) {
+        console.error("Error al generar PDF de consulta:", e);
+        alert("Ocurrió un error al generar el PDF de la consulta.");
+      }
+    }, 300);
+  }
+
+  /* --- MODO PDF Y SELECCIÓN DE RANGO --- */
   function togglePdfMode() {
     isPdfMode = !isPdfMode;
     const banner = document.getElementById("pdfModeBanner");
@@ -1507,113 +1560,6 @@
       banner.style.display = "none";
       btn.style.opacity = "1";
     }
-  }
-
-  function openSelectConsultaPdfModal() {
-    const container = document.getElementById("consultaPdfListContainer");
-    container.innerHTML = "";
-
-    if (consultasData.length === 0) {
-      container.innerHTML = `<p style="text-align:center; color:#64748b; font-size:0.85rem; padding:15px;">No hay consultas creadas por el momento.</p>`;
-    } else {
-      consultasData.forEach(c => {
-        const cColor = COLOR_OPTIONS[c.color] || COLOR_OPTIONS.AZUL;
-        const card = document.createElement("div");
-        card.className = "history-card";
-        card.style.borderLeft = `4px solid ${cColor.hex}`;
-        card.style.cursor = "pointer";
-        card.onclick = () => generateConsultaPDF(c);
-
-        card.innerHTML = `
-          <div style="flex:1;">
-            <div style="font-weight:700; font-size:0.85rem; color:${cColor.hex};">${cColor.icon} ${c.text}</div>
-            <div style="font-size:0.72rem; color:#64748b; margin-top:2px;">
-              Equipos: ${c.teams.join(', ')}
-            </div>
-          </div>
-          <button class="btn-edit-history" style="background:${cColor.hex};">📄 Exportar PDF</button>
-        `;
-        container.appendChild(card);
-      });
-    }
-
-    document.getElementById("modalSelectConsultaPdf").classList.add("active");
-  }
-
-  function closeSelectConsultaPdfModal() {
-    document.getElementById("modalSelectConsultaPdf").classList.remove("active");
-  }
-
-  async function generateConsultaPDF(consulta) {
-    closeSelectConsultaPdfModal();
-    if (isPdfMode) togglePdfMode();
-
-    const cColor = COLOR_OPTIONS[consulta.color] || COLOR_OPTIONS.AZUL;
-    document.getElementById("pdfConsultaTextHeader").innerText = `${cColor.icon} ${consulta.text}`;
-
-    const teamsContainer = document.getElementById("pdfConsultaTeamsContainer");
-    teamsContainer.innerHTML = "";
-
-    consulta.teams.forEach(teamKey => {
-      const players = getPlayersForTeamKey(teamKey);
-      const teamSection = document.createElement("div");
-      teamSection.style.marginBottom = "20px";
-
-      let rowsHtml = "";
-      players.forEach(pName => {
-        const respKey = pName + '|' + teamKey;
-        const resp = consulta.responses ? consulta.responses[respKey] : null;
-        let respBadge = '<span style="color:#64748b; font-style:italic; font-weight:600;">Pendiente</span>';
-        if (resp === 'V') {
-          respBadge = '<span style="color:#22c55e; font-weight:bold; background:#dcfce7; padding:2px 8px; border-radius:4px;">V (Apto / Sí)</span>';
-        } else if (resp === 'X') {
-          respBadge = '<span style="color:#ef4444; font-weight:bold; background:#fee2e2; padding:2px 8px; border-radius:4px;">X (No / Rechazado)</span>';
-        }
-
-        rowsHtml += `
-          <tr>
-            <td style="padding: 6px 10px; border-bottom: 1px solid #e2e8f0; font-weight:600;">${pName}</td>
-            <td style="padding: 6px 10px; border-bottom: 1px solid #e2e8f0; text-align:center;">${respBadge}</td>
-          </tr>
-        `;
-      });
-
-      teamSection.innerHTML = `
-        <div style="background: linear-gradient(135deg, #1e3c72, #0f172a); color: white; padding: 6px 12px; border-radius: 6px 6px 0 0; font-weight: 700; font-size: 14px;">
-          🏐 ${teamKey}
-        </div>
-        <table style="width:100%; border-collapse:collapse; background:white; border:1px solid #cbd5e1; border-top:none; font-size:13px;">
-          <thead>
-            <tr style="background:#f1f5f9;">
-              <th style="padding:6px 10px; text-align:left; border-bottom:2px solid #cbd5e1; color:#334155;">Jugadora</th>
-              <th style="padding:6px 10px; text-align:center; border-bottom:2px solid #cbd5e1; color:#334155;">Respuesta</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rowsHtml || '<tr><td colspan="2" style="padding:8px; text-align:center; color:#64748b;">Sin jugadoras asignadas</td></tr>'}
-          </tbody>
-        </table>
-      `;
-      teamsContainer.appendChild(teamSection);
-    });
-
-    const exportArea = document.getElementById("pdfConsultaExportArea");
-
-    setTimeout(async () => {
-      try {
-        const canvas = await html2canvas(exportArea, { scale: 2, useCORS: true });
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-
-        const imgData = canvas.toDataURL('image/png');
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, (canvas.height * pdfWidth) / canvas.width);
-        pdf.save(`Consulta_NVA_${consulta.id}.pdf`);
-      } catch (e) {
-        console.error("Error al generar PDF de consulta:", e);
-        alert("Error al generar el PDF de la consulta.");
-      }
-    }, 300);
   }
 
   function openDateRangeModal(coach, teamKey, displayName) {
@@ -1959,7 +1905,6 @@
 
     currentCoach = coach;
     currentTeam = teamKey;
-    tempConsultaResponses = {}; // Reinicia respuestas temporales
     document.getElementById("sessionTitle").innerText = `${displayName || teamKey} (${coach.name})`;
     resetToTodayDate();
     initSessionData();
@@ -1986,45 +1931,38 @@
     const container = document.getElementById("playersContainer");
     container.innerHTML = "";
 
-    // Consultas activas sin responder para este equipo
-    const activeConsultas = consultasData.filter(c => !c.completed && c.teams.includes(currentTeam));
-
     sessionData.forEach((player, index) => {
       const card = document.createElement("div");
       card.className = "player-card";
 
-      // Verifica si la jugadora tiene un warning activo
-      const warn = getPlayerWarning(player.name);
-      const warnColorObj = warn ? (COLOR_OPTIONS[warn.color] || COLOR_OPTIONS.ROJO) : null;
-      
-      const nameHtml = warn 
-        ? `<div class="warning-capsule" style="background-color: ${warnColorObj.hex}; color: ${warnColorObj.text};" title="${player.name} - ${warn.reason}">${player.name} (${warn.reason})</div>`
+      // Verifica si la jugadora tiene un warning activo con color
+      const wObj = warningsData[player.name];
+      const hasWarning = !!wObj;
+      const warningText = hasWarning ? (typeof wObj === 'string' ? wObj : wObj.reason) : "";
+      const warningColor = hasWarning ? (wObj.color || "#ef4444") : "#ef4444";
+
+      const nameHtml = hasWarning 
+        ? `<div class="warning-capsule" style="background:${warningColor};" title="${player.name} - ${warningText}">${player.name} (${warningText})</div>`
         : `<div class="player-name" title="${player.name}">${player.name}</div>`;
 
-      // Consultas pendientes para esta jugadora específica
-      const playerPendingConsultas = activeConsultas.filter(c => {
-        const respKey = player.name + '|' + currentTeam;
-        return !c.responses || !c.responses[respKey];
-      });
-
-      const consultasHtml = playerPendingConsultas.map(c => {
-        const cColor = COLOR_OPTIONS[c.color] || COLOR_OPTIONS.AZUL;
-        const currentAns = tempConsultaResponses[player.name + '_' + c.id] || '';
-        
-        return `
-          <div class="consulta-capsule" style="background:${cColor.hex}; color:${cColor.text};" title="${c.text}">
-            <span style="overflow:hidden; text-overflow:ellipsis;">${c.text}</span>
-            <button type="button" class="btn-vx" style="background:${currentAns === 'V' ? '#22c55e' : 'rgba(255,255,255,0.3)'}; color:white;" onclick="setConsultaAnswer('${player.name}', '${c.id}', 'V')">V</button>
-            <button type="button" class="btn-vx" style="background:${currentAns === 'X' ? '#ef4444' : 'rgba(255,255,255,0.3)'}; color:white;" onclick="setConsultaAnswer('${player.name}', '${c.id}', 'X')">X</button>
+      // Verifica si hay consulta pendiente para esta jugadora en su equipo
+      let queryHtml = "";
+      const pendingQuery = queriesData.find(q => q.teams.includes(currentTeam) && (!q.responses || !q.responses[player.name]));
+      if (pendingQuery) {
+        queryHtml = `
+          <div class="query-capsule" style="background:${pendingQuery.color};">
+            <span>❓</span>
+            <button class="query-btn" onclick="answerQuery(${pendingQuery.id}, '${player.name}', 'V')">V</button>
+            <button class="query-btn" onclick="answerQuery(${pendingQuery.id}, '${player.name}', 'X')">X</button>
           </div>
         `;
-      }).join('');
+      }
 
       card.innerHTML = `
         <div class="card-row-1">
-          <div style="display:flex; align-items:center; gap:6px; flex:1; overflow:hidden;">
+          <div style="display:flex; align-items:center; flex:1; overflow:hidden;">
             ${nameHtml}
-            ${consultasHtml}
+            ${queryHtml}
           </div>
           <div class="attendance-btn-group">
             <button class="attendance-btn ${player.attendance === 'presente' ? 'present' : ''}" 
@@ -2151,215 +2089,238 @@
     sessionData = JSON.parse(JSON.stringify(log.jugadores));
     renderPlayersMain();
     closeHistoryModal();
+    alert(`Se ha cargado el entrenamiento del ${log.fecha} para modificar. Al terminar pulsa "Guardar Entrenamiento en GitHub".`);
   }
 
-  /* ------------------- ACCESO PROPIETARIO Y CONFIGURACIÓN ------------------- */
+  /* ------------------- PROPIETARIO Y CONFIGURACIÓN ------------------- */
   function promptOwnerPassword() {
     document.getElementById("ownerPasswordInput").value = "";
     document.getElementById("modalPassword").classList.add("active");
   }
 
-  function closePasswordModal() {
-    document.getElementById("modalPassword").classList.remove("active");
-  }
+  function closePasswordModal() { document.getElementById("modalPassword").classList.remove("active"); }
 
   function verifyOwnerPassword() {
-    const pwd = document.getElementById("ownerPasswordInput").value;
-    if (pwd === ownerPassword) {
+    const pass = document.getElementById("ownerPasswordInput").value;
+    if (pass === ownerPassword) {
       closePasswordModal();
       openOptionsModal();
     } else {
-      alert("Contraseña incorrecta.");
+      alert("Contraseña incorrecta de propietario.");
     }
   }
 
   function openOptionsModal() {
-    renderConfigModal();
+    renderConfigTab1();
+    renderConfigTab2Select();
     document.getElementById("modalOptions").classList.add("active");
   }
 
   function closeOptionsModal() {
     document.getElementById("modalOptions").classList.remove("active");
+    renderCoachTeamSelection();
   }
 
-  function switchTab(idx) {
-    document.querySelectorAll(".tab-btn").forEach((btn, i) => {
-      btn.classList.toggle("active", i === idx - 1);
-    });
-    document.querySelectorAll(".tab-content").forEach((cnt, i) => {
-      cnt.classList.toggle("active", i === idx - 1);
-    });
+  function switchTab(num) {
+    document.querySelectorAll(".tab-btn").forEach((b, i) => b.classList.toggle("active", i + 1 === num));
+    document.querySelectorAll(".tab-content").forEach((c, i) => c.classList.toggle("active", i + 1 === num));
+    if (num === 2) renderPlayerManagement();
   }
 
-  function renderConfigModal() {
+  function renderConfigTab1() {
+    const coachesList = document.getElementById("configCoachesList");
+    coachesList.innerHTML = "";
     document.getElementById("coachCountBadge").innerText = appData.coaches.length;
+
+    appData.coaches.forEach((c, idx) => {
+      const row = document.createElement("div");
+      row.className = "item-row";
+      row.innerHTML = `<span><strong>${c.name}</strong> (${c.teams ? c.teams.length : 0} eq.)</span>
+                       <button class="btn-del" onclick="deleteCoach(${idx})">✕</button>`;
+      coachesList.appendChild(row);
+    });
+
+    const teamsList = document.getElementById("configTeamsList");
+    teamsList.innerHTML = "";
     document.getElementById("teamCountBadge").innerText = appData.teams.length;
 
-    const coachList = document.getElementById("configCoachesList");
-    coachList.innerHTML = "";
-    appData.coaches.forEach(c => {
+    appData.teams.forEach((t, idx) => {
       const row = document.createElement("div");
       row.className = "item-row";
-      row.innerHTML = `<span>👨‍🏫 ${c.name}</span> <button class="btn-del" onclick="deleteCoach(${c.id})">✕</button>`;
-      coachList.appendChild(row);
+      row.innerHTML = `<span><strong>${t.name}</strong> <small class="badge">${t.category}</small></span>
+                       <button class="btn-del" onclick="deleteTeam(${idx})">✕</button>`;
+      teamsList.appendChild(row);
     });
 
-    const teamList = document.getElementById("configTeamsList");
-    teamList.innerHTML = "";
-    appData.teams.forEach((t, i) => {
-      const row = document.createElement("div");
-      row.className = "item-row";
-      row.innerHTML = `<span>🏐 ${t.name} (${t.category})</span> <button class="btn-del" onclick="deleteTeam(${i})">✕</button>`;
-      teamList.appendChild(row);
-    });
-
-    const selectAssign = document.getElementById("selectCoachAssign");
-    selectAssign.innerHTML = "";
+    const selectCoach = document.getElementById("selectCoachAssign");
+    selectCoach.innerHTML = "";
     appData.coaches.forEach(c => {
       const opt = document.createElement("option");
       opt.value = c.id;
       opt.innerText = c.name;
-      selectAssign.appendChild(opt);
+      selectCoach.appendChild(opt);
     });
-
     renderCoachAssignments();
+  }
 
-    const selectTeamP = document.getElementById("selectTeamPlayers");
-    selectTeamP.innerHTML = "";
-    appData.teams.forEach(t => {
-      const key = getTeamKey(t);
-      const opt = document.createElement("option");
-      opt.value = key;
-      opt.innerText = `${t.name} (${t.category})`;
-      selectTeamP.appendChild(opt);
+  function addCoach() {
+    const input = document.getElementById("newCoachName");
+    const name = input.value.trim();
+    if (!name) return;
+    appData.coaches.push({ id: Date.now(), name: name, teams: [] });
+    input.value = "";
+    saveDataAndSyncGitHub();
+  }
+
+  function deleteCoach(idx) { appData.coaches.splice(idx, 1); saveDataAndSyncGitHub(); }
+
+  function addTeam() {
+    const inputName = document.getElementById("newTeamName");
+    const catSelect = document.getElementById("newTeamCategory");
+    const name = inputName.value.trim();
+    const category = catSelect.value;
+    if (!name) return;
+
+    if (!appData.teams.some(t => t.name === name && t.category === category)) {
+      appData.teams.push({ name: name, category: category });
+      const key = `${name} (${category})`;
+      if (!appData.players[key]) appData.players[key] = [];
+      saveDataAndSyncGitHub();
+      renderConfigTab2Select();
+    }
+    inputName.value = "";
+  }
+
+  function deleteTeam(idx) {
+    const team = appData.teams[idx];
+    if (!team) return;
+    const teamKey = getTeamKey(team);
+    const teamName = team.name;
+
+    appData.teams.splice(idx, 1);
+    delete appData.players[teamKey];
+    if (teamName) delete appData.players[teamName];
+
+    appData.coaches.forEach(c => {
+      if (c.teams) c.teams = c.teams.filter(t => t !== teamKey && t !== teamName);
     });
-
-    renderPlayerManagement();
+    saveDataAndSyncGitHub();
+    renderConfigTab2Select();
   }
 
   function renderCoachAssignments() {
     const coachId = parseInt(document.getElementById("selectCoachAssign").value);
-    const coach = appData.coaches.find(c => c.id === coachId);
     const container = document.getElementById("coachTeamsCheckboxes");
     container.innerHTML = "";
 
+    const coach = appData.coaches.find(c => c.id === coachId);
     if (!coach) return;
 
     appData.teams.forEach(t => {
       const key = getTeamKey(t);
-      const isAssigned = coach.teams && coach.teams.includes(key);
-
       const label = document.createElement("label");
       label.style.fontSize = "0.8rem";
       label.style.display = "flex";
       label.style.alignItems = "center";
       label.style.gap = "6px";
-      label.innerHTML = `
-        <input type="checkbox" ${isAssigned ? 'checked' : ''} onchange="toggleTeamCoachAssignment(${coach.id}, '${key}', this.checked)">
-        ${t.name} (${t.category})
-      `;
+
+      const isChecked = coach.teams && (coach.teams.includes(key) || coach.teams.includes(t.name));
+      label.innerHTML = `<input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleTeamCoachAssignment(${coach.id}, '${key}')"> ${t.name} (${t.category})`;
       container.appendChild(label);
     });
   }
 
-  function toggleTeamCoachAssignment(coachId, teamKey, isChecked) {
+  function toggleTeamCoachAssignment(coachId, teamKey) {
     const coach = appData.coaches.find(c => c.id === coachId);
     if (!coach) return;
     if (!coach.teams) coach.teams = [];
 
-    if (isChecked) {
-      if (!coach.teams.includes(teamKey)) coach.teams.push(teamKey);
+    const teamObj = appData.teams.find(t => getTeamKey(t) === teamKey);
+    const simpleName = teamObj ? teamObj.name : teamKey;
+
+    if (coach.teams.includes(teamKey) || coach.teams.includes(simpleName)) {
+      coach.teams = coach.teams.filter(t => t !== teamKey && t !== simpleName);
     } else {
-      coach.teams = coach.teams.filter(tk => tk !== teamKey);
+      coach.teams.push(teamKey);
     }
     saveDataAndSyncGitHub();
-    renderCoachTeamSelection();
   }
 
-  function addCoach() {
-    const name = document.getElementById("newCoachName").value.trim();
-    if (!name) return;
-    const newId = appData.coaches.length > 0 ? Math.max(...appData.coaches.map(c => c.id)) + 1 : 1;
-    appData.coaches.push({ id: newId, name: name, teams: [] });
-    document.getElementById("newCoachName").value = "";
-    saveDataAndSyncGitHub();
-    renderConfigModal();
-    renderCoachTeamSelection();
-  }
-
-  function deleteCoach(id) {
-    appData.coaches = appData.coaches.filter(c => c.id !== id);
-    saveDataAndSyncGitHub();
-    renderConfigModal();
-    renderCoachTeamSelection();
-  }
-
-  function addTeam() {
-    const name = document.getElementById("newTeamName").value.trim();
-    const category = document.getElementById("newTeamCategory").value;
-    if (!name) return;
-
-    const newTeam = { name: name, category: category };
-    appData.teams.push(newTeam);
-    ensurePlayerListExists(getTeamKey(newTeam));
-
-    document.getElementById("newTeamName").value = "";
-    saveDataAndSyncGitHub();
-    renderConfigModal();
-    renderCoachTeamSelection();
-  }
-
-  function deleteTeam(index) {
-    const teamToDelete = appData.teams[index];
-    if (teamToDelete) {
-      const key = getTeamKey(teamToDelete);
-      if (appData.players) delete appData.players[key];
-    }
-    appData.teams.splice(index, 1);
-    saveDataAndSyncGitHub();
-    renderConfigModal();
-    renderCoachTeamSelection();
+  function renderConfigTab2Select() {
+    const selectTeam = document.getElementById("selectTeamPlayers");
+    selectTeam.innerHTML = "";
+    appData.teams.forEach(t => {
+      const key = getTeamKey(t);
+      const opt = document.createElement("option");
+      opt.value = key;
+      opt.innerText = `${t.name} (${t.category})`;
+      selectTeam.appendChild(opt);
+    });
+    renderPlayerManagement();
   }
 
   function renderPlayerManagement() {
     const teamKey = document.getElementById("selectTeamPlayers").value;
-    if (!teamKey) return;
+    const container = document.getElementById("draggablePlayerList");
+    container.innerHTML = "";
 
-    const players = ensurePlayerListExists(teamKey);
-    document.getElementById("playerCountBadge").innerText = players.length;
+    if (!teamKey) {
+      document.getElementById("playerCountBadge").innerText = "0";
+      return;
+    }
 
-    const list = document.getElementById("draggablePlayerList");
-    list.innerHTML = "";
+    const playersList = getPlayersForTeamKey(teamKey);
+    document.getElementById("playerCountBadge").innerText = playersList.length;
 
-    players.forEach((p, idx) => {
-      const row = document.createElement("div");
-      row.className = "item-row";
-      row.innerHTML = `<span>👤 ${p}</span> <button class="btn-del" onclick="deletePlayer(${idx})">✕</button>`;
-      list.appendChild(row);
+    playersList.forEach((player, index) => {
+      const item = document.createElement("div");
+      item.className = "item-row";
+      item.style.marginBottom = "4px";
+      item.innerHTML = `
+        <span style="font-weight:600;">${player}</span>
+        <div style="display:flex; gap:4px; align-items:center;">
+          <button style="border:none; background:#e2e8f0; border-radius:4px; padding:2px 5px; font-size:0.7rem;" onclick="movePlayer('${teamKey}', ${index}, -1)">▲</button>
+          <button style="border:none; background:#e2e8f0; border-radius:4px; padding:2px 5px; font-size:0.7rem;" onclick="movePlayer('${teamKey}', ${index}, 1)">▼</button>
+          <button class="btn-del" onclick="deletePlayer('${teamKey}', ${index})">✕</button>
+        </div>
+      `;
+      container.appendChild(item);
     });
   }
 
   function addPlayer() {
     const teamKey = document.getElementById("selectTeamPlayers").value;
-    const name = document.getElementById("newPlayerName").value.trim();
-    if (!teamKey || !name) return;
+    const input = document.getElementById("newPlayerName");
+    const name = input.value.trim();
+    if (!name || !teamKey) return;
 
-    const players = ensurePlayerListExists(teamKey);
-    players.push(name);
-    document.getElementById("newPlayerName").value = "";
+    const playersList = ensurePlayerListExists(teamKey);
+    playersList.push(name);
+    input.value = "";
     saveDataAndSyncGitHub();
     renderPlayerManagement();
   }
 
-  function deletePlayer(idx) {
-    const teamKey = document.getElementById("selectTeamPlayers").value;
-    const players = ensurePlayerListExists(teamKey);
-    players.splice(idx, 1);
+  function deletePlayer(teamKey, index) {
+    const playersList = getPlayersForTeamKey(teamKey);
+    if (playersList && playersList[index] !== undefined) playersList.splice(index, 1);
     saveDataAndSyncGitHub();
     renderPlayerManagement();
   }
 
-  /* ------------------- INTEGRACIÓN Y SINCRONIZACIÓN GITHUB API ------------------- */
+  function movePlayer(teamKey, index, direction) {
+    const list = getPlayersForTeamKey(teamKey);
+    if (!list) return;
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= list.length) return;
+    const temp = list[index];
+    list[index] = list[newIndex];
+    list[newIndex] = temp;
+    saveDataAndSyncGitHub();
+    renderPlayerManagement();
+  }
+
+  /* ------------------- COMUNICACIÓN REST API GITHUB ------------------- */
   function loadGitHubSettingsUI() {
     document.getElementById("ghUser").value = ghSettings.user || "";
     document.getElementById("ghRepo").value = ghSettings.repo || "";
@@ -2370,215 +2331,167 @@
     ghSettings.user = document.getElementById("ghUser").value.trim();
     ghSettings.repo = document.getElementById("ghRepo").value.trim();
     ghSettings.token = document.getElementById("ghToken").value.trim();
-
     localStorage.setItem("NVA_GH_SETTINGS", JSON.stringify(ghSettings));
-    alert("Ajustes de GitHub guardados correctamente.");
+    alert("Configuración de GitHub guardada.");
+    syncConfigFromGitHub();
+    fetchTrainingLogsFromGitHub();
+    fetchWarningsFromGitHub();
+    fetchQueriesFromGitHub();
   }
 
   function saveDataAndSyncGitHub() {
     localStorage.setItem("NVA_APP_DATA", JSON.stringify(appData));
-    saveConfigToGitHub();
+    renderConfigTab1();
+    if (ghSettings.user && ghSettings.repo && ghSettings.token) {
+      writeGitHubFile("configuracion.json", appData, "Actualizar configuraciones del club");
+    }
   }
 
-  async function getGitHubFileSHA(path) {
-    if (!ghSettings.user || !ghSettings.repo || !ghSettings.token) return null;
-    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${path}`;
+  function utf8_to_b64(str) { return window.btoa(unescape(encodeURIComponent(str))); }
+  function b64_to_utf8(str) { return decodeURIComponent(escape(window.atob(str))); }
+
+  async function writeGitHubFile(fileName, dataObject, commitMessage) {
+    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${fileName}`;
     try {
-      const res = await fetch(url, {
-        headers: { "Authorization": `token ${ghSettings.token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return data.sha;
+      let sha = "";
+      const getRes = await fetch(url, { headers: { "Authorization": `token ${ghSettings.token}` } });
+      if (getRes.ok) {
+        const getJson = await getRes.json();
+        sha = getJson.sha;
       }
-    } catch (e) {
-      console.warn("Error obteniendo SHA de GitHub:", e);
-    }
-    return null;
-  }
-
-  async function uploadToGitHub(path, contentObj, commitMessage) {
-    if (!ghSettings.user || !ghSettings.repo || !ghSettings.token) return false;
-
-    const sha = await getGitHubFileSHA(path);
-    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${path}`;
-    
-    // Codificación UTF-8 robusta para Base64
-    const jsonString = JSON.stringify(contentObj, null, 2);
-    const bytes = new TextEncoder().encode(jsonString);
-    let binary = '';
-    for (let i = 0; i < bytes.byteLength; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    const contentBase64 = btoa(binary);
-
-    const body = {
-      message: commitMessage,
-      content: contentBase64
-    };
-    if (sha) body.sha = sha;
-
-    try {
-      const res = await fetch(url, {
+      const contentBase64 = utf8_to_b64(JSON.stringify(dataObject, null, 2));
+      const body = { message: commitMessage, content: contentBase64, ...(sha && { sha: sha }) };
+      const putRes = await fetch(url, {
         method: "PUT",
-        headers: {
-          "Authorization": `token ${ghSettings.token}`,
-          "Content-Type": "application/json"
-        },
+        headers: { "Authorization": `token ${ghSettings.token}`, "Content-Type": "application/json" },
         body: JSON.stringify(body)
       });
-      return res.ok;
-    } catch (e) {
-      console.error("Error subiendo archivo a GitHub:", e);
-      return false;
-    }
-  }
-
-  async function fetchFromGitHub(path) {
-    if (!ghSettings.user || !ghSettings.repo || !ghSettings.token) return null;
-    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${path}?ref=main&t=${Date.now()}`;
-    try {
-      const res = await fetch(url, {
-        headers: { "Authorization": `token ${ghSettings.token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const binary = atob(data.content.replace(/\s/g, ''));
-        const bytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) {
-          bytes[i] = binary.charCodeAt(i);
-        }
-        const jsonString = new TextDecoder('utf-8').decode(bytes);
-        return JSON.parse(jsonString);
-      }
-    } catch (e) {
-      console.warn(`No se pudo leer ${path} de GitHub:`, e);
-    }
-    return null;
-  }
-
-  async function saveConfigToGitHub() {
-    await uploadToGitHub("config.json", appData, "Actualizar configuración del club");
+      return putRes.ok;
+    } catch (e) { return false; }
   }
 
   async function syncConfigFromGitHub(silent = false) {
-    const remoteData = await fetchFromGitHub("config.json");
-    if (remoteData) {
-      appData = remoteData;
-      localStorage.setItem("NVA_APP_DATA", JSON.stringify(appData));
-      renderCoachTeamSelection();
-      if (appData.tablonText) {
-        document.getElementById("tablonTextarea").value = appData.tablonText;
+    if (!ghSettings.user || !ghSettings.repo) return; 
+    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/configuracion.json`;
+    
+    const headers = {};
+    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
+
+    try {
+      const res = await fetch(url, { headers });
+      if (res.ok) {
+        const json = await res.json();
+        appData = JSON.parse(b64_to_utf8(json.content));
+        localStorage.setItem("NVA_APP_DATA", JSON.stringify(appData));
+        renderCoachTeamSelection();
+        if (appData.tablonText) {
+          document.getElementById("tablonTextarea").value = appData.tablonText;
+        }
+        if (!silent) alert("¡Configuración sincronizada desde GitHub!");
       }
-      if (!silent) alert("Sincronización con GitHub completada.");
-    } else if (!silent) {
-      alert("No se pudo obtener la configuración remota de GitHub.");
+    } catch (e) { console.error(e); }
+  }
+
+  async function fetchTrainingLogsFromGitHub() {
+    if (!ghSettings.user || !ghSettings.repo) return;
+    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/registro_entrenamientos.json`;
+    
+    const headers = {};
+    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
+
+    try {
+      const res = await fetch(url, { headers });
+      if (res.ok) {
+        const json = await res.json();
+        allTrainingLogs = JSON.parse(b64_to_utf8(json.content));
+      }
+    } catch (e) { console.error(e); }
+  }
+
+  async function fetchWarningsFromGitHub() {
+    if (!ghSettings.user || !ghSettings.repo) return;
+    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/Warning.json`;
+    
+    const headers = {};
+    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
+
+    try {
+      const res = await fetch(url, { headers });
+      if (res.ok) {
+        const json = await res.json();
+        warningsData = JSON.parse(b64_to_utf8(json.content));
+      }
+    } catch (e) { console.error("No hay Warning.json previo o hubo error:", e); }
+  }
+
+  async function saveWarningsToGitHub() {
+    if (ghSettings.user && ghSettings.repo && ghSettings.token) {
+      const success = await writeGitHubFile("Warning.json", warningsData, "Actualizar warnings de Dirección NVA");
+      if (success) {
+        alert("¡Avisos (Warnings) guardados en GitHub!");
+      } else {
+        alert("Atención: No se pudo conectar con GitHub. Solo se guardó en local.");
+      }
+    } else {
+      alert("No hay configuración de GitHub. Solo se aplicó en local temporalmente.");
+    }
+  }
+
+  async function fetchQueriesFromGitHub() {
+    if (!ghSettings.user || !ghSettings.repo) return;
+    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/Consultas.json`;
+    
+    const headers = {};
+    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
+
+    try {
+      const res = await fetch(url, { headers });
+      if (res.ok) {
+        const json = await res.json();
+        queriesData = JSON.parse(b64_to_utf8(json.content));
+      }
+    } catch (e) { console.error("No hay Consultas.json previo o hubo error:", e); }
+  }
+
+  async function saveQueriesToGitHub() {
+    if (ghSettings.user && ghSettings.repo && ghSettings.token) {
+      await writeGitHubFile("Consultas.json", queriesData, "Actualizar consultas de Dirección NVA");
     }
   }
 
   async function saveSession() {
-    const fecha = document.getElementById("sessionDatePicker").value;
-    if (!fecha) {
+    const selectedDate = document.getElementById("sessionDatePicker").value;
+    if (!selectedDate) {
       alert("Por favor selecciona una fecha válida.");
       return;
     }
 
-    const sessionRecord = {
-      fecha: fecha,
-      equipo: currentTeam,
+    const reportRecord = {
+      fecha: selectedDate,
       entrenador: currentCoach ? currentCoach.name : "Desconocido",
+      equipo: currentTeam,
+      timestamp: new Date().toISOString(),
       jugadores: sessionData
     };
 
-    // Actualiza respuestas de consultas asociadas durante la sesión
-    for (const key in tempConsultaResponses) {
-      const val = tempConsultaResponses[key];
-      const lastUnderscore = key.lastIndexOf('_');
-      const playerName = key.substring(0, lastUnderscore);
-      const consultaId = key.substring(lastUnderscore + 1);
-
-      const consulta = consultasData.find(c => c.id === consultaId);
-      if (consulta) {
-        if (!consulta.responses) consulta.responses = {};
-        consulta.responses[playerName + '|' + currentTeam] = val;
-      }
-    }
-
-    saveConsultasToGitHub();
-    checkAndCleanCompletedConsultas();
-
-    const fileName = `entrenamiento_${currentTeam.replace(/[^a-zA-Z0-9]/g, '_')}_${fecha}.json`;
-    const path = `entrenamientos/${fileName}`;
-
-    const ok = await uploadToGitHub(path, sessionRecord, `Guardar entrenamiento ${currentTeam} - ${fecha}`);
-    
-    // Actualiza copia local en allTrainingLogs
-    const existingIndex = allTrainingLogs.findIndex(l => l.equipo === currentTeam && l.fecha === fecha);
+    const existingIndex = allTrainingLogs.findIndex(l => l.equipo === currentTeam && l.fecha === selectedDate);
     if (existingIndex >= 0) {
-      allTrainingLogs[existingIndex] = sessionRecord;
+      allTrainingLogs[existingIndex] = reportRecord;
     } else {
-      allTrainingLogs.push(sessionRecord);
+      allTrainingLogs.push(reportRecord);
     }
 
-    if (ok) {
-      alert("Entrenamiento e información de consultas guardados exitosamente en GitHub.");
-    } else {
-      alert("Guardado localmente. (Configura GitHub PAT en Ajustes para sincronización remota).");
-    }
-  }
-
-  async function fetchTrainingLogsFromGitHub() {
-    if (!ghSettings.user || !ghSettings.repo || !ghSettings.token) return;
-    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/entrenamientos`;
-    try {
-      const res = await fetch(url, {
-        headers: { "Authorization": `token ${ghSettings.token}` }
-      });
-      if (res.ok) {
-        const files = await res.json();
-        allTrainingLogs = [];
-        for (const file of files) {
-          if (file.name.endsWith('.json')) {
-            const logData = await fetchFromGitHub(`entrenamientos/${file.name}`);
-            if (logData) allTrainingLogs.push(logData);
-          }
-        }
+    if (ghSettings.user && ghSettings.repo && ghSettings.token) {
+      const success = await writeGitHubFile("registro_entrenamientos.json", allTrainingLogs, `Registro entrenamiento: ${currentTeam} - ${selectedDate}`);
+      if (success) {
+        alert(`¡Entrenamiento del ${selectedDate} guardado/actualizado correctamente en GitHub!`);
+      } else {
+        alert("Atención: No se pudo conectar con GitHub. Se ha guardado en memoria local.");
       }
-    } catch (e) {
-      console.warn("No se pudieron cargar entrenamientos desde GitHub:", e);
-    }
-  }
-
-  async function saveWarningsToGitHub() {
-    const ok = await uploadToGitHub("warnings.json", warningsData, "Actualizar avisos (warnings) de jugadoras");
-    if (ok) {
-      alert("Warnings guardados en GitHub correctamente.");
     } else {
-      alert("Ocurrió un problema al guardar los warnings en GitHub.");
-    }
-  }
-
-  async function fetchWarningsFromGitHub() {
-    const remoteWarnings = await fetchFromGitHub("warnings.json");
-    if (remoteWarnings) {
-      warningsData = remoteWarnings;
-    }
-  }
-
-  async function saveConsultasToGitHub() {
-    localStorage.setItem("NVA_CONSULTAS_DATA", JSON.stringify(consultasData));
-    await uploadToGitHub("consultas.json", consultasData, "Actualizar consultas y peticiones de contestación");
-  }
-
-  async function fetchConsultasFromGitHub() {
-    const remoteConsultas = await fetchFromGitHub("consultas.json");
-    if (remoteConsultas) {
-      consultasData = remoteConsultas;
-      localStorage.setItem("NVA_CONSULTAS_DATA", JSON.stringify(consultasData));
-      checkAndCleanCompletedConsultas();
+      alert(`Entrenamiento del ${selectedDate} guardado en memoria local.`);
     }
   }
 </script>
-
 </body>
 </html>
