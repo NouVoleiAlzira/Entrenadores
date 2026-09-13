@@ -639,18 +639,31 @@
     }
 
     .consulta-capsule {
-      padding: 4px 8px;
-      border-radius: 8px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      display: flex;
-      flex-direction: column;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
       gap: 4px;
-      margin-top: 4px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      max-width: 55%;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
     }
 
-    /* Área Oculta para Renderizar el PDF */
+    .btn-vx {
+      border: none;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-weight: bold;
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    /* Área Oculta para Renderizar el PDF (MODERNIZADO) */
     #pdfReportExportArea {
       position: absolute;
       left: -9999px;
@@ -760,14 +773,14 @@
     <div class="section-title">Selecciona Entrenador y Equipo</div>
     <div id="coachTeamList"></div>
     
-    <!-- SECCIÓN: DIRECCIÓN NVA -->
+    <!-- NUEVA SECCIÓN: DIRECCIÓN NVA -->
     <div class="section-title" style="margin-top:20px;">Dirección NVA</div>
     <button class="coach-btn" id="btnDireccionNVA" onclick="toggleDireccionNVA()">
       <span>🏢 Gestión y Avisos (Dirección)</span> <span id="iconDireccionNVA">►</span>
     </button>
     <div id="direccionTeamsContainer" class="teams-container" style="display: none;"></div>
 
-    <!-- SECCIÓN: TABLÓN DE ANUNCIOS -->
+    <!-- NUEVA SECCIÓN: TABLÓN DE ANUNCIOS -->
     <div class="section-title" style="margin-top:20px;">Tablón de Anuncios y Noticias</div>
     <textarea id="tablonTextarea" class="comment-input-long" style="width:100%; min-height:80px; font-size:0.9rem;" placeholder="Escribe aquí las noticias del club..." onchange="updateTablon(this.value)"></textarea>
     <button class="btn-save-session" style="margin-top: 8px; padding: 8px; font-size: 0.8rem;" onclick="saveTablon()">Guardar Tablón</button>
@@ -781,7 +794,7 @@
     <div class="controls-bar">
       <div class="date-container">
         <label for="sessionDatePicker">📅 Fecha:</label>
-        <input type="date" id="sessionDatePicker" class="date-input" onchange="loadSessionForDate()">
+        <input type="date" id="sessionDatePicker" class="date-input">
       </div>
       <button class="btn-history" onclick="openHistoryModal()">📜 Historial</button>
     </div>
@@ -963,7 +976,7 @@
           <div class="config-subtitle">Equipos <span class="badge" id="teamCountBadge">0</span></div>
           <div class="input-group">
             <input type="text" id="newTeamName" class="app-input" placeholder="Nombre Equipo">
-            <select id="newTeamCategory" class="app-select" style="width: 110px;">
+            <select id="newTeamCategory" class="app-select" style="width: 100px;">
               <option value="Alevín">Alevín</option>
               <option value="Infantil">Infantil</option>
               <option value="Cadete">Cadete</option>
@@ -998,7 +1011,7 @@
             <input type="text" id="newPlayerName" class="app-input" placeholder="Nombre Jugador/a">
             <button class="btn-add" onclick="addPlayer()">+</button>
           </div>
-          <div id="draggablePlayerList" class="item-list" style="max-height: 200px;"></div>
+          <div id="draggablePlayerList"></div>
         </div>
       </div>
 
@@ -1020,7 +1033,7 @@
 
         <div class="config-section">
           <div class="config-subtitle">Base de Datos Remota</div>
-          <button class="btn-save-session" style="background: var(--azul-primary); padding:8px; margin-top:8px;" onclick="syncConfigFromGitHub(false)">Sincronizar Desde GitHub Ahora</button>
+          <button class="btn-save-session" style="background: var(--azul-primary); padding:8px; margin-top:8px;" onclick="syncConfigFromGitHub()">Sincronizar Desde GitHub Ahora</button>
         </div>
       </div>
 
@@ -1094,7 +1107,7 @@
 </div>
 
 <script>
-  // Opciones y Mapas de Color Globales
+  // Opciones y Mapas de Color Globales (ROJO, AZUL, VERDE, AMARILLO)
   const COLOR_OPTIONS = {
     ROJO: { name: 'ROJO', hex: '#ef4444', text: '#ffffff', icon: '🔴' },
     AZUL: { name: 'AZUL', hex: '#2563eb', text: '#ffffff', icon: '🔵' },
@@ -1102,7 +1115,7 @@
     AMARILLO: { name: 'AMARILLO', hex: '#eab308', text: '#000000', icon: '🟡' }
   };
 
-  // Datos iniciales por defecto
+  // Datos iniciales
   const defaultData = {
     coaches: [
       { id: 1, name: "Carlos Martínez", teams: ["Cadete Femenino A (Cadete)", "Juvenil Femenino (Juvenil)"] },
@@ -1127,22 +1140,23 @@
   let ghSettings = JSON.parse(localStorage.getItem("NVA_GH_SETTINGS")) || { user: "", repo: "", token: "" };
   let appData = JSON.parse(localStorage.getItem("NVA_APP_DATA")) || defaultData;
 
-  // Estado global de la aplicación
+  // Estado global
   let activeCoachId = null;
   let currentCoach = null;
   let currentTeam = null;
   let selectedPlayerIndexForAbsence = null;
   let sessionData = [];
-  let allTrainingLogs = JSON.parse(localStorage.getItem("NVA_TRAINING_LOGS")) || [];
+  let allTrainingLogs = []; 
 
   // Estado de Warnings y Consultas
   let isDireccionExpanded = false;
-  let warningsData = JSON.parse(localStorage.getItem("NVA_WARNINGS_DATA")) || {};
+  let warningsData = {}; // Guarda { "Nombre Jugadora": { reason: "Motivo", color: "ROJO" } }
   let currentWarningPlayer = null;
   let selectedWarningColor = 'ROJO';
 
   let consultasData = JSON.parse(localStorage.getItem("NVA_CONSULTAS_DATA")) || [];
   let selectedConsultaColor = 'AZUL';
+  let tempConsultaResponses = {}; // Respuestas temporales durante la toma de asistencia
 
   // Estado de Modo PDF y Calendario
   let isPdfMode = false;
@@ -1156,8 +1170,6 @@
 
   let pdfChart1 = null;
   let pdfChart2 = null;
-
-  // --- FUNCIONES DE UTILIDAD DE EQUIPOS Y JUGADORAS ---
 
   function getTeamKey(t) {
     if (!t) return "";
@@ -1196,8 +1208,6 @@
     return w;
   }
 
-  // --- INICIALIZACIÓN DE LA APLICACIÓN ---
-
   document.addEventListener("DOMContentLoaded", () => {
     resetToTodayDate();
     renderCoachTeamSelection();
@@ -1220,70 +1230,7 @@
     document.getElementById("sessionDatePicker").value = today;
   }
 
-  function showScreen(screenId) {
-    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-    const target = document.getElementById(screenId);
-    if (target) target.classList.add("active");
-  }
-
-  function goBack() {
-    showScreen("screenCoachTeam");
-    document.getElementById("btnBack").style.display = "none";
-  }
-
-  // --- NAVEGACIÓN Y RENDERIZADO DE ENTRENADORES Y EQUIPOS ---
-
-  function renderCoachTeamSelection() {
-    const container = document.getElementById("coachTeamList");
-    container.innerHTML = "";
-
-    appData.coaches.forEach(coach => {
-      const btnCoach = document.createElement("button");
-      btnCoach.className = `coach-btn ${activeCoachId === coach.id ? 'selected' : ''}`;
-      btnCoach.innerHTML = `<span>👤 ${coach.name}</span> <span>${activeCoachId === coach.id ? '▼' : '►'}</span>`;
-      btnCoach.onclick = () => selectCoach(coach.id);
-      container.appendChild(btnCoach);
-
-      if (activeCoachId === coach.id) {
-        const teamsDiv = document.createElement("div");
-        teamsDiv.className = "teams-container";
-
-        if (coach.teams && coach.teams.length > 0) {
-          coach.teams.forEach(teamKey => {
-            const btnTeam = document.createElement("button");
-            btnTeam.className = "team-btn";
-            btnTeam.innerHTML = `<span>🏐 ${teamKey}</span> <span>Registrar →</span>`;
-            btnTeam.onclick = () => selectTeam(teamKey, coach.name);
-            teamsDiv.appendChild(btnTeam);
-          });
-        } else {
-          teamsDiv.innerHTML = `<div style="color:white; font-size:0.8rem; padding:4px;">No hay equipos asignados.</div>`;
-        }
-        container.appendChild(teamsDiv);
-      }
-    });
-  }
-
-  function selectCoach(coachId) {
-    activeCoachId = activeCoachId === coachId ? null : coachId;
-    renderCoachTeamSelection();
-  }
-
-  function selectTeam(teamKey, coachName) {
-    currentTeam = teamKey;
-    currentCoach = coachName;
-
-    if (isPdfMode) {
-      openDateRangeModalForTeam(teamKey);
-    } else {
-      document.getElementById("sessionTitle").innerText = `Registro: ${teamKey}`;
-      document.getElementById("btnBack").style.display = "flex";
-      showScreen("screenAttendance");
-      loadSessionForDate();
-    }
-  }
-
-  // --- DIRECCIÓN NVA, TABLÓN Y WARNINGS ---
+  /* --- MODO DIRECCIÓN NVA, TABLÓN Y WARNINGS --- */
 
   function toggleDireccionNVA() {
     isDireccionExpanded = !isDireccionExpanded;
@@ -1294,6 +1241,7 @@
     if (isDireccionExpanded) {
       container.innerHTML = "";
 
+      // Botones de acción en Dirección NVA
       const actionsDiv = document.createElement("div");
       actionsDiv.style.display = "flex";
       actionsDiv.style.flexDirection = "column";
@@ -1322,8 +1270,8 @@
     appData.tablonText = val;
   }
 
-  async function saveTablon() {
-    await saveDataAndSyncGitHub();
+  function saveTablon() {
+    saveDataAndSyncGitHub();
     alert("Tablón de anuncios guardado.");
   }
 
@@ -1407,7 +1355,7 @@
     document.getElementById("modalWarning").classList.remove("active"); 
   }
 
-  // --- CONSULTAS / PETICIONES DE CONTESTACIÓN ---
+  /* --- PETICIONES DE CONTESTACIÓN (CONSULTAS) --- */
 
   function openCreateConsultaModal() {
     document.getElementById("consultaTextInput").value = "";
@@ -1456,10 +1404,10 @@
     btn.innerText = anyUnchecked ? "Desmarcar Todos" : "Seleccionar Todos";
   }
 
-  async function saveNewConsulta() {
+  function saveNewConsulta() {
     const text = document.getElementById("consultaTextInput").value.trim();
     if (!text) {
-      alert("Por favor, escribe el texto de la consulta.");
+      alert("Por favor escribe el texto de la consulta.");
       return;
     }
 
@@ -1469,23 +1417,96 @@
     });
 
     if (selectedTeams.length === 0) {
-      alert("Por favor, selecciona al menos un equipo.");
+      alert("Por favor selecciona al menos un equipo.");
       return;
     }
 
+    const colorObj = COLOR_OPTIONS[selectedConsultaColor] || COLOR_OPTIONS.AZUL;
+
     const newConsulta = {
-      id: "cons_" + Date.now(),
-      date: new Date().toISOString().split('T')[0],
+      id: "c_" + Date.now(),
       text: text,
       color: selectedConsultaColor || 'AZUL',
       teams: selectedTeams,
-      responses: {}
+      responses: {},
+      completed: false
     };
 
     consultasData.push(newConsulta);
+    saveConsultasToGitHub();
+
+    // Añadir al Tablón de Anuncios con icono del color seleccionado
+    const icon = colorObj.icon;
+    const currentTablon = document.getElementById("tablonTextarea").value;
+    const newTablonText = currentTablon ? `${currentTablon}\n${icon} ${text}` : `${icon} ${text}`;
+
+    document.getElementById("tablonTextarea").value = newTablonText;
+    appData.tablonText = newTablonText;
+    saveDataAndSyncGitHub();
+
     closeCreateConsultaModal();
-    await saveConsultasToGitHub();
-    alert("Consulta creada y publicada correctamente.");
+    alert("Consulta creada y añadida al tablón de anuncios.");
+  }
+
+  function setConsultaAnswer(playerName, consultaId, val) {
+    const key = playerName + '_' + consultaId;
+    if (tempConsultaResponses[key] === val) {
+      delete tempConsultaResponses[key];
+    } else {
+      tempConsultaResponses[key] = val;
+    }
+    renderPlayersMain();
+  }
+
+  function checkAndCleanCompletedConsultas() {
+    let tablonChanged = false;
+
+    consultasData.forEach(c => {
+      let allAnswered = true;
+      c.teams.forEach(tKey => {
+        const teamPlayers = getPlayersForTeamKey(tKey);
+        teamPlayers.forEach(pName => {
+          const respKey = pName + '|' + tKey;
+          if (!c.responses || !c.responses[respKey]) {
+            allAnswered = false;
+          }
+        });
+      });
+
+      if (allAnswered && !c.completed) {
+        c.completed = true;
+        const colorObj = COLOR_OPTIONS[c.color] || COLOR_OPTIONS.AZUL;
+        const targetText = `${colorObj.icon} ${c.text}`;
+
+        if (appData.tablonText) {
+          let lines = appData.tablonText.split('\n');
+          lines = lines.filter(line => line.trim() !== targetText.trim() && line.trim() !== c.text.trim());
+          appData.tablonText = lines.join('\n').trim();
+          document.getElementById("tablonTextarea").value = appData.tablonText;
+          tablonChanged = true;
+        }
+      }
+    });
+
+    if (tablonChanged) {
+      saveDataAndSyncGitHub();
+    }
+  }
+
+  /* --- MODO PDF Y SELECCIÓN DE RANGO / CONSULTAS --- */
+
+  function togglePdfMode() {
+    isPdfMode = !isPdfMode;
+    const banner = document.getElementById("pdfModeBanner");
+    const btn = document.getElementById("btnPdfMode");
+    
+    if (isPdfMode) {
+      banner.style.display = "flex";
+      btn.style.opacity = "0.6";
+    } else {
+      banner.style.display = "none";
+      btn.style.opacity = "1";
+    }
   }
 
   function openSelectConsultaPdfModal() {
@@ -1493,22 +1514,26 @@
     container.innerHTML = "";
 
     if (consultasData.length === 0) {
-      container.innerHTML = `<p style="font-size:0.8rem; color:#64748b;">No hay consultas creadas.</p>`;
+      container.innerHTML = `<p style="text-align:center; color:#64748b; font-size:0.85rem; padding:15px;">No hay consultas creadas por el momento.</p>`;
     } else {
       consultasData.forEach(c => {
-        const colorObj = COLOR_OPTIONS[c.color] || COLOR_OPTIONS.AZUL;
-        const item = document.createElement("div");
-        item.style.background = "#f8fafc";
-        item.style.border = `1px solid ${colorObj.hex}`;
-        item.style.borderRadius = "8px";
-        item.style.padding = "10px";
-        item.style.cursor = "pointer";
-        item.innerHTML = `
-          <div style="font-weight:bold; font-size:0.85rem; color:${colorObj.hex}">${colorObj.icon} ${c.text}</div>
-          <div style="font-size:0.72rem; color:#64748b; margin-top:4px;">Fecha: ${c.date} | Equipos: ${c.teams.length}</div>
+        const cColor = COLOR_OPTIONS[c.color] || COLOR_OPTIONS.AZUL;
+        const card = document.createElement("div");
+        card.className = "history-card";
+        card.style.borderLeft = `4px solid ${cColor.hex}`;
+        card.style.cursor = "pointer";
+        card.onclick = () => generateConsultaPDF(c);
+
+        card.innerHTML = `
+          <div style="flex:1;">
+            <div style="font-weight:700; font-size:0.85rem; color:${cColor.hex};">${cColor.icon} ${c.text}</div>
+            <div style="font-size:0.72rem; color:#64748b; margin-top:2px;">
+              Equipos: ${c.teams.join(', ')}
+            </div>
+          </div>
+          <button class="btn-edit-history" style="background:${cColor.hex};">📄 Exportar PDF</button>
         `;
-        item.onclick = () => generateConsultaPdf(c.id);
-        container.appendChild(item);
+        container.appendChild(card);
       });
     }
 
@@ -1519,245 +1544,92 @@
     document.getElementById("modalSelectConsultaPdf").classList.remove("active");
   }
 
-  // --- REGISTRO DE ENTRENAMIENTO Y TOMA DE ASISTENCIA ---
+  async function generateConsultaPDF(consulta) {
+    closeSelectConsultaPdfModal();
+    if (isPdfMode) togglePdfMode();
 
-  function loadSessionForDate() {
-    const date = document.getElementById("sessionDatePicker").value;
-    const players = getPlayersForTeamKey(currentTeam);
+    const cColor = COLOR_OPTIONS[consulta.color] || COLOR_OPTIONS.AZUL;
+    document.getElementById("pdfConsultaTextHeader").innerText = `${cColor.icon} ${consulta.text}`;
 
-    const existingLog = allTrainingLogs.find(log => log.date === date && log.teamKey === currentTeam);
+    const teamsContainer = document.getElementById("pdfConsultaTeamsContainer");
+    teamsContainer.innerHTML = "";
 
-    if (existingLog) {
-      sessionData = existingLog.players.map(p => ({ ...p }));
-    } else {
-      sessionData = players.map(playerName => ({
-        name: playerName,
-        status: 'present',
-        absenceReason: '',
-        quality: 3,
-        strikes: 0,
-        comment: ''
-      }));
-    }
+    consulta.teams.forEach(teamKey => {
+      const players = getPlayersForTeamKey(teamKey);
+      const teamSection = document.createElement("div");
+      teamSection.style.marginBottom = "20px";
 
-    renderAttendanceCards();
-  }
+      let rowsHtml = "";
+      players.forEach(pName => {
+        const respKey = pName + '|' + teamKey;
+        const resp = consulta.responses ? consulta.responses[respKey] : null;
+        let respBadge = '<span style="color:#64748b; font-style:italic; font-weight:600;">Pendiente</span>';
+        if (resp === 'V') {
+          respBadge = '<span style="color:#22c55e; font-weight:bold; background:#dcfce7; padding:2px 8px; border-radius:4px;">V (Apto / Sí)</span>';
+        } else if (resp === 'X') {
+          respBadge = '<span style="color:#ef4444; font-weight:bold; background:#fee2e2; padding:2px 8px; border-radius:4px;">X (No / Rechazado)</span>';
+        }
 
-  function renderAttendanceCards() {
-    const container = document.getElementById("playersContainer");
-    container.innerHTML = "";
-
-    const teamConsultas = consultasData.filter(c => c.teams.includes(currentTeam));
-
-    sessionData.forEach((player, index) => {
-      const warn = getPlayerWarning(player.name);
-      const colorObj = warn ? (COLOR_OPTIONS[warn.color] || COLOR_OPTIONS.ROJO) : null;
-
-      const card = document.createElement("div");
-      card.className = "player-card";
-      if (warn) card.style.borderLeft = `4px solid ${colorObj.hex}`;
-
-      let consultaHtml = "";
-      if (teamConsultas.length > 0) {
-        teamConsultas.forEach(c => {
-          const cColor = COLOR_OPTIONS[c.color] || COLOR_OPTIONS.AZUL;
-          const currentResp = (c.responses && c.responses[currentTeam] && c.responses[currentTeam][player.name]) || "";
-          consultaHtml += `
-            <div class="consulta-capsule" style="background:${cColor.hex}15; border:1px solid ${cColor.hex}; color:${cColor.hex}">
-              <div>${cColor.icon} <strong>Consulta:</strong> ${c.text}</div>
-              <input type="text" class="app-input" style="font-size:0.75rem; padding:4px; margin-top:2px;" 
-                     placeholder="Respuesta..." value="${currentResp}" 
-                     onchange="updateConsultaResponse('${c.id}', '${player.name}', this.value)">
-            </div>
-          `;
-        });
-      }
-
-      card.innerHTML = `
-        <div class="card-row-1">
-          <span class="player-name">${player.name}</span>
-          ${warn ? `<span class="warning-capsule" style="background:${colorObj.hex}; color:${colorObj.text}">${colorObj.icon} ${warn.reason}</span>` : ''}
-          <div class="attendance-btn-group">
-            <button class="attendance-btn ${player.status === 'present' ? 'present' : ''}" onclick="setAttendance(${index}, 'present')">Presente</button>
-            <button class="attendance-btn ${player.status === 'absent' ? 'absent' : ''}" onclick="setAttendance(${index}, 'absent')">Ausente</button>
-          </div>
-        </div>
-
-        ${player.status === 'absent' && player.absenceReason ? `
-          <div style="font-size:0.72rem; color:#ef4444; font-weight:bold;">Motivo: ${player.absenceReason}</div>
-        ` : ''}
-
-        <div class="card-row-2">
-          <div class="mini-group">
-            <span class="mini-label">Calidad:</span>
-            <div class="stars">
-              ${[1, 2, 3, 4, 5].map(star => `
-                <span class="star ${star <= player.quality ? 'active' : ''}" onclick="setQuality(${index}, ${star})">★</span>
-              `).join('')}
-            </div>
-          </div>
-
-          <div class="mini-group">
-            <span class="mini-label">Strikes:</span>
-            <div class="strikes-selector">
-              ${[0, 1, 2, 3].map(st => `
-                <div class="strike-pill ${player.strikes === st ? 'active' : ''}" onclick="setStrikes(${index}, ${st})">${st}</div>
-              `).join('')}
-            </div>
-          </div>
-        </div>
-
-        ${consultaHtml}
-
-        <div class="card-row-3">
-          <textarea class="comment-input-long" placeholder="Observaciones de ${player.name}..." onchange="updateComment(${index}, this.value)">${player.comment || ''}</textarea>
-        </div>
-      `;
-
-      container.appendChild(card);
-    });
-  }
-
-  function setAttendance(index, status) {
-    sessionData[index].status = status;
-    if (status === 'absent') {
-      openAbsenceModal(index);
-    } else {
-      sessionData[index].absenceReason = '';
-      renderAttendanceCards();
-    }
-  }
-
-  function openAbsenceModal(index) {
-    selectedPlayerIndexForAbsence = index;
-    document.getElementById("modalPlayerName").innerText = `Falta de ${sessionData[index].name}`;
-    document.getElementById("customReason").value = "";
-    document.getElementById("modalAbsence").classList.add("active");
-  }
-
-  function selectReason(reason) {
-    if (selectedPlayerIndexForAbsence !== null) {
-      sessionData[selectedPlayerIndexForAbsence].absenceReason = reason;
-      document.getElementById("modalAbsence").classList.remove("active");
-      renderAttendanceCards();
-    }
-  }
-
-  function confirmAbsence() {
-    const custom = document.getElementById("customReason").value.trim();
-    if (custom && selectedPlayerIndexForAbsence !== null) {
-      sessionData[selectedPlayerIndexForAbsence].absenceReason = custom;
-    }
-    document.getElementById("modalAbsence").classList.remove("active");
-    renderAttendanceCards();
-  }
-
-  function setQuality(index, stars) {
-    sessionData[index].quality = stars;
-    renderAttendanceCards();
-  }
-
-  function setStrikes(index, strikes) {
-    sessionData[index].strikes = strikes;
-    renderAttendanceCards();
-  }
-
-  function updateComment(index, val) {
-    sessionData[index].comment = val;
-  }
-
-  function updateConsultaResponse(consultaId, playerName, responseText) {
-    const consulta = consultasData.find(c => c.id === consultaId);
-    if (consulta) {
-      if (!consulta.responses) consulta.responses = {};
-      if (!consulta.responses[currentTeam]) consulta.responses[currentTeam] = {};
-      consulta.responses[currentTeam][playerName] = responseText;
-      saveConsultasToGitHub();
-    }
-  }
-
-  async function saveSession() {
-    const date = document.getElementById("sessionDatePicker").value;
-    const logIndex = allTrainingLogs.findIndex(log => log.date === date && log.teamKey === currentTeam);
-
-    const newLog = {
-      date: date,
-      teamKey: currentTeam,
-      coach: currentCoach,
-      players: sessionData
-    };
-
-    if (logIndex >= 0) {
-      allTrainingLogs[logIndex] = newLog;
-    } else {
-      allTrainingLogs.push(newLog);
-    }
-
-    const success = await saveSessionToGitHub();
-    if (success) {
-      alert("Entrenamiento guardado e historia sincronizada en GitHub.");
-    } else {
-      alert("Guardado en almacenamiento local. Sin conexión con GitHub.");
-    }
-  }
-
-  // --- HISTORIAL ---
-
-  function openHistoryModal() {
-    const container = document.getElementById("historyListContainer");
-    container.innerHTML = "";
-
-    const teamLogs = allTrainingLogs.filter(log => log.teamKey === currentTeam);
-
-    if (teamLogs.length === 0) {
-      container.innerHTML = `<p style="font-size:0.8rem; color:#64748b;">No hay registros anteriores para este equipo.</p>`;
-    } else {
-      teamLogs.forEach(log => {
-        const presentCount = log.players.filter(p => p.status === 'present').length;
-        const total = log.players.length;
-
-        const card = document.createElement("div");
-        card.className = "history-card";
-        card.innerHTML = `
-          <div>
-            <div style="font-weight:bold; font-size:0.85rem;">📅 ${log.date}</div>
-            <div style="font-size:0.75rem; color:#64748b;">Asistencia: ${presentCount}/${total}</div>
-          </div>
-          <button class="btn-edit-history" onclick="loadHistorySession('${log.date}')">Editar</button>
+        rowsHtml += `
+          <tr>
+            <td style="padding: 6px 10px; border-bottom: 1px solid #e2e8f0; font-weight:600;">${pName}</td>
+            <td style="padding: 6px 10px; border-bottom: 1px solid #e2e8f0; text-align:center;">${respBadge}</td>
+          </tr>
         `;
-        container.appendChild(card);
       });
-    }
 
-    document.getElementById("modalHistory").classList.add("active");
+      teamSection.innerHTML = `
+        <div style="background: linear-gradient(135deg, #1e3c72, #0f172a); color: white; padding: 6px 12px; border-radius: 6px 6px 0 0; font-weight: 700; font-size: 14px;">
+          🏐 ${teamKey}
+        </div>
+        <table style="width:100%; border-collapse:collapse; background:white; border:1px solid #cbd5e1; border-top:none; font-size:13px;">
+          <thead>
+            <tr style="background:#f1f5f9;">
+              <th style="padding:6px 10px; text-align:left; border-bottom:2px solid #cbd5e1; color:#334155;">Jugadora</th>
+              <th style="padding:6px 10px; text-align:center; border-bottom:2px solid #cbd5e1; color:#334155;">Respuesta</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml || '<tr><td colspan="2" style="padding:8px; text-align:center; color:#64748b;">Sin jugadoras asignadas</td></tr>'}
+          </tbody>
+        </table>
+      `;
+      teamsContainer.appendChild(teamSection);
+    });
+
+    const exportArea = document.getElementById("pdfConsultaExportArea");
+
+    setTimeout(async () => {
+      try {
+        const canvas = await html2canvas(exportArea, { scale: 2, useCORS: true });
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+
+        const imgData = canvas.toDataURL('image/png');
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, (canvas.height * pdfWidth) / canvas.width);
+        pdf.save(`Consulta_NVA_${consulta.id}.pdf`);
+      } catch (e) {
+        console.error("Error al generar PDF de consulta:", e);
+        alert("Error al generar el PDF de la consulta.");
+      }
+    }, 300);
   }
 
-  function loadHistorySession(date) {
-    document.getElementById("sessionDatePicker").value = date;
-    document.getElementById("modalHistory").classList.remove("active");
-    loadSessionForDate();
-  }
-
-  function closeHistoryModal() {
-    document.getElementById("modalHistory").classList.remove("active");
-  }
-
-  // --- MODO PDF Y CALENDARIO DE RANGO DE FECHAS ---
-
-  function togglePdfMode() {
-    isPdfMode = !isPdfMode;
-    document.getElementById("pdfModeBanner").style.display = isPdfMode ? "flex" : "none";
-    document.getElementById("btnPdfMode").style.background = isPdfMode ? "#ef4444" : "linear-gradient(135deg, #0284c7, #0369a1)";
-    document.getElementById("btnPdfMode").innerText = isPdfMode ? "✕ CANCELAR MODO PDF" : "📄 CREAR PDF";
-  }
-
-  function openDateRangeModalForTeam(teamKey) {
+  function openDateRangeModal(coach, teamKey, displayName) {
+    pdfSelectedCoach = coach;
     pdfSelectedTeamKey = teamKey;
-    pdfSelectedTeamName = teamKey;
+    pdfSelectedTeamName = displayName;
+
     rangeStart = null;
     rangeEnd = null;
-    document.getElementById("pdfModalTitle").innerText = `🗓️ PDF: ${teamKey}`;
+    calYear = new Date().getFullYear();
+    calMonth = new Date().getMonth();
+
+    document.getElementById("pdfModalTitle").innerText = `🗓️ Período - ${displayName}`;
+    updateDateSelectionSummary();
     renderCalendar();
+
     document.getElementById("modalDateRange").classList.add("active");
   }
 
@@ -1765,56 +1637,46 @@
     document.getElementById("modalDateRange").classList.remove("active");
   }
 
-  function prevMonth() {
-    calMonth--;
-    if (calMonth < 0) { calMonth = 11; calYear--; }
-    renderCalendar();
-  }
-
-  function nextMonth() {
-    calMonth++;
-    if (calMonth > 11) { calMonth = 0; calYear++; }
-    renderCalendar();
-  }
+  function prevMonth() { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendar(); }
+  function nextMonth() { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendar(); }
 
   function renderCalendar() {
     const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
     document.getElementById("calendarMonthLabel").innerText = `${monthNames[calMonth]} ${calYear}`;
 
-    const grid = document.getElementById("calendarDaysGrid");
-    grid.innerHTML = "";
+    const daysGrid = document.getElementById("calendarDaysGrid");
+    daysGrid.innerHTML = "";
 
-    const firstDay = new Date(calYear, calMonth, 1);
-    const lastDay = new Date(calYear, calMonth + 1, 0);
+    const firstDayIndex = (new Date(calYear, calMonth, 1).getDay() + 6) % 7;
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
 
-    let startDayIndex = (firstDay.getDay() + 6) % 7; // Lunes = 0
-
-    for (let i = 0; i < startDayIndex; i++) {
-      const emptyCell = document.createElement("div");
-      emptyCell.className = "cal-day empty";
-      grid.appendChild(emptyCell);
+    for (let i = 0; i < firstDayIndex; i++) {
+      const empty = document.createElement("div");
+      empty.className = "cal-day empty";
+      daysGrid.appendChild(empty);
     }
 
-    for (let day = 1; day <= lastDay.getDate(); day++) {
-      const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      const dayCell = document.createElement("div");
-      dayCell.className = "cal-day";
-      dayCell.innerText = day;
+    for (let day = 1; day <= daysInMonth; day++) {
+      const cell = document.createElement("div");
+      cell.className = "cal-day";
+      const monthStr = String(calMonth + 1).padStart(2, '0');
+      const dayStr = String(day).padStart(2, '0');
+      const dateStr = `${calYear}-${monthStr}-${dayStr}`;
 
-      if (rangeStart && dateStr === rangeStart) dayCell.classList.add("range-start");
-      if (rangeEnd && dateStr === rangeEnd) dayCell.classList.add("range-end");
+      cell.innerText = day;
+
+      if (rangeStart && dateStr === rangeStart) cell.classList.add("range-start");
+      if (rangeEnd && dateStr === rangeEnd) cell.classList.add("range-end");
       if (rangeStart && rangeEnd && dateStr > rangeStart && dateStr < rangeEnd) {
-        dayCell.classList.add("range-in-between");
+        cell.classList.add("range-in-between");
       }
 
-      dayCell.onclick = () => selectCalendarDate(dateStr);
-      grid.appendChild(dayCell);
+      cell.onclick = () => selectCalDate(dateStr);
+      daysGrid.appendChild(cell);
     }
-
-    updateDateSummary();
   }
 
-  function selectCalendarDate(dateStr) {
+  function selectCalDate(dateStr) {
     if (!rangeStart || (rangeStart && rangeEnd)) {
       rangeStart = dateStr;
       rangeEnd = null;
@@ -1825,15 +1687,16 @@
         rangeEnd = dateStr;
       }
     }
+    updateDateSelectionSummary();
     renderCalendar();
   }
 
-  function updateDateSummary() {
+  function updateDateSelectionSummary() {
     const summary = document.getElementById("dateSelectionSummary");
     const btn = document.getElementById("btnConfirmPdf");
 
     if (rangeStart && rangeEnd) {
-      summary.innerText = `Período: ${rangeStart} al ${rangeEnd}`;
+      summary.innerText = `Rango: ${rangeStart}  ➜  ${rangeEnd}`;
       btn.disabled = false;
       btn.style.opacity = "1";
     } else if (rangeStart) {
@@ -1847,230 +1710,507 @@
     }
   }
 
-  // --- GENERACIÓN DE INFORMES EN PDF (ENTRENAMIENTO Y CONSULTA) ---
-
-  async function processPdfGeneration() {
+  function processPdfGeneration() {
     closeDateRangeModal();
-    togglePdfMode();
+    if (isPdfMode) togglePdfMode();
+    generatePDF();
+  }
+
+  async function generatePDF() {
+    const logs = allTrainingLogs.filter(log => log.equipo === pdfSelectedTeamKey && log.fecha >= rangeStart && log.fecha <= rangeEnd);
+    logs.sort((a, b) => a.fecha.localeCompare(b.fecha));
+
+    if (logs.length === 0) {
+      alert(`No existen registros de entrenamiento guardados para ${pdfSelectedTeamName} entre ${rangeStart} y ${rangeEnd}.`);
+      return;
+    }
 
     document.getElementById("pdfReportTeamTitle").innerText = `Informe de Entrenamiento: ${pdfSelectedTeamName}`;
     document.getElementById("pdfReportDateRange").innerText = `Período: ${rangeStart} al ${rangeEnd}`;
 
-    const logsInRange = allTrainingLogs.filter(log => log.teamKey === pdfSelectedTeamKey && log.date >= rangeStart && log.date <= rangeEnd);
-    const playersList = getPlayersForTeamKey(pdfSelectedTeamKey);
+    const teamPlayers = getPlayersForTeamKey(pdfSelectedTeamKey);
+    const tableBody = document.getElementById("pdfReportTableBody");
+    tableBody.innerHTML = "";
 
-    const tbody = document.getElementById("pdfReportTableBody");
-    tbody.innerHTML = "";
+    teamPlayers.forEach(playerName => {
+      let attended = 0;
+      let totalAssigned = 0;
+      let qualitySum = 0;
+      let qualityCount = 0;
+      let strikesSum = 0;
 
-    const playerStats = {};
-    playersList.forEach(p => {
-      playerStats[p] = { present: 0, absent: 0, totalQuality: 0, qualityCount: 0, totalStrikes: 0 };
-    });
-
-    logsInRange.forEach(log => {
-      log.players.forEach(p => {
-        if (!playerStats[p.name]) {
-          playerStats[p.name] = { present: 0, absent: 0, totalQuality: 0, qualityCount: 0, totalStrikes: 0 };
+      logs.forEach(log => {
+        const pData = log.jugadores.find(j => j.name === playerName);
+        if (pData) {
+          totalAssigned++;
+          if (pData.attendance === "presente") {
+            attended++;
+            qualitySum += (pData.quality || 0);
+            qualityCount++;
+          }
+          strikesSum += (pData.strikes || 0);
         }
-        if (p.status === 'present') playerStats[p.name].present++;
-        else playerStats[p.name].absent++;
-
-        playerStats[p.name].totalQuality += (p.quality || 0);
-        playerStats[p.name].qualityCount++;
-        playerStats[p.name].totalStrikes += (p.strikes || 0);
       });
-    });
 
-    Object.keys(playerStats).forEach(pName => {
-      const st = playerStats[pName];
-      const totalSessions = st.present + st.absent;
-      const pct = totalSessions > 0 ? Math.round((st.present / totalSessions) * 100) : 0;
-      const avgQuality = st.qualityCount > 0 ? (st.totalQuality / st.qualityCount).toFixed(1) : "-";
+      const qualityAvg = qualityCount > 0 ? (qualitySum / qualityCount).toFixed(1) + " ★" : "N/A";
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td><strong>${pName}</strong></td>
-        <td style="text-align:center;">${st.present}/${totalSessions} (${pct}%)</td>
-        <td style="text-align:center;">${avgQuality} ★</td>
-        <td style="text-align:center;">${st.totalStrikes}</td>
+        <td style="font-weight:600;">${playerName}</td>
+        <td style="text-align:center; font-weight:700; color:#0284c7;">${attended}/${totalAssigned}</td>
+        <td style="text-align:center; font-weight:700; color:#f59e0b;">${qualityAvg}</td>
+        <td style="text-align:center; font-weight:700; color:#ef4444;">${strikesSum}</td>
       `;
-      tbody.appendChild(tr);
+      tableBody.appendChild(tr);
     });
 
-    // Renderizar Gráficos Chart.js
-    renderPdfCharts(logsInRange);
-
-    // Esperar a que se rendericen los gráficos
-    setTimeout(async () => {
-      const element = document.getElementById("pdfReportExportArea");
-      element.style.position = "static";
-      element.style.left = "0";
-      element.style.top = "0";
-
-      const canvas = await html2canvas(element, { scale: 2, useCORS: true });
-
-      element.style.position = "absolute";
-      element.style.left = "-9999px";
-      element.style.top = "-9999px";
-
-      const imgData = canvas.toDataURL("image/png");
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF("p", "mm", "a4");
-      const imgWidth = 210;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
-      pdf.save(`Informe_${pdfSelectedTeamName}_${rangeStart}_al_${rangeEnd}.pdf`);
-    }, 500);
-  }
-
-  function renderPdfCharts(logs) {
-    const dates = logs.map(l => l.date);
-    const attendanceData = logs.map(l => l.players.filter(p => p.status === 'present').length);
+    const labels = logs.map(l => l.fecha);
+    const attendanceData = logs.map(l => l.jugadores.filter(j => j.attendance === "presente").length);
     const qualityData = logs.map(l => {
-      const sum = l.players.reduce((acc, p) => acc + (p.quality || 0), 0);
-      return l.players.length > 0 ? (sum / l.players.length).toFixed(1) : 0;
+      const present = l.jugadores.filter(j => j.attendance === "presente");
+      if (present.length === 0) return 0;
+      const sum = present.reduce((acc, curr) => acc + (curr.quality || 0), 0);
+      return parseFloat((sum / present.length).toFixed(1));
     });
 
     if (pdfChart1) pdfChart1.destroy();
     if (pdfChart2) pdfChart2.destroy();
 
+    const chartValueLabelPlugin = {
+      id: 'chartValueLabel',
+      afterDatasetsDraw(chart) {
+        const { ctx } = chart;
+        chart.data.datasets.forEach((dataset, i) => {
+          const meta = chart.getDatasetMeta(i);
+          meta.data.forEach((element, index) => {
+            const val = dataset.data[index];
+            if (val !== null && val !== undefined) {
+              ctx.save();
+              ctx.fillStyle = '#0f172a';
+              ctx.font = 'bold 11px -apple-system, sans-serif';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'bottom';
+              const pos = element.tooltipPosition();
+              ctx.fillText(val, pos.x, pos.y - 4);
+              ctx.restore();
+            }
+          });
+        });
+      }
+    };
+
     const ctx1 = document.getElementById("chartAttendanceCanvas").getContext("2d");
+    const grad1 = ctx1.createLinearGradient(0, 0, 0, 200);
+    grad1.addColorStop(0, '#0052d4');
+    grad1.addColorStop(1, '#4364f7');
+
     pdfChart1 = new Chart(ctx1, {
       type: 'bar',
       data: {
-        labels: dates,
-        datasets: [{ label: 'Asistencia', data: attendanceData, backgroundColor: '#0052d4' }]
+        labels: labels,
+        datasets: [{
+          label: 'Jugadoras Presentes',
+          data: attendanceData,
+          backgroundColor: grad1,
+          borderRadius: 6,
+          borderSkipped: false
+        }]
       },
-      options: { responsive: true, maintainAspectRatio: false }
+      plugins: [chartValueLabelPlugin],
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        layout: { padding: { top: 20 } },
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: { x: { grid: { display: false } }, y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,0.05)' } } }
+      }
     });
 
     const ctx2 = document.getElementById("chartQualityCanvas").getContext("2d");
+    const grad2 = ctx2.createLinearGradient(0, 0, 0, 200);
+    grad2.addColorStop(0, 'rgba(0, 82, 212, 0.4)');
+    grad2.addColorStop(1, 'rgba(0, 82, 212, 0.03)');
+
     pdfChart2 = new Chart(ctx2, {
       type: 'line',
       data: {
-        labels: dates,
-        datasets: [{ label: 'Calidad Media', data: qualityData, borderColor: '#ec4899', fill: false }]
+        labels: labels,
+        datasets: [{
+          label: 'Media Calidad',
+          data: qualityData,
+          borderColor: '#0052d4',
+          borderWidth: 3,
+          backgroundColor: grad2,
+          fill: true,
+          tension: 0.35,
+          pointRadius: 5,
+          pointBackgroundColor: '#0066ff',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2
+        }]
       },
-      options: { responsive: true, maintainAspectRatio: false }
+      plugins: [chartValueLabelPlugin],
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        layout: { padding: { top: 20 } },
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: { x: { grid: { display: false } }, y: { min: 1, max: 5, grid: { color: 'rgba(0,0,0,0.05)' } } }
+      }
     });
+
+    const exportArea = document.getElementById("pdfReportExportArea");
+    
+    setTimeout(async () => {
+      try {
+        const canvas = await html2canvas(exportArea, { scale: 2, useCORS: true });
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+
+        const fullCanvas = document.createElement("canvas");
+        const scale = 2;
+        fullCanvas.width = pdfWidth * 3.7795275591 * scale; 
+        fullCanvas.height = pdfHeight * 3.7795275591 * scale;
+        const ctx = fullCanvas.getContext("2d");
+
+        const bgGradient = ctx.createLinearGradient(0, 0, fullCanvas.width, fullCanvas.height);
+        bgGradient.addColorStop(0, 'rgba(0, 102, 255, 0.3)');
+        bgGradient.addColorStop(0.5, 'rgba(67, 100, 247, 0.3)');
+        bgGradient.addColorStop(1, 'rgba(0, 210, 255, 0.3)');
+        ctx.fillStyle = bgGradient;
+        ctx.fillRect(0, 0, fullCanvas.width, fullCanvas.height);
+
+        const watermarkImg = exportArea.querySelector('.pdf-watermark');
+        if (watermarkImg && watermarkImg.complete) {
+          ctx.save();
+          ctx.globalAlpha = 0.12;
+          const wmWidth = 380 * scale;
+          const wmHeight = (watermarkImg.naturalHeight / watermarkImg.naturalWidth) * wmWidth || wmWidth;
+          const wmX = (fullCanvas.width - wmWidth) / 2;
+          const wmY = (fullCanvas.height - wmHeight) / 2;
+          ctx.drawImage(watermarkImg, wmX, wmY, wmWidth, wmHeight);
+          ctx.restore();
+        }
+
+        ctx.drawImage(canvas, 0, 0, fullCanvas.width, (canvas.height * fullCanvas.width) / canvas.width);
+
+        const imgData = fullCanvas.toDataURL('image/png');
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.save(`Informe_${pdfSelectedTeamName.replace(/[^a-zA-Z0-9]/g, '_')}_${rangeStart}_al_${rangeEnd}.pdf`);
+      } catch (e) {
+        console.error("Error al generar el PDF:", e);
+        alert("Ocurrió un error al generar el PDF.");
+      }
+    }, 300);
   }
 
-  async function generateConsultaPdf(consultaId) {
-    closeSelectConsultaPdfModal();
-    const consulta = consultasData.find(c => c.id === consultaId);
-    if (!consulta) return;
-
-    document.getElementById("pdfConsultaTextHeader").innerText = `Consulta: "${consulta.text}" (Fecha: ${consulta.date})`;
-    const container = document.getElementById("pdfConsultaTeamsContainer");
+  /* ------------------- PANTALLA 1: UNIFICADA ENTRENADOR Y EQUIPO ------------------- */
+  function renderCoachTeamSelection() {
+    const container = document.getElementById("coachTeamList");
     container.innerHTML = "";
 
-    consulta.teams.forEach(teamKey => {
-      const teamBox = document.createElement("div");
-      teamBox.style.marginBottom = "16px";
-      teamBox.style.background = "#f8fafc";
-      teamBox.style.padding = "12px";
-      teamBox.style.borderRadius = "8px";
-      teamBox.style.border = "1px solid #cbd5e1";
+    appData.coaches.forEach(coach => {
+      const isSelected = coach.id === activeCoachId;
 
-      let playersHtml = "";
-      const teamResponses = (consulta.responses && consulta.responses[teamKey]) || {};
-      const players = getPlayersForTeamKey(teamKey);
+      const coachBtn = document.createElement("button");
+      coachBtn.className = `coach-btn ${isSelected ? 'selected' : ''}`;
+      coachBtn.innerHTML = `<span>👨‍🏫 ${coach.name}</span> <span>${isSelected ? '▼' : '►'}</span>`;
+      coachBtn.onclick = () => toggleCoachSelection(coach.id);
+      container.appendChild(coachBtn);
 
-      players.forEach(pName => {
-        const resp = teamResponses[pName] || "Sin respuesta";
-        playersHtml += `<li style="font-size:13px; margin-bottom:4px;"><strong>${pName}:</strong> ${resp}</li>`;
-      });
+      if (isSelected) {
+        const teamsDiv = document.createElement("div");
+        teamsDiv.className = "teams-container";
 
-      teamBox.innerHTML = `
-        <h3 style="font-size:15px; color:#0052d4; margin-bottom:8px;">🏐 ${teamKey}</h3>
-        <ul style="padding-left:18px;">${playersHtml}</ul>
-      `;
-      container.appendChild(teamBox);
+        if (!coach.teams || coach.teams.length === 0) {
+          teamsDiv.innerHTML = `<div style="color: rgba(255,255,255,0.7); font-size: 0.8rem; padding: 4px;">Sin equipos asignados</div>`;
+        } else {
+          coach.teams.forEach(teamRef => {
+            const teamObj = appData.teams.find(t => getTeamKey(t) === teamRef || t.name === teamRef);
+            const displayName = teamObj ? `${teamObj.name} (${teamObj.category})` : teamRef;
+            const teamKey = teamObj ? getTeamKey(teamObj) : teamRef;
+
+            const teamBtn = document.createElement("button");
+            teamBtn.className = "team-btn";
+            teamBtn.innerHTML = `<span>🏐 ${displayName}</span> <span>${isPdfMode ? 'Generar PDF →' : 'Ingresar →'}</span>`;
+            teamBtn.onclick = () => selectCoachAndTeam(coach, teamKey, displayName);
+            teamsDiv.appendChild(teamBtn);
+          });
+        }
+        container.appendChild(teamsDiv);
+      }
     });
-
-    setTimeout(async () => {
-      const element = document.getElementById("pdfConsultaExportArea");
-      element.style.position = "static";
-      element.style.left = "0";
-      element.style.top = "0";
-
-      const canvas = await html2canvas(element, { scale: 2, useCORS: true });
-
-      element.style.position = "absolute";
-      element.style.left = "-9999px";
-      element.style.top = "-9999px";
-
-      const imgData = canvas.toDataURL("image/png");
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF("p", "mm", "a4");
-      const imgWidth = 210;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
-      pdf.save(`Consulta_${consulta.date}.pdf`);
-    }, 400);
   }
 
-  // --- MODAL Y OPCIONES DEL PROPIETARIO / CONFIGURACIÓN ---
+  function toggleCoachSelection(coachId) {
+    activeCoachId = activeCoachId === coachId ? null : coachId;
+    renderCoachTeamSelection();
+  }
 
+  function selectCoachAndTeam(coach, teamKey, displayName) {
+    if (isPdfMode) {
+      openDateRangeModal(coach, teamKey, displayName);
+      return;
+    }
+
+    currentCoach = coach;
+    currentTeam = teamKey;
+    tempConsultaResponses = {}; // Reinicia respuestas temporales
+    document.getElementById("sessionTitle").innerText = `${displayName || teamKey} (${coach.name})`;
+    resetToTodayDate();
+    initSessionData();
+    renderPlayersMain();
+
+    showScreen("screenAttendance");
+    document.getElementById("btnBack").style.display = "flex";
+  }
+
+  function initSessionData() {
+    const playerNames = getPlayersForTeamKey(currentTeam);
+    sessionData = playerNames.map(name => ({
+      name: name,
+      attendance: "presente",
+      absenceReason: "",
+      quality: 3,
+      strikes: 0,
+      comments: ""
+    }));
+  }
+
+  /* ------------------- PANTALLA 2: REGISTRO COMPACTO ------------------- */
+  function renderPlayersMain() {
+    const container = document.getElementById("playersContainer");
+    container.innerHTML = "";
+
+    // Consultas activas sin responder para este equipo
+    const activeConsultas = consultasData.filter(c => !c.completed && c.teams.includes(currentTeam));
+
+    sessionData.forEach((player, index) => {
+      const card = document.createElement("div");
+      card.className = "player-card";
+
+      // Verifica si la jugadora tiene un warning activo
+      const warn = getPlayerWarning(player.name);
+      const warnColorObj = warn ? (COLOR_OPTIONS[warn.color] || COLOR_OPTIONS.ROJO) : null;
+      
+      const nameHtml = warn 
+        ? `<div class="warning-capsule" style="background-color: ${warnColorObj.hex}; color: ${warnColorObj.text};" title="${player.name} - ${warn.reason}">${player.name} (${warn.reason})</div>`
+        : `<div class="player-name" title="${player.name}">${player.name}</div>`;
+
+      // Consultas pendientes para esta jugadora específica
+      const playerPendingConsultas = activeConsultas.filter(c => {
+        const respKey = player.name + '|' + currentTeam;
+        return !c.responses || !c.responses[respKey];
+      });
+
+      const consultasHtml = playerPendingConsultas.map(c => {
+        const cColor = COLOR_OPTIONS[c.color] || COLOR_OPTIONS.AZUL;
+        const currentAns = tempConsultaResponses[player.name + '_' + c.id] || '';
+        
+        return `
+          <div class="consulta-capsule" style="background:${cColor.hex}; color:${cColor.text};" title="${c.text}">
+            <span style="overflow:hidden; text-overflow:ellipsis;">${c.text}</span>
+            <button type="button" class="btn-vx" style="background:${currentAns === 'V' ? '#22c55e' : 'rgba(255,255,255,0.3)'}; color:white;" onclick="setConsultaAnswer('${player.name}', '${c.id}', 'V')">V</button>
+            <button type="button" class="btn-vx" style="background:${currentAns === 'X' ? '#ef4444' : 'rgba(255,255,255,0.3)'}; color:white;" onclick="setConsultaAnswer('${player.name}', '${c.id}', 'X')">X</button>
+          </div>
+        `;
+      }).join('');
+
+      card.innerHTML = `
+        <div class="card-row-1">
+          <div style="display:flex; align-items:center; gap:6px; flex:1; overflow:hidden;">
+            ${nameHtml}
+            ${consultasHtml}
+          </div>
+          <div class="attendance-btn-group">
+            <button class="attendance-btn ${player.attendance === 'presente' ? 'present' : ''}" 
+                    onclick="setAttendance(${index}, 'presente')">Asiste</button>
+            <button class="attendance-btn ${player.attendance === 'falta' ? 'absent' : ''}" 
+                    onclick="setAttendance(${index}, 'falta')">Falta</button>
+          </div>
+        </div>
+
+        ${player.attendance === 'falta' ? '' : `
+        <div class="card-row-2">
+          <div class="mini-group">
+            <span class="mini-label">Calidad:</span>
+            <div class="stars">
+              ${[1, 2, 3, 4, 5].map(star => `
+                <span class="star ${star <= player.quality ? 'active' : ''}" 
+                      onclick="setQuality(${index}, ${star})">★</span>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="mini-group">
+            <span class="mini-label">Strikes:</span>
+            <div class="strikes-selector">
+              ${[0, 1, 2, 3].map(s => `
+                <div class="strike-pill ${player.strikes === s ? 'active' : ''}" 
+                     onclick="setStrikes(${index}, ${s})">${s}</div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+        `}
+
+        <div class="card-row-3">
+          <textarea class="comment-input-long" 
+                    placeholder="Escribir comentario u observación..." 
+                    onchange="updateComment(${index}, this.value)">${player.comments}</textarea>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  function setAttendance(index, status) {
+    sessionData[index].attendance = status;
+    if (status === 'falta') {
+      selectedPlayerIndexForAbsence = index;
+      document.getElementById("modalPlayerName").innerText = `Motivo de falta: ${sessionData[index].name}`;
+      document.getElementById("customReason").value = "";
+      document.getElementById("modalAbsence").classList.add("active");
+    } else {
+      renderPlayersMain();
+    }
+  }
+
+  function selectReason(reason) { document.getElementById("customReason").value = reason; }
+
+  function confirmAbsence() {
+    const reason = document.getElementById("customReason").value || "Falta de asistencia";
+    if (selectedPlayerIndexForAbsence !== null) {
+      sessionData[selectedPlayerIndexForAbsence].absenceReason = reason;
+      sessionData[selectedPlayerIndexForAbsence].comments = `[Falta]: ${reason}`;
+    }
+    document.getElementById("modalAbsence").classList.remove("active");
+    renderPlayersMain();
+  }
+
+  function setQuality(i, r) { sessionData[i].quality = r; renderPlayersMain(); }
+  function setStrikes(i, c) { sessionData[i].strikes = c; renderPlayersMain(); }
+  function updateComment(i, text) { sessionData[i].comments = text; }
+
+  function showScreen(id) {
+    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+  }
+
+  function goBack() {
+    showScreen("screenCoachTeam");
+    document.getElementById("btnBack").style.display = "none";
+  }
+
+  /* ------------------- REGISTROS ANTERIORES (HISTORIAL) ------------------- */
+  function openHistoryModal() {
+    renderHistoryList();
+    document.getElementById("modalHistory").classList.add("active");
+  }
+
+  function closeHistoryModal() {
+    document.getElementById("modalHistory").classList.remove("active");
+  }
+
+  function renderHistoryList() {
+    const container = document.getElementById("historyListContainer");
+    container.innerHTML = "";
+    const teamLogs = allTrainingLogs.filter(log => log.equipo === currentTeam);
+
+    if (teamLogs.length === 0) {
+      container.innerHTML = `<p style="text-align:center; font-size:0.85rem; color:#64748b; padding:20px;">No hay entrenamientos guardados previamente para este equipo.</p>`;
+      return;
+    }
+
+    teamLogs.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+    teamLogs.forEach((log) => {
+      const card = document.createElement("div");
+      card.className = "history-card";
+      card.innerHTML = `
+        <div>
+          <div style="font-weight:700; font-size:0.85rem; color:var(--azul-dark);">📅 ${log.fecha}</div>
+          <div style="font-size:0.75rem; color:#64748b;">Entrenador: ${log.entrenador}</div>
+          <div style="font-size:0.72rem; color:#0284c7; margin-top:2px;">
+            Jugadoras: ${log.jugadores.filter(j => j.attendance === 'presente').length} Asisten / ${log.jugadores.filter(j => j.attendance === 'falta').length} Faltas
+          </div>
+        </div>
+        <button class="btn-edit-history" onclick="loadRecordForEditing('${log.fecha}')">✏️ Cargar/Editar</button>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  function loadRecordForEditing(fecha) {
+    const log = allTrainingLogs.find(l => l.equipo === currentTeam && l.fecha === fecha);
+    if (!log) return;
+    document.getElementById("sessionDatePicker").value = log.fecha;
+    sessionData = JSON.parse(JSON.stringify(log.jugadores));
+    renderPlayersMain();
+    closeHistoryModal();
+  }
+
+  /* ------------------- ACCESO PROPIETARIO Y CONFIGURACIÓN ------------------- */
   function promptOwnerPassword() {
     document.getElementById("ownerPasswordInput").value = "";
     document.getElementById("modalPassword").classList.add("active");
-  }
-
-  function verifyOwnerPassword() {
-    const inputPass = document.getElementById("ownerPasswordInput").value;
-    if (inputPass === ownerPassword) {
-      document.getElementById("modalPassword").classList.remove("active");
-      document.getElementById("modalOptions").classList.add("active");
-      switchTab(1);
-    } else {
-      alert("Contraseña incorrecta.");
-    }
   }
 
   function closePasswordModal() {
     document.getElementById("modalPassword").classList.remove("active");
   }
 
+  function verifyOwnerPassword() {
+    const pwd = document.getElementById("ownerPasswordInput").value;
+    if (pwd === ownerPassword) {
+      closePasswordModal();
+      openOptionsModal();
+    } else {
+      alert("Contraseña incorrecta.");
+    }
+  }
+
+  function openOptionsModal() {
+    renderConfigModal();
+    document.getElementById("modalOptions").classList.add("active");
+  }
+
   function closeOptionsModal() {
     document.getElementById("modalOptions").classList.remove("active");
   }
 
-  function switchTab(tabIndex) {
-    document.querySelectorAll(".tab-btn").forEach((btn, idx) => {
-      btn.classList.toggle("active", idx === tabIndex - 1);
+  function switchTab(idx) {
+    document.querySelectorAll(".tab-btn").forEach((btn, i) => {
+      btn.classList.toggle("active", i === idx - 1);
     });
-    document.querySelectorAll(".tab-content").forEach((content, idx) => {
-      content.classList.toggle("active", idx === tabIndex - 1);
+    document.querySelectorAll(".tab-content").forEach((cnt, i) => {
+      cnt.classList.toggle("active", i === idx - 1);
     });
-
-    if (tabIndex === 1) renderConfigCoachesAndTeams();
-    if (tabIndex === 2) renderPlayerManagement();
-    if (tabIndex === 3) loadGitHubSettingsUI();
   }
 
-  function renderConfigCoachesAndTeams() {
+  function renderConfigModal() {
     document.getElementById("coachCountBadge").innerText = appData.coaches.length;
     document.getElementById("teamCountBadge").innerText = appData.teams.length;
 
-    const coachesList = document.getElementById("configCoachesList");
-    coachesList.innerHTML = "";
-    appData.coaches.forEach((c, idx) => {
+    const coachList = document.getElementById("configCoachesList");
+    coachList.innerHTML = "";
+    appData.coaches.forEach(c => {
       const row = document.createElement("div");
       row.className = "item-row";
-      row.innerHTML = `<span>👤 ${c.name}</span> <button class="btn-del" onclick="deleteCoach(${c.id})">✕</button>`;
-      coachesList.appendChild(row);
+      row.innerHTML = `<span>👨‍🏫 ${c.name}</span> <button class="btn-del" onclick="deleteCoach(${c.id})">✕</button>`;
+      coachList.appendChild(row);
     });
 
-    const teamsList = document.getElementById("configTeamsList");
-    teamsList.innerHTML = "";
-    appData.teams.forEach((t, idx) => {
+    const teamList = document.getElementById("configTeamsList");
+    teamList.innerHTML = "";
+    appData.teams.forEach((t, i) => {
       const row = document.createElement("div");
       row.className = "item-row";
-      row.innerHTML = `<span>🏐 ${t.name} (${t.category})</span> <button class="btn-del" onclick="deleteTeam(${idx})">✕</button>`;
-      teamsList.appendChild(row);
+      row.innerHTML = `<span>🏐 ${t.name} (${t.category})</span> <button class="btn-del" onclick="deleteTeam(${i})">✕</button>`;
+      teamList.appendChild(row);
     });
 
     const selectAssign = document.getElementById("selectCoachAssign");
@@ -2083,6 +2223,18 @@
     });
 
     renderCoachAssignments();
+
+    const selectTeamP = document.getElementById("selectTeamPlayers");
+    selectTeamP.innerHTML = "";
+    appData.teams.forEach(t => {
+      const key = getTeamKey(t);
+      const opt = document.createElement("option");
+      opt.value = key;
+      opt.innerText = `${t.name} (${t.category})`;
+      selectTeamP.appendChild(opt);
+    });
+
+    renderPlayerManagement();
   }
 
   function renderCoachAssignments() {
@@ -2095,18 +2247,22 @@
 
     appData.teams.forEach(t => {
       const key = getTeamKey(t);
-      const isChecked = coach.teams && coach.teams.includes(key);
+      const isAssigned = coach.teams && coach.teams.includes(key);
+
       const label = document.createElement("label");
-      label.style.fontSize = "0.78rem";
+      label.style.fontSize = "0.8rem";
       label.style.display = "flex";
       label.style.alignItems = "center";
       label.style.gap = "6px";
-      label.innerHTML = `<input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleCoachTeamAssignment(${coachId}, '${key}', this.checked)"> ${key}`;
+      label.innerHTML = `
+        <input type="checkbox" ${isAssigned ? 'checked' : ''} onchange="toggleTeamCoachAssignment(${coach.id}, '${key}', this.checked)">
+        ${t.name} (${t.category})
+      `;
       container.appendChild(label);
     });
   }
 
-  async function toggleCoachTeamAssignment(coachId, teamKey, isChecked) {
+  function toggleTeamCoachAssignment(coachId, teamKey, isChecked) {
     const coach = appData.coaches.find(c => c.id === coachId);
     if (!coach) return;
     if (!coach.teams) coach.teams = [];
@@ -2114,90 +2270,76 @@
     if (isChecked) {
       if (!coach.teams.includes(teamKey)) coach.teams.push(teamKey);
     } else {
-      coach.teams = coach.teams.filter(k => k !== teamKey);
+      coach.teams = coach.teams.filter(tk => tk !== teamKey);
     }
-
-    await saveDataAndSyncGitHub();
+    saveDataAndSyncGitHub();
     renderCoachTeamSelection();
   }
 
-  async function addCoach() {
+  function addCoach() {
     const name = document.getElementById("newCoachName").value.trim();
     if (!name) return;
-    appData.coaches.push({ id: Date.now(), name: name, teams: [] });
+    const newId = appData.coaches.length > 0 ? Math.max(...appData.coaches.map(c => c.id)) + 1 : 1;
+    appData.coaches.push({ id: newId, name: name, teams: [] });
     document.getElementById("newCoachName").value = "";
-    await saveDataAndSyncGitHub();
-    renderConfigCoachesAndTeams();
+    saveDataAndSyncGitHub();
+    renderConfigModal();
     renderCoachTeamSelection();
   }
 
-  async function deleteCoach(id) {
+  function deleteCoach(id) {
     appData.coaches = appData.coaches.filter(c => c.id !== id);
-    await saveDataAndSyncGitHub();
-    renderConfigCoachesAndTeams();
+    saveDataAndSyncGitHub();
+    renderConfigModal();
     renderCoachTeamSelection();
   }
 
-  async function addTeam() {
+  function addTeam() {
     const name = document.getElementById("newTeamName").value.trim();
     const category = document.getElementById("newTeamCategory").value;
     if (!name) return;
 
-    const newTeamObj = { name, category };
-    const teamKey = getTeamKey(newTeamObj);
-    appData.teams.push(newTeamObj);
-    ensurePlayerListExists(teamKey);
+    const newTeam = { name: name, category: category };
+    appData.teams.push(newTeam);
+    ensurePlayerListExists(getTeamKey(newTeam));
 
     document.getElementById("newTeamName").value = "";
-    await saveDataAndSyncGitHub();
-    renderConfigCoachesAndTeams();
+    saveDataAndSyncGitHub();
+    renderConfigModal();
+    renderCoachTeamSelection();
   }
 
-  async function deleteTeam(index) {
-    const team = appData.teams[index];
-    const key = getTeamKey(team);
+  function deleteTeam(index) {
+    const teamToDelete = appData.teams[index];
+    if (teamToDelete) {
+      const key = getTeamKey(teamToDelete);
+      if (appData.players) delete appData.players[key];
+    }
     appData.teams.splice(index, 1);
-    delete appData.players[key];
-    await saveDataAndSyncGitHub();
-    renderConfigCoachesAndTeams();
+    saveDataAndSyncGitHub();
+    renderConfigModal();
+    renderCoachTeamSelection();
   }
 
   function renderPlayerManagement() {
-    const select = document.getElementById("selectTeamPlayers");
-    select.innerHTML = "";
+    const teamKey = document.getElementById("selectTeamPlayers").value;
+    if (!teamKey) return;
 
-    appData.teams.forEach(t => {
-      const key = getTeamKey(t);
-      const opt = document.createElement("option");
-      opt.value = key;
-      opt.innerText = key;
-      select.appendChild(opt);
-    });
-
-    const selectedTeamKey = select.value;
-    const players = selectedTeamKey ? ensurePlayerListExists(selectedTeamKey) : [];
-
+    const players = ensurePlayerListExists(teamKey);
     document.getElementById("playerCountBadge").innerText = players.length;
 
     const list = document.getElementById("draggablePlayerList");
     list.innerHTML = "";
 
-    players.forEach((pName, idx) => {
+    players.forEach((p, idx) => {
       const row = document.createElement("div");
       row.className = "item-row";
-      row.innerHTML = `
-        <span>${idx + 1}. ${pName}</span>
-        <div>
-          <button style="border:none; background:none; cursor:pointer;" onclick="movePlayer(${idx}, -1)">⬆️</button>
-          <button style="border:none; background:none; cursor:pointer;" onclick="movePlayer(${idx}, 1)">⬇️</button>
-          <button class="btn-del" onclick="deletePlayer(${idx})">✕</button>
-        </div>
-      `;
+      row.innerHTML = `<span>👤 ${p}</span> <button class="btn-del" onclick="deletePlayer(${idx})">✕</button>`;
       list.appendChild(row);
     });
   }
 
-  async function addPlayer() {
+  function addPlayer() {
     const teamKey = document.getElementById("selectTeamPlayers").value;
     const name = document.getElementById("newPlayerName").value.trim();
     if (!teamKey || !name) return;
@@ -2205,180 +2347,236 @@
     const players = ensurePlayerListExists(teamKey);
     players.push(name);
     document.getElementById("newPlayerName").value = "";
-    await saveDataAndSyncGitHub();
+    saveDataAndSyncGitHub();
     renderPlayerManagement();
   }
 
-  async function deletePlayer(index) {
+  function deletePlayer(idx) {
     const teamKey = document.getElementById("selectTeamPlayers").value;
     const players = ensurePlayerListExists(teamKey);
-    players.splice(index, 1);
-    await saveDataAndSyncGitHub();
+    players.splice(idx, 1);
+    saveDataAndSyncGitHub();
     renderPlayerManagement();
   }
 
-  async function movePlayer(index, direction) {
-    const teamKey = document.getElementById("selectTeamPlayers").value;
-    const players = ensurePlayerListExists(teamKey);
-    const targetIndex = index + direction;
-
-    if (targetIndex >= 0 && targetIndex < players.length) {
-      const temp = players[index];
-      players[index] = players[targetIndex];
-      players[targetIndex] = temp;
-      await saveDataAndSyncGitHub();
-      renderPlayerManagement();
-    }
-  }
-
-  // --- INTEGRACIÓN UNIFICADA CON API REST DE GITHUB ---
-
+  /* ------------------- INTEGRACIÓN Y SINCRONIZACIÓN GITHUB API ------------------- */
   function loadGitHubSettingsUI() {
     document.getElementById("ghUser").value = ghSettings.user || "";
     document.getElementById("ghRepo").value = ghSettings.repo || "";
     document.getElementById("ghToken").value = ghSettings.token || "";
   }
 
-  async function saveGitHubSettings() {
+  function saveGitHubSettings() {
     ghSettings.user = document.getElementById("ghUser").value.trim();
     ghSettings.repo = document.getElementById("ghRepo").value.trim();
     ghSettings.token = document.getElementById("ghToken").value.trim();
 
     localStorage.setItem("NVA_GH_SETTINGS", JSON.stringify(ghSettings));
-    alert("Ajustes de GitHub guardados.");
-    await syncConfigFromGitHub(true);
+    alert("Ajustes de GitHub guardados correctamente.");
   }
 
-  // Función genérica para obtener archivos JSON desde GitHub REST API
-  async function getGitHubFile(path) {
+  function saveDataAndSyncGitHub() {
+    localStorage.setItem("NVA_APP_DATA", JSON.stringify(appData));
+    saveConfigToGitHub();
+  }
+
+  async function getGitHubFileSHA(path) {
     if (!ghSettings.user || !ghSettings.repo || !ghSettings.token) return null;
     const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${path}`;
     try {
       const res = await fetch(url, {
-        headers: {
-          "Authorization": `token ${ghSettings.token}`,
-          "Accept": "application/vnd.github.v3+json"
-        }
+        headers: { "Authorization": `token ${ghSettings.token}` }
       });
-      if (!res.ok) return null;
-      const data = await res.json();
-      
-      const binaryString = atob(data.content.replace(/\s/g, ''));
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
+      if (res.ok) {
+        const data = await res.json();
+        return data.sha;
       }
-      const jsonText = new TextDecoder('utf-8').decode(bytes);
-      return { content: JSON.parse(jsonText), sha: data.sha };
     } catch (e) {
-      console.error(`Error al obtener ${path} desde GitHub:`, e);
-      return null;
+      console.warn("Error obteniendo SHA de GitHub:", e);
     }
+    return null;
   }
 
-  // Función genérica para subir o actualizar archivos JSON en GitHub REST API
-  async function putGitHubFile(path, contentObj, commitMessage) {
-    if (!ghSettings.user || !ghSettings.repo || !ghSettings.token) {
-      console.warn("Ajustes de GitHub no configurados.");
-      return false;
-    }
+  async function uploadToGitHub(path, contentObj, commitMessage) {
+    if (!ghSettings.user || !ghSettings.repo || !ghSettings.token) return false;
+
+    const sha = await getGitHubFileSHA(path);
     const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${path}`;
+    
+    // Codificación UTF-8 robusta para Base64
+    const jsonString = JSON.stringify(contentObj, null, 2);
+    const bytes = new TextEncoder().encode(jsonString);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    const contentBase64 = btoa(binary);
+
+    const body = {
+      message: commitMessage,
+      content: contentBase64
+    };
+    if (sha) body.sha = sha;
+
     try {
-      const existing = await getGitHubFile(path);
-      const sha = existing ? existing.sha : undefined;
-
-      const jsonString = JSON.stringify(contentObj, null, 2);
-      const encoder = new TextEncoder();
-      const bytes = encoder.encode(jsonString);
-      let binary = '';
-      for (let i = 0; i < bytes.byteLength; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      const base64Content = btoa(binary);
-
-      const body = {
-        message: commitMessage || `Update ${path}`,
-        content: base64Content
-      };
-      if (sha) body.sha = sha;
-
       const res = await fetch(url, {
         method: "PUT",
         headers: {
           "Authorization": `token ${ghSettings.token}`,
-          "Content-Type": "application/json",
-          "Accept": "application/vnd.github.v3+json"
+          "Content-Type": "application/json"
         },
         body: JSON.stringify(body)
       });
-
       return res.ok;
     } catch (e) {
-      console.error(`Error al guardar ${path} en GitHub:`, e);
+      console.error("Error subiendo archivo a GitHub:", e);
       return false;
     }
   }
 
-  // Funciones específicas unificadas de Sincronización
+  async function fetchFromGitHub(path) {
+    if (!ghSettings.user || !ghSettings.repo || !ghSettings.token) return null;
+    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${path}?ref=main&t=${Date.now()}`;
+    try {
+      const res = await fetch(url, {
+        headers: { "Authorization": `token ${ghSettings.token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const binary = atob(data.content.replace(/\s/g, ''));
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        const jsonString = new TextDecoder('utf-8').decode(bytes);
+        return JSON.parse(jsonString);
+      }
+    } catch (e) {
+      console.warn(`No se pudo leer ${path} de GitHub:`, e);
+    }
+    return null;
+  }
+
+  async function saveConfigToGitHub() {
+    await uploadToGitHub("config.json", appData, "Actualizar configuración del club");
+  }
+
   async function syncConfigFromGitHub(silent = false) {
-    const remote = await getGitHubFile("config.json");
-    if (remote && remote.content) {
-      appData = remote.content;
+    const remoteData = await fetchFromGitHub("config.json");
+    if (remoteData) {
+      appData = remoteData;
       localStorage.setItem("NVA_APP_DATA", JSON.stringify(appData));
       renderCoachTeamSelection();
-      if (!silent) alert("Configuración sincronizada con éxito desde GitHub.");
+      if (appData.tablonText) {
+        document.getElementById("tablonTextarea").value = appData.tablonText;
+      }
+      if (!silent) alert("Sincronización con GitHub completada.");
     } else if (!silent) {
-      alert("No se pudo descargar config.json desde GitHub. Revisa la configuración.");
+      alert("No se pudo obtener la configuración remota de GitHub.");
     }
   }
 
-  async function saveDataAndSyncGitHub() {
-    localStorage.setItem("NVA_APP_DATA", JSON.stringify(appData));
-    await putGitHubFile("config.json", appData, "Actualización de configuración NVA");
+  async function saveSession() {
+    const fecha = document.getElementById("sessionDatePicker").value;
+    if (!fecha) {
+      alert("Por favor selecciona una fecha válida.");
+      return;
+    }
+
+    const sessionRecord = {
+      fecha: fecha,
+      equipo: currentTeam,
+      entrenador: currentCoach ? currentCoach.name : "Desconocido",
+      jugadores: sessionData
+    };
+
+    // Actualiza respuestas de consultas asociadas durante la sesión
+    for (const key in tempConsultaResponses) {
+      const val = tempConsultaResponses[key];
+      const lastUnderscore = key.lastIndexOf('_');
+      const playerName = key.substring(0, lastUnderscore);
+      const consultaId = key.substring(lastUnderscore + 1);
+
+      const consulta = consultasData.find(c => c.id === consultaId);
+      if (consulta) {
+        if (!consulta.responses) consulta.responses = {};
+        consulta.responses[playerName + '|' + currentTeam] = val;
+      }
+    }
+
+    saveConsultasToGitHub();
+    checkAndCleanCompletedConsultas();
+
+    const fileName = `entrenamiento_${currentTeam.replace(/[^a-zA-Z0-9]/g, '_')}_${fecha}.json`;
+    const path = `entrenamientos/${fileName}`;
+
+    const ok = await uploadToGitHub(path, sessionRecord, `Guardar entrenamiento ${currentTeam} - ${fecha}`);
+    
+    // Actualiza copia local en allTrainingLogs
+    const existingIndex = allTrainingLogs.findIndex(l => l.equipo === currentTeam && l.fecha === fecha);
+    if (existingIndex >= 0) {
+      allTrainingLogs[existingIndex] = sessionRecord;
+    } else {
+      allTrainingLogs.push(sessionRecord);
+    }
+
+    if (ok) {
+      alert("Entrenamiento e información de consultas guardados exitosamente en GitHub.");
+    } else {
+      alert("Guardado localmente. (Configura GitHub PAT en Ajustes para sincronización remota).");
+    }
   }
 
   async function fetchTrainingLogsFromGitHub() {
-    const remote = await getGitHubFile("trainings.json");
-    if (remote && remote.content && Array.isArray(remote.content)) {
-      allTrainingLogs = remote.content;
-      localStorage.setItem("NVA_TRAINING_LOGS", JSON.stringify(allTrainingLogs));
-    }
-  }
-
-  async function saveSessionToGitHub() {
-    localStorage.setItem("NVA_TRAINING_LOGS", JSON.stringify(allTrainingLogs));
-    return await putGitHubFile("trainings.json", allTrainingLogs, `Registro entrenamiento ${currentTeam}`);
-  }
-
-  async function fetchWarningsFromGitHub() {
-    const remote = await getGitHubFile("warnings.json");
-    if (remote && remote.content) {
-      warningsData = remote.content;
-      localStorage.setItem("NVA_WARNINGS_DATA", JSON.stringify(warningsData));
+    if (!ghSettings.user || !ghSettings.repo || !ghSettings.token) return;
+    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/entrenamientos`;
+    try {
+      const res = await fetch(url, {
+        headers: { "Authorization": `token ${ghSettings.token}` }
+      });
+      if (res.ok) {
+        const files = await res.json();
+        allTrainingLogs = [];
+        for (const file of files) {
+          if (file.name.endsWith('.json')) {
+            const logData = await fetchFromGitHub(`entrenamientos/${file.name}`);
+            if (logData) allTrainingLogs.push(logData);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("No se pudieron cargar entrenamientos desde GitHub:", e);
     }
   }
 
   async function saveWarningsToGitHub() {
-    localStorage.setItem("NVA_WARNINGS_DATA", JSON.stringify(warningsData));
-    const ok = await putGitHubFile("warnings.json", warningsData, "Actualización de warnings/avisos NVA");
+    const ok = await uploadToGitHub("warnings.json", warningsData, "Actualizar avisos (warnings) de jugadoras");
     if (ok) {
       alert("Warnings guardados en GitHub correctamente.");
     } else {
-      alert("Warnings guardados en local. No se pudo sincronizar con GitHub.");
+      alert("Ocurrió un problema al guardar los warnings en GitHub.");
     }
   }
 
-  async function fetchConsultasFromGitHub() {
-    const remote = await getGitHubFile("consultas.json");
-    if (remote && remote.content && Array.isArray(remote.content)) {
-      consultasData = remote.content;
-      localStorage.setItem("NVA_CONSULTAS_DATA", JSON.stringify(consultasData));
+  async function fetchWarningsFromGitHub() {
+    const remoteWarnings = await fetchFromGitHub("warnings.json");
+    if (remoteWarnings) {
+      warningsData = remoteWarnings;
     }
   }
 
   async function saveConsultasToGitHub() {
     localStorage.setItem("NVA_CONSULTAS_DATA", JSON.stringify(consultasData));
-    await putGitHubFile("consultas.json", consultasData, "Actualización de consultas/peticiones NVA");
+    await uploadToGitHub("consultas.json", consultasData, "Actualizar consultas y peticiones de contestación");
+  }
+
+  async function fetchConsultasFromGitHub() {
+    const remoteConsultas = await fetchFromGitHub("consultas.json");
+    if (remoteConsultas) {
+      consultasData = remoteConsultas;
+      localStorage.setItem("NVA_CONSULTAS_DATA", JSON.stringify(consultasData));
+      checkAndCleanCompletedConsultas();
+    }
   }
 </script>
 
