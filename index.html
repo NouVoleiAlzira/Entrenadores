@@ -20,6 +20,7 @@
       --text-dark: #1e293b;
       --gray-light: #f8fafc;
       --gray-border: #cbd5e1;
+      --rojo: #fc0341;
     }
 
     * {
@@ -48,6 +49,23 @@
       flex-direction: column;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
       position: relative;
+      overflow: hidden;
+    }
+
+    /* REQUISITO 3: Marca de agua del logo del club en el fondo de todas las páginas */
+    .app-container::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 320px;
+      height: 320px;
+      background: url('LOGO NVA.png') no-repeat center center;
+      background-size: contain;
+      opacity: 0.08;
+      pointer-events: none;
+      z-index: 0;
     }
 
     /* Encabezado */
@@ -69,19 +87,22 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: 10px;
       flex: 1;
     }
 
+    /* REQUISITO 2: Logo del club más grande */
     .header-logo {
-      height: 32px;
+      height: 48px;
       width: auto;
       object-fit: contain;
     }
 
+    /* REQUISITO 2: Encabezado más grande y con BOLD */
     header h1 {
-      font-size: 1rem;
-      font-weight: 700;
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
       background: linear-gradient(90deg, #38bdf8, var(--rosa-brand));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -104,23 +125,43 @@
 
     .btn-back { display: none; }
 
-    /* Botón Modo PDF */
+    /* REQUISITO 4 y 5: Botones de acción ajustados al alto de "Guardar Tablón" y con degradado morado claro a oscuro */
     .btn-pdf-mode {
       width: 100%;
-      background: linear-gradient(135deg, #0284c7, #0369a1);
+      background: linear-gradient(135deg, #a855f7, #581c87);
       color: white;
       border: none;
-      padding: 12px;
-      border-radius: 12px;
+      padding: 8px 12px;
+      border-radius: 10px;
       font-weight: 700;
-      font-size: 0.9rem;
+      font-size: 0.8rem;
       cursor: pointer;
-      margin-bottom: 12px;
-      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
+      margin-bottom: 8px;
+      box-shadow: 0 4px 12px rgba(126, 34, 206, 0.3);
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-pdf-mode2 {
+      width: 100%;
+      background: linear-gradient(135deg, #035efc, #581c87);
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      cursor: pointer;
+      margin-bottom: 8px;
+      box-shadow: 0 4px 12px rgba(126, 34, 206, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s ease;
     }
 
     .pdf-mode-banner {
@@ -142,6 +183,8 @@
       padding: 12px;
       flex: 1;
       animation: fadeIn 0.25s ease-in-out;
+      position: relative;
+      z-index: 1;
     }
 
     .screen.active { display: block; }
@@ -284,7 +327,6 @@
       max-width: 55%;
     }
 
-    /* REQUISITO 1: Cápsula adaptada a la longitud de Nombre + Warning sin truncamiento forzado */
     .warning-capsule {
       color: white;
       padding: 4px 8px;
@@ -298,7 +340,6 @@
       box-sizing: border-box;
     }
 
-    /* Capsula Consulta en Tarjeta */
     .query-capsule {
       color: white;
       padding: 3px 6px;
@@ -416,11 +457,10 @@
       border-color: var(--morado-accent);
     }
 
-    /* REQUISITO 5: Textarea del Tablón de Anuncios con min-height de 4 líneas y auto-ajuste de altura */
     #tablonTextarea {
       width: 100%;
       font-size: 0.9rem;
-      min-height: 5.6em; /* Aprox 4 líneas de texto */
+      min-height: 5.6em;
       height: auto;
       resize: none;
       overflow-y: hidden;
@@ -594,13 +634,13 @@
 
     .btn-save-session {
       width: 100%;
-      background: linear-gradient(135deg, var(--rosa-brand), var(--morado-accent));
+      background: linear-gradient(135deg, var(--rojo), var(--morado-accent));
       color: white;
       border: none;
-      padding: 12px;
+      padding: 8px 12px;
       border-radius: 10px;
       font-weight: 700;
-      font-size: 0.9rem;
+      font-size: 0.8rem;
       cursor: pointer;
       margin-top: 8px;
     }
@@ -673,7 +713,7 @@
       border-radius: 0;
     }
 
-    /* Área Oculta para Renderizar el PDF (MODERNIZADO) */
+    /* Área Oculta para Renderizar el PDF */
     #pdfReportExportArea {
       position: absolute;
       left: -9999px;
@@ -797,24 +837,22 @@
     <div class="section-title">Selecciona Entrenador y Equipo</div>
     <div id="coachTeamList"></div>
     
-    <!-- REQUISITO 3: El botón CREAR PDF de la parte superior ahora está situado debajo de los entrenadores -->
+    <!-- REQUISITO 4 y 5: Botón CREAR PDF con degradado morado claro a oscuro y misma altura -->
     <button class="btn-pdf-mode" id="btnPdfMode" onclick="togglePdfMode()" style="margin-top:10px;">📄 CREAR PDF</button>
 
-    <!-- REQUISITO 4: La sección "Tablón de Anuncios y Noticias" ahora va PRIMERO -->
     <div class="section-title" style="margin-top:20px;">Tablón de Anuncios y Noticias</div>
     <textarea id="tablonTextarea" class="comment-input-long" placeholder="Escribe aquí las noticias del club..." oninput="autoResizeTablon(this)" onchange="updateTablon(this.value)"></textarea>
-    <button class="btn-save-session" style="margin-top: 8px; padding: 8px; font-size: 0.8rem;" onclick="saveTablon()">Guardar Tablón</button>
+    <button class="btn-save-session" onclick="saveTablon()">Guardar Tablón</button>
 
-    <!-- REQUISITO 4: La sección "Dirección NVA" está ahora DEBAJO de "Tablón de Anuncios" -->
     <div class="section-title" style="margin-top:20px;">Dirección NVA</div>
     <button class="coach-btn" id="btnDireccionNVA" onclick="toggleDireccionNVA()">
       <span>🏢 Gestión y Avisos (Dirección)</span> <span id="iconDireccionNVA">►</span>
     </button>
     <div id="direccionTeamsContainer" class="teams-container" style="display: none;"></div>
 
-    <!-- BOTÓN CREAR CONSULTA Y CONSULTA PDF DIRECCIÓN EN PÁGINA PRINCIPAL -->
-    <button class="btn-pdf-mode" style="background: linear-gradient(135deg, #0284c7, #0f172a); margin-top: 10px; margin-bottom: 6px;" onclick="openCreateQueryModal()">❓ Crear Consulta</button>
-    <button class="btn-pdf-mode" style="background: linear-gradient(135deg, #7e22ce, #a855f7); margin-top: 4px;" onclick="openSelectQueryPdfModal()">📄 Consulta PDF</button>
+    <!-- REQUISITO 4 y 5: Botones "Crear Consulta" y "Consulta PDF" con degradado morado claro a oscuro y misma altura -->
+    <button class="btn-pdf-mode2" style="margin-top: 10px;" onclick="openCreateQueryModal()">❓ Crear Consulta</button>
+    <button class="btn-pdf-mode" style="margin-top: 4px;" onclick="openSelectQueryPdfModal()">📄 Consulta PDF</button>
   </div>
 
   <!-- PANTALLA 2: REGISTRO DE ENTRENAMIENTO -->
@@ -830,15 +868,14 @@
     </div>
 
     <div id="playersContainer"></div>
-    <button class="btn-save-session" onclick="saveSession()">Guardar Entrenamiento en GitHub</button>
+    <button class="btn-save-session" style="padding:12px; font-size:0.9rem;" onclick="saveSession()">Guardar Entrenamiento en GitHub</button>
   </div>
 
   <!-- PANTALLA NUEVA: GESTIÓN DE WARNINGS POR EQUIPO -->
   <div class="screen" id="screenWarnings">
     <div class="section-title" id="warningTeamTitle">Dirección NVA - Equipo</div>
     <div id="warningPlayersContainer"></div>
-    <!-- REQUISITO 2: Se eliminó el botón 'Crear Consulta' de esta pantalla para que solo quede en la principal -->
-    <button class="btn-save-session" onclick="saveWarningsToGitHub()">Guardar Warning en GitHub</button>
+    <button class="btn-save-session" style="padding:12px; font-size:0.9rem;" onclick="saveWarningsToGitHub()">Guardar Warning en GitHub</button>
   </div>
 
   <!-- MODALES DE LA APLICACIÓN -->
@@ -1165,11 +1202,11 @@
 
   // Estado del Tablón, Warnings y Consultas
   let isDireccionExpanded = false;
-  let warningsData = {}; // Guarda { "Nombre Jugadora": { reason: "Motivo", color: "#color" } }
+  let warningsData = {};
   let currentWarningPlayer = null;
   let selectedWarningColor = "#ef4444";
 
-  let queriesData = []; // Array de consultas { id, text, color, teams: [], responses: { "Jugadora": "V"|"X" } }
+  let queriesData = [];
   let tempQueryColor = "#0284c7";
   let tempQueryText = "";
   let selectedQueryPdfId = null;
@@ -1240,14 +1277,12 @@
     document.getElementById("sessionDatePicker").value = today;
   }
 
-  /* --- REQUISITO 5: AUTO-RESIZE PARA EL TEXTAREA DEL TABLÓN --- */
   function autoResizeTablon(element) {
     if (!element) return;
     element.style.height = 'auto';
     element.style.height = element.scrollHeight + 'px';
   }
 
-  /* --- CONFIGURACIÓN SELECTOR DE COLORES --- */
   function setupColorPickers() {
     const wPicker = document.getElementById("warningColorPicker");
     wPicker.querySelectorAll(".color-circle").forEach(c => {
@@ -1267,8 +1302,6 @@
       };
     });
   }
-
-  /* --- MODO DIRECCIÓN NVA, TABLÓN Y WARNINGS CON COLOR --- */
 
   function toggleDireccionNVA() {
     isDireccionExpanded = !isDireccionExpanded;
@@ -1432,7 +1465,6 @@
 
     queriesData.push(newQuery);
 
-    // Añadir al tablón de anuncios con icono del color
     const colorTag = tempQueryColor === '#0284c7' ? '🔵' : (tempQueryColor === '#7e22ce' ? '🟣' : '🟠');
     const queryNotice = `${colorTag} CONSULTA: ${tempQueryText}`;
     appData.tablonText = appData.tablonText ? `${appData.tablonText}\n${queryNotice}` : queryNotice;
@@ -1453,7 +1485,6 @@
     if (!q.responses) q.responses = {};
     q.responses[playerName] = option;
 
-    // Verificar si todas las jugadoras de los equipos seleccionados han contestado
     let allAnswered = true;
     q.teams.forEach(teamKey => {
       const players = getPlayersForTeamKey(teamKey);
@@ -1463,7 +1494,6 @@
     });
 
     if (allAnswered) {
-      // Eliminar el texto de la consulta del tablón de anuncios
       const colorTag = q.color === '#0284c7' ? '🔵' : (q.color === '#7e22ce' ? '🟣' : '🟠');
       const queryNotice = `${colorTag} CONSULTA: ${q.text}`;
       
@@ -1480,7 +1510,6 @@
     renderPlayersMain();
   }
 
-  /* --- MODAL SELECTOR CONSULTA PDF --- */
   function openSelectQueryPdfModal() {
     const container = document.getElementById("queryListPdfContainer");
     container.innerHTML = "";
@@ -1574,7 +1603,6 @@
     }, 300);
   }
 
-  /* --- MODO PDF Y SELECCIÓN DE RANGO --- */
   function togglePdfMode() {
     isPdfMode = !isPdfMode;
     const banner = document.getElementById("pdfModeBanner");
@@ -1962,18 +1990,15 @@
       const card = document.createElement("div");
       card.className = "player-card";
 
-      // Verifica si la jugadora tiene un warning activo con color
       const wObj = warningsData[player.name];
       const hasWarning = !!wObj;
       const warningText = hasWarning ? (typeof wObj === 'string' ? wObj : wObj.reason) : "";
       const warningColor = hasWarning ? (wObj.color || "#ef4444") : "#ef4444";
 
-      // REQUISITO 1: Cápsula adapta su longitud al nombre + warning
       const nameHtml = hasWarning 
         ? `<div class="warning-capsule" style="background:${warningColor};" title="${player.name} (${warningText})">${player.name} (${warningText})</div>`
         : `<div class="player-name" title="${player.name}">${player.name}</div>`;
 
-      // Verifica si hay consulta pendiente para esta jugadora en su equipo
       let queryHtml = "";
       const pendingQuery = queriesData.find(q => q.teams.includes(currentTeam) && (!q.responses || !q.responses[player.name]));
       if (pendingQuery) {
@@ -2467,6 +2492,7 @@
     }
   }
 
+  /* REQUISITO 1: Carga y verifica Consultas sin finalizar restaurando en el Tablón de Anuncios si fue borrada */
   async function fetchQueriesFromGitHub() {
     if (!ghSettings.user || !ghSettings.repo) return;
     const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/Consultas.json`;
@@ -2479,49 +2505,83 @@
       if (res.ok) {
         const json = await res.json();
         queriesData = JSON.parse(b64_to_utf8(json.content));
+
+        // Verificar si existen consultas sin finalizar
+        let tablonUpdated = false;
+        queriesData.forEach(q => {
+          let isFinished = true;
+          q.teams.forEach(teamKey => {
+            const players = getPlayersForTeamKey(teamKey);
+            players.forEach(p => {
+              if (!q.responses || !q.responses[p]) isFinished = false;
+            });
+          });
+
+          // Si la consulta no está finalizada, nos aseguramos de que esté en el tablón
+          if (!isFinished) {
+            const colorTag = q.color === '#0284c7' ? '🔵' : (q.color === '#7e22ce' ? '🟣' : '🟠');
+            const queryNotice = `${colorTag} CONSULTA: ${q.text}`;
+
+            if (!appData.tablonText || !appData.tablonText.includes(queryNotice.trim())) {
+              appData.tablonText = appData.tablonText ? `${queryNotice}\n${appData.tablonText}` : queryNotice;
+              tablonUpdated = true;
+            }
+          }
+        });
+
+        if (tablonUpdated) {
+          const tablonEl = document.getElementById("tablonTextarea");
+          if (tablonEl) {
+            tablonEl.value = appData.tablonText;
+            autoResizeTablon(tablonEl);
+          }
+          saveDataAndSyncGitHub();
+        }
       }
     } catch (e) { console.error("No hay Consultas.json previo o hubo error:", e); }
   }
 
   async function saveQueriesToGitHub() {
     if (ghSettings.user && ghSettings.repo && ghSettings.token) {
-      await writeGitHubFile("Consultas.json", queriesData, "Actualizar consultas de Dirección NVA");
+      await writeGitHubFile("Consultas.json", queriesData, "Actualizar estado de consultas");
     }
   }
 
   async function saveSession() {
-    const selectedDate = document.getElementById("sessionDatePicker").value;
-    if (!selectedDate) {
+    if (!currentCoach || !currentTeam) return;
+
+    const fecha = document.getElementById("sessionDatePicker").value;
+    if (!fecha) {
       alert("Por favor selecciona una fecha válida.");
       return;
     }
 
-    const reportRecord = {
-      fecha: selectedDate,
-      entrenador: currentCoach ? currentCoach.name : "Desconocido",
+    const logEntry = {
+      fecha: fecha,
+      entrenador: currentCoach.name,
       equipo: currentTeam,
-      timestamp: new Date().toISOString(),
       jugadores: sessionData
     };
 
-    const existingIndex = allTrainingLogs.findIndex(l => l.equipo === currentTeam && l.fecha === selectedDate);
-    if (existingIndex >= 0) {
-      allTrainingLogs[existingIndex] = reportRecord;
+    const existingIdx = allTrainingLogs.findIndex(l => l.equipo === currentTeam && l.fecha === fecha);
+    if (existingIdx !== -1) {
+      allTrainingLogs[existingIdx] = logEntry;
     } else {
-      allTrainingLogs.push(reportRecord);
+      allTrainingLogs.push(logEntry);
     }
 
     if (ghSettings.user && ghSettings.repo && ghSettings.token) {
-      const success = await writeGitHubFile("registro_entrenamientos.json", allTrainingLogs, `Registro entrenamiento: ${currentTeam} - ${selectedDate}`);
+      const success = await writeGitHubFile("registro_entrenamientos.json", allTrainingLogs, `Registro entrenamiento ${currentTeam} - ${fecha}`);
       if (success) {
-        alert(`¡Entrenamiento del ${selectedDate} guardado/actualizado correctamente en GitHub!`);
+        alert("¡Entrenamiento guardado y sincronizado con exito en GitHub!");
       } else {
-        alert("Atención: No se pudo conectar con GitHub. Se ha guardado en memoria local.");
+        alert("Atención: No se pudo sincronizar con GitHub. Solo guardado localmente.");
       }
     } else {
-      alert(`Entrenamiento del ${selectedDate} guardado en memoria local.`);
+      alert("Atención: No hay token/repo configurado. Solo guardado localmente.");
     }
   }
 </script>
+
 </body>
 </html>
