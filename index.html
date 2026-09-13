@@ -2528,61 +2528,6 @@
     }
   }
 
-  /* REQUISITO 1: Carga y verifica Consultas sin finalizar restaurando en el Tablón de Anuncios si fue borrada */
-  async function fetchQueriesFromGitHub() {
-    if (!ghSettings.user || !ghSettings.repo) return;
-    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/Consultas.json`;
-    
-    const headers = {};
-    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
-
-    try {
-      const res = await fetch(url, { headers });
-      if (res.ok) {
-        const json = await res.json();
-        queriesData = JSON.parse(b64_to_utf8(json.content));
-
-        // Verificar si existen consultas sin finalizar
-        let tablonUpdated = false;
-        queriesData.forEach(q => {
-          let isFinished = true;
-          q.teams.forEach(teamKey => {
-            const players = getPlayersForTeamKey(teamKey);
-            players.forEach(p => {
-              if (!q.responses || !q.responses[p]) isFinished = false;
-            });
-          });
-
-          // Si la consulta no está finalizada, nos aseguramos de que esté en el tablón
-          if (!isFinished) {
-            const colorTag = q.color === '#0284c7' ? '🔵' : (q.color === '#7e22ce' ? '🟣' : '🟠');
-            const queryNotice = `${colorTag} CONSULTA: ${q.text}`;
-
-            if (!appData.tablonText || !appData.tablonText.includes(queryNotice.trim())) {
-              appData.tablonText = appData.tablonText ? `${queryNotice}\n${appData.tablonText}` : queryNotice;
-              tablonUpdated = true;
-            }
-          }
-        });
-
-        if (tablonUpdated) {
-          const tablonEl = document.getElementById("tablonTextarea");
-          if (tablonEl) {
-            tablonEl.value = appData.tablonText;
-            autoResizeTablon(tablonEl);
-          }
-          saveDataAndSyncGitHub();
-        }
-      }
-    } catch (e) { console.error("No hay Consultas.json previo o hubo error:", e); }
-  }
-
-  async function saveQueriesToGitHub() {
-    if (ghSettings.user && ghSettings.repo && ghSettings.token) {
-      await writeGitHubFile("Consultas.json", queriesData, "Actualizar estado de consultas");
-    }
-  }
-
   async function saveSession() {
     if (!currentCoach || !currentTeam) return;
 
@@ -2619,30 +2564,174 @@
     goBack();
   }
 
-  async function saveQueriesToGitHubConsultas() {
-    localStorage.setItem("NVA_QUERIES_DATA", JSON.stringify(queriesData));
-    if (ghSettings.user && ghSettings.repo && ghSettings.token) {
-      await writeGitHubFile("consultas.json", queriesData, "Actualizar consultas del club");
+  /**
+ * Unificación de guardado de consultas/encuestas en GitHub.
+ * Utiliza un único archivo de origen/destino ('Consultas.json') 
+ * y gestiona correctamente la codificación UTF-8 y el SHA del archivo.
+ */
+ async function saveQueriesToGitHub() {
+    if (!ghSettings.user || !ghSettings.repo) {
+    console.warn("GitHub no está configurado (falta usuario o repositorio).");
+    return;
+    }
+
+    const fileName = "Consultas.json";
+    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${fileName}`;
+
+    const headers = {
+    "Accept": "application/vnd.github.v3+json",
+    "Content-Type": "application/json"
+    };
+    if (ghSettings.token) {
+    headers["Authorization"] = `token ${ghSettings.token}`;
+    }
+
+    try {
+    // 1. Obtener el SHA actual del archivo si existe en GitHub para evitar conflictos
+    let sha = null;
+    const getRes = await fetch(url, { headers });
+    if (getRes.ok) {
+        const getData = await getRes.json();
+        sha = getData.sha;
+    }
+
+    // 2. Convertir los datos de las consultas a texto JSON en formato UTF-8 / Base64
+    const jsonString = JSON.stringify(queriesData, null, 2);
+    const contentBase64 = utf8_to_b64(jsonString);
+
+    // 3. Preparar el cuerpo de la petición
+    const body = {
+        message: `Actualizar ${fileName} [Automático]`,
+        content: contentBase64
+    };
+    if (sha) {
+        body.sha = sha;
+    }
+
+    // 4. Guardar/Actualizar en GitHub
+    const putRes = await fetch(url, {
+        method: "PUT",
+        headers,
+        body: JSON.stringify(body)
+    });
+
+    if (putRes.ok) {
+        console.log(`✅ ${fileName} guardado correctamente en GitHub.`);
+    } else {
+        const errData = await putRes.json();
+        console.error(`❌ Error al guardar ${fileName} en GitHub:`, errData);
+    }
+    } catch (error) {
+    console.error(`❌ Error de red al intentar guardar ${fileName}:`, error);
     }
   }
 
-  async function fetchQueriesFromGitHubConsultas() {
-    if (!ghSettings.user || !ghSettings.repo) return;
-    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/consultas.json`;
-    
-    const headers = {};
-    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
-
-    try {
-      const res = await fetch(url, { headers });
-      if (res.ok) {
-        const json = await res.json();
-        queriesData = JSON.parse(b64_to_utf8(json.content));
-        localStorage.setItem("NVA_QUERIES_DATA", JSON.stringify(queriesData));
-      }
-    } catch (e) { console.error("Error al obtener consultas de GitHub:", e); }
+  // Codificar UTF-8 a Base64 (compatible con tildes, caracteres especiales y emojis)
+  function utf8_to_b64(str) {
+    return window.btoa(unescape(encodeURIComponent(str)));
   }
-</script>
 
+// Decodificar Base64 a UTF-8
+  function b64_to_utf8(str) {
+    return decodeURIComponent(escape(window.atob(str)));
+  }
+  
+  /**
+ * Unificación de lectura de consultas/encuestas desde GitHub.
+ * Lee 'Consultas.json', analiza el estado de respuestas de cada equipo
+ * y actualiza el tablón únicamente si hay consultas activas pendientes.
+ */
+ async function fetchQueriesFromGitHub() {
+      if (!ghSettings.user || !ghSettings.repo) {
+        console.warn("GitHub no está configurado (falta usuario o repositorio).");
+        return;
+      }
+
+      const fileName = "Consultas.json";
+      const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${fileName}`;
+
+      const headers = {
+        "Accept": "application/vnd.github.v3+json"
+      };
+      if (ghSettings.token) {
+        headers["Authorization"] = `token ${ghSettings.token}`;
+      }
+
+      try {
+        const res = await fetch(url, { headers });
+        if (!res.ok) {
+          if (res.status === 404) {
+            console.log(`ℹ️ El archivo ${fileName} aún no existe en GitHub.`);
+          } else {
+            console.error(`❌ Error al obtener ${fileName}: Status ${res.status}`);
+          }
+          return;
+        }
+
+        const json = await res.json();
+    
+        // Decodificación UTF-8 segura
+        const decodedContent = b64_to_utf8(json.content);
+        queriesData = JSON.parse(decodedContent);
+
+        let tablonUpdated = false;
+
+        // Recorremos las consultas cargadas
+        queriesData.forEach(q => {
+          let isFinished = true;
+
+          // Comprobación de finalización: verifica si todas las jugadoras de cada equipo han respondido
+          if (Array.isArray(q.teams)) {
+            q.teams.forEach(teamKey => {
+              const players = getPlayersForTeamKey(teamKey);
+              if (players.length === 0) {
+                isFinished = false;
+              } else {
+                players.forEach(player => {
+                  if (!q.responses || !q.responses[player]) {
+                    isFinished = false;
+                  }
+                });
+              }
+            });
+          } else {
+            isFinished = false;
+          }
+
+          // Si la consulta NO está terminada, aseguramos que la línea del aviso esté presente en el tablón
+          if (!isFinished) {
+            const colorTag = q.color === '#0284c7' ? '🔵' : (q.color === '#7e22ce' ? '🟣' : '🟠');
+            const queryNotice = `${colorTag} CONSULTA: ${q.text}`;
+
+            if (!appData.tablonText || !appData.tablonText.includes(queryNotice.trim())) {
+              appData.tablonText = appData.tablonText 
+                ? `${queryNotice}\n${appData.tablonText}` 
+                : queryNotice;
+              tablonUpdated = true;
+            }
+          }
+        });
+
+        // Si hubo cambios en el tablón tras reevaluar las consultas activas, actualizamos la vista y guardamos
+        if (tablonUpdated) {
+          const tablonEl = document.getElementById("tablonTextarea");
+          if (tablonEl) {
+            tablonEl.value = appData.tablonText;
+            if (typeof autoResizeTablon === "function") {
+              autoResizeTablon(tablonEl);
+            }
+          }
+          if (typeof saveDataAndSyncGitHub === "function") {
+            saveDataAndSyncGitHub();
+          }
+        }
+
+      } catch (error) {
+        console.error(`❌ Error al procesar ${fileName}:`, error);
+      }
+ }
+
+
+</script>
 </body>
 </html>
