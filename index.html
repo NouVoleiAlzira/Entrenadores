@@ -2577,6 +2577,275 @@
     tempConsultaResponses = {};
     renderPlayersMain();
   }
+
+  // --- GUARDAR Y LEER ENTRENAMIENTOS ---
+  async function saveSession() {
+    const date = document.getElementById("sessionDatePicker").value;
+    if (!date) {
+      alert("Por favor, selecciona una fecha válida.");
+      return;
+    }
+
+    if (!currentTeam) {
+      alert("No hay un equipo seleccionado.");
+      return;
+    }
+
+    // 1. Guardar o actualizar la sesión en la memoria local
+    const existingIndex = allTrainingLogs.findIndex(l => l.equipo === currentTeam && l.fecha === date);
+    const logRecord = {
+      fecha: date,
+      entrenador: currentCoach ? currentCoach.name : "",
+      equipo: currentTeam,
+      jugadores: sessionData
+    };
+
+    if (existingIndex >= 0) {
+      allTrainingLogs[existingIndex] = logRecord;
+    } else {
+      allTrainingLogs.push(logRecord);
+    }
+
+    // 2. Procesar respuestas a consultas pendientes (si se respondieron en la tabla)
+    sessionData.forEach(p => {
+      consultasData.forEach(c => {
+        const key = p.name + '_' + c.id;
+        if (tempConsultaResponses[key]) {
+          if (!c.responses) c.responses = {};
+          c.responses[p.name + '|' + currentTeam] = tempConsultaResponses[key];
+        }
+      });
+    });
+
+    checkAndCleanCompletedConsultas();
+    saveConsultasToGitHub();
+
+    // 3. Persistir en localStorage
+    localStorage.setItem("NVA_TRAINING_LOGS", JSON.stringify(allTrainingLogs));
+
+    // 4. Subir archivo entrenamientos.json a GitHub
+    if (ghSettings.user && ghSettings.repo && ghSettings.token) {
+      const ok = await writeGitHubFile("entrenamientos.json", allTrainingLogs, `Actualizar entrenamiento de ${currentTeam} - ${date}`);
+      if (ok) {
+        alert("¡Entrenamiento guardado con éxito en GitHub!");
+      } else {
+        alert("Error al guardar en GitHub. Revisa la consola o tus credenciales.");
+      }
+    } else {
+      alert("Guardado localmente. Configura GitHub en Opciones para sincronización remota.");
+    }
+  }
+
+  async function fetchTrainingLogsFromGitHub() {
+    if (!ghSettings.user || !ghSettings.repo || !ghSettings.token) return;
+    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/entrenamientos.json`;
+    try {
+      const res = await fetch(url, { headers: { "Authorization": `token ${ghSettings.token}` } });
+      if (res.ok) {
+        const json = await res.json();
+        const content = b64_to_utf8(json.content);
+        allTrainingLogs = JSON.parse(content);
+        localStorage.setItem("NVA_TRAINING_LOGS", JSON.stringify(allTrainingLogs));
+      }
+    } catch (e) {
+      console.error("Error al obtener entrenamientos de GitHub:", e);
+    }
+  }
+
+  // --- GUARDAR Y LEER WARNINGS ---
+  async function saveWarningsToGitHub() {
+    localStorage.setItem("NVA_WARNINGS_DATA", JSON.stringify(warningsData));
+    if (ghSettings.user && ghSettings.repo && ghSettings.token) {
+      const ok = await writeGitHubFile("warnings.json", warningsData, "Actualizar avisos/warnings del club");
+      if (ok) alert("Avisos guardados correctamente en GitHub.");
+      else alert("Error al guardar avisos en GitHub.");
+    } else {
+      alert("Avisos guardados localmente.");
+    }
+  }
+
+  async function fetchWarningsFromGitHub() {
+    if (!ghSettings.user || !ghSettings.repo || !ghSettings.token) return;
+    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/warnings.json`;
+    try {
+      const res = await fetch(url, { headers: { "Authorization": `token ${ghSettings.token}` } });
+      if (res.ok) {
+        const json = await res.json();
+        warningsData = JSON.parse(b64_to_utf8(json.content));
+        localStorage.setItem("NVA_WARNINGS_DATA", JSON.stringify(warningsData));
+      }
+    } catch (e) {
+      console.error("Error al obtener warnings:", e);
+    }
+  }
+
+  // --- GUARDAR Y LEER CONSULTAS ---
+  async function saveConsultasToGitHub() {
+    localStorage.setItem("NVA_CONSULTAS_DATA", JSON.stringify(consultasData));
+    if (ghSettings.user && ghSettings.repo && ghSettings.token) {
+      await writeGitHubFile("consultas.json", consultasData, "Actualizar peticiones/consultas");
+    }
+  }
+
+  async function fetchConsultasFromGitHub() {
+    if (!ghSettings.user || !ghSettings.repo || !ghSettings.token) return;
+    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/consultas.json`;
+    try {
+      const res = await fetch(url, { headers: { "Authorization": `token ${ghSettings.token}` } });
+      if (res.ok) {
+        const json = await res.json();
+        consultasData = JSON.parse(b64_to_utf8(json.content));
+        localStorage.setItem("NVA_CONSULTAS_DATA", JSON.stringify(consultasData));
+      }
+    } catch (e) {
+      console.error("Error al obtener consultas:", e);
+    }
+  }
+
+ async function syncConfigFromGitHub(silent = false) {
+    if (!ghSettings.user || !ghSettings.repo) return; 
+    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/configuracion.json`;
+    
+    const headers = {};
+    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
+
+    try {
+      const res = await fetch(url, { headers });
+      if (res.ok) {
+        const json = await res.json();
+        const content = b64_to_utf8(json.content);
+        appData = JSON.parse(content);
+        localStorage.setItem("NVA_APP_DATA", JSON.stringify(appData));
+        renderCoachTeamSelection();
+        if (document.getElementById("modalOptions").classList.contains("active")) {
+          renderConfigTab1();
+        }
+        if (!silent) alert("Configuración sincronizada con éxito desde GitHub.");
+      }
+    } catch (e) {
+      console.error("Error al sincronizar configuración desde GitHub:", e);
+    }
+  }
+
+  async function saveSession() {
+    const fecha = document.getElementById("sessionDatePicker").value;
+    if (!fecha) {
+      alert("Por favor selecciona una fecha.");
+      return;
+    }
+
+    const logEntry = {
+      id: "log_" + Date.now(),
+      fecha: fecha,
+      entrenador: currentCoach ? currentCoach.name : "Desconocido",
+      equipo: currentTeam,
+      jugadores: sessionData
+    };
+
+    const existingIndex = allTrainingLogs.findIndex(l => l.equipo === currentTeam && l.fecha === fecha);
+    if (existingIndex >= 0) {
+      allTrainingLogs[existingIndex] = logEntry;
+    } else {
+      allTrainingLogs.push(logEntry);
+    }
+
+    // Procesa y guarda las respuestas pendientes de las consultas asociadas
+    let consultasUpdated = false;
+    Object.keys(tempConsultaResponses).forEach(key => {
+      const parts = key.split('_');
+      const pName = parts[0];
+      const cId = parts[1];
+      const val = tempConsultaResponses[key];
+
+      const consulta = consultasData.find(c => c.id === cId);
+      if (consulta) {
+        if (!consulta.responses) consulta.responses = {};
+        consulta.responses[pName + '|' + currentTeam] = val;
+        consultasUpdated = true;
+      }
+    });
+
+    if (consultasUpdated) {
+      checkAndCleanCompletedConsultas();
+      saveConsultasToGitHub();
+      tempConsultaResponses = {};
+    }
+
+    const ok = await writeGitHubFile("entrenamientos.json", allTrainingLogs, `Guardar entrenamiento ${currentTeam} - ${fecha}`);
+    if (ok) {
+      alert("Entrenamiento guardado correctamente en GitHub.");
+    } else {
+      alert("Entrenamiento guardado localmente (Revisa conexión/token GitHub).");
+    }
+  }
+
+  async function saveWarningsToGitHub() {
+    const ok = await writeGitHubFile("warnings.json", warningsData, `Actualizar warnings ${currentTeam}`);
+    if (ok) {
+      alert("Avisos/Warnings guardados correctamente en GitHub.");
+    } else {
+      alert("Error al guardar avisos en GitHub.");
+    }
+  }
+
+  async function saveConsultasToGitHub() {
+    localStorage.setItem("NVA_CONSULTAS_DATA", JSON.stringify(consultasData));
+    if (ghSettings.user && ghSettings.repo && ghSettings.token) {
+      await writeGitHubFile("consultas.json", consultasData, "Actualizar consultas de dirección");
+    }
+  }
+
+  async function fetchTrainingLogsFromGitHub() {
+    if (!ghSettings.user || !ghSettings.repo) return;
+    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/entrenamientos.json`;
+    const headers = {};
+    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
+
+    try {
+      const res = await fetch(url, { headers });
+      if (res.ok) {
+        const json = await res.json();
+        allTrainingLogs = JSON.parse(b64_to_utf8(json.content));
+      }
+    } catch (e) {
+      console.error("Error al cargar historial de entrenamientos:", e);
+    }
+  }
+
+  async function fetchWarningsFromGitHub() {
+    if (!ghSettings.user || !ghSettings.repo) return;
+    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/warnings.json`;
+    const headers = {};
+    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
+
+    try {
+      const res = await fetch(url, { headers });
+      if (res.ok) {
+        const json = await res.json();
+        warningsData = JSON.parse(b64_to_utf8(json.content));
+      }
+    } catch (e) {
+      console.error("Error al cargar warnings:", e);
+    }
+  }
+
+  async function fetchConsultasFromGitHub() {
+    if (!ghSettings.user || !ghSettings.repo) return;
+    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/consultas.json`;
+    const headers = {};
+    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
+
+    try {
+      const res = await fetch(url, { headers });
+      if (res.ok) {
+        const json = await res.json();
+        consultasData = JSON.parse(b64_to_utf8(json.content));
+        localStorage.setItem("NVA_CONSULTAS_DATA", JSON.stringify(consultasData));
+      }
+    } catch (e) {
+      console.error("Error al cargar consultas:", e);
+    }
+  }
 </script>
 </body>
 </html>
