@@ -878,7 +878,7 @@
   <div class="screen" id="screenWarnings">
     <div class="section-title" id="warningTeamTitle">Dirección NVA - Equipo</div>
     <div id="warningPlayersContainer"></div>
-    <button class="btn-save-session" style="padding:12px; font-size:0.9rem;" onclick="saveWarningsToGitHub()">Guardar Warning en GitHub</button>
+    <!--<button class="btn-save-session" style="padding:12px; font-size:0.9rem;" onclick="saveWarningsToGitHub()">Guardar Warning en GitHub</button> -->
   </div>
 
   <!-- MODALES DE LA APLICACIÓN -->
@@ -2167,6 +2167,12 @@
   }
 
   function goBack() {
+    
+    // Solo guarda los avisos si la pantalla actual es "screenWarnings"
+    if (document.getElementById("screenWarnings").classList.contains("active")) {
+    saveWarningsToGitHub();
+    }
+
     showScreen("screenCoachTeam");
     document.getElementById("btnBack").style.display = "none";
   }
@@ -2604,53 +2610,86 @@
 
   /* REQUISITO 1: Carga y verifica Consultas sin finalizar restaurando en el Tablón de Anuncios si fue borrada */
   async function fetchQueriesFromGitHub() {
-    if (!ghSettings.user || !ghSettings.repo) return;
-    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/Consultas.json`;
-    
-    const headers = {};
-    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
+      if (!ghSettings.user || !ghSettings.repo) return;
+      const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/Consultas.json`;
+  
+      const headers = {};
+      if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
 
-    try {
-      const res = await fetch(url, { headers });
-      if (res.ok) {
-        const json = await res.json();
-        queriesData = JSON.parse(b64_to_utf8(json.content));
+      try {
+        const res = await fetch(url, { headers });
+        if (res.ok) {
+          const json = await res.json();
+          const remoteQueries = JSON.parse(b64_to_utf8(json.content)) || [];
+          const localQueries = JSON.parse(localStorage.getItem("NVA_QUERIES_DATA")) || [];
 
-        // Verificar si existen consultas sin finalizar
-        let tablonUpdated = false;
-        queriesData.forEach(q => {
-          let isFinished = true;
-          q.teams.forEach(teamKey => {
-            const players = getPlayersForTeamKey(teamKey);
-            players.forEach(p => {
-              if (!q.responses || !q.responses[p]) isFinished = false;
-            });
+          // Fusionar consultas locales y remotas por ID
+          const mergedMap = new Map();
+
+          // 1. Cargar remotas
+          remoteQueries.forEach(q => mergedMap.set(q.id, q));
+
+          // 2. Combinar o añadir locales
+          localQueries.forEach(localQ => {
+            if (!mergedMap.has(localQ.id)) {
+              mergedMap.set(localQ.id, localQ);
+            } else {
+              // Si existe en ambos lados, fusionar las respuestas acumuladas
+              const remoteQ = mergedMap.get(localQ.id);
+              remoteQ.responses = { ...remoteQ.responses, ...localQ.responses };
+              mergedMap.set(localQ.id, remoteQ);
+            }
           });
 
-          // Si la consulta no está finalizada, nos aseguramos de que esté en el tablón
-          if (!isFinished) {
-            const colorTag = q.color === '#0284c7' ? '🔵' : (q.color === '#7e22ce' ? '🟣' : '🟠');
-            const queryNotice = `${colorTag} CONSULTA: ${q.text}`;
+          queriesData = Array.from(mergedMap.values());
+          localStorage.setItem("NVA_QUERIES_DATA", JSON.stringify(queriesData));
+          renderPlayersMain();
+        }
+      } catch (e) { 
+        console.error("No se pudieron sincronizar las consultas desde GitHub:", e); 
 
-            if (!appData.tablonText || !appData.tablonText.includes(queryNotice.trim())) {
-              appData.tablonText = appData.tablonText ? `${queryNotice}\n${appData.tablonText}` : queryNotice;
-              tablonUpdated = true;
+      try {
+          const res = await fetch(url, { headers });
+          if (res.ok) {
+            const json = await res.json();
+            queriesData = JSON.parse(b64_to_utf8(json.content));
+
+            // Verificar si existen consultas sin finalizar
+            let tablonUpdated = false;
+            queriesData.forEach(q => {
+              let isFinished = true;
+              q.teams.forEach(teamKey => {
+                const players = getPlayersForTeamKey(teamKey);
+                players.forEach(p => {
+                  if (!q.responses || !q.responses[p]) isFinished = false;
+                });
+              });
+
+              // Si la consulta no está finalizada, nos aseguramos de que esté en el tablón
+              if (!isFinished) {
+                const colorTag = q.color === '#0284c7' ? '🔵' : (q.color === '#7e22ce' ? '🟣' : '🟠');
+                const queryNotice = `${colorTag} CONSULTA: ${q.text}`;
+
+                if (!appData.tablonText || !appData.tablonText.includes(queryNotice.trim())) {
+                  appData.tablonText = appData.tablonText ? `${queryNotice}\n${appData.tablonText}` : queryNotice;
+                  tablonUpdated = true;
+                }
+              }
+            });
+
+            if (tablonUpdated) {
+              const tablonEl = document.getElementById("tablonTextarea");
+              if (tablonEl) {
+                tablonEl.value = appData.tablonText;
+                autoResizeTablon(tablonEl);
+              }
+              saveDataAndSyncGitHub();
             }
           }
-        });
-
-        if (tablonUpdated) {
-          const tablonEl = document.getElementById("tablonTextarea");
-          if (tablonEl) {
-            tablonEl.value = appData.tablonText;
-            autoResizeTablon(tablonEl);
-          }
-          saveDataAndSyncGitHub();
-        }
-      }
-    } catch (e) { console.error("No hay Consultas.json previo o hubo error:", e); }
+      } catch (e) { console.error("No hay Consultas.json previo o hubo error:", e); }
   }
-
+}
+  
   async function saveQueriesToGitHub() {
     saveQueriesToLocalStorage(); // Guarda localmente primero
 
@@ -2671,40 +2710,40 @@
     }
 
     try {
-    // 1. Obtener el SHA actual del archivo si existe en GitHub para evitar conflictos
-    let sha = null;
-    const getRes = await fetch(url, { headers });
-    if (getRes.ok) {
-        const getData = await getRes.json();
-        sha = getData.sha;
-    }
+        // 1. Obtener el SHA actual del archivo si existe en GitHub para evitar conflictos
+        let sha = null;
+        const getRes = await fetch(url, { headers });
+        if (getRes.ok) {
+            const getData = await getRes.json();
+            sha = getData.sha;
+        }
 
-    // 2. Convertir los datos de las consultas a texto JSON en formato UTF-8 / Base64
-    const jsonString = JSON.stringify(queriesData, null, 2);
-    const contentBase64 = utf8_to_b64(jsonString);
+        // 2. Convertir los datos de las consultas a texto JSON en formato UTF-8 / Base64
+        const jsonString = JSON.stringify(queriesData, null, 2);
+        const contentBase64 = utf8_to_b64(jsonString);
 
-    // 3. Preparar el cuerpo de la petición
-    const body = {
-        message: `Actualizar ${fileName} [Automático]`,
-        content: contentBase64
-    };
-    if (sha) {
-        body.sha = sha;
-    }
+        // 3. Preparar el cuerpo de la petición
+        const body = {
+            message: `Actualizar ${fileName} [Automático]`,
+            content: contentBase64
+        };
+        if (sha) {
+            body.sha = sha;
+        }
 
-    // 4. Guardar/Actualizar en GitHub
-    const putRes = await fetch(url, {
-        method: "PUT",
-        headers,
-        body: JSON.stringify(body)
-    });
+        // 4. Guardar/Actualizar en GitHub
+        const putRes = await fetch(url, {
+            method: "PUT",
+            headers,
+            body: JSON.stringify(body)
+        });
 
-    if (putRes.ok) {
-        console.log(`✅ ${fileName} guardado correctamente en GitHub.`);
-    } else {
-        const errData = await putRes.json();
-        console.error(`❌ Error al guardar ${fileName} en GitHub:`, errData);
-    }
+        if (putRes.ok) {
+            console.log(`✅ ${fileName} guardado correctamente en GitHub.`);
+        } else {
+            const errData = await putRes.json();
+            console.error(`❌ Error al guardar ${fileName} en GitHub:`, errData);
+        }
     } catch (error) {
     console.error(`❌ Error de red al intentar guardar ${fileName}:`, error);
     }
