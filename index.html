@@ -272,6 +272,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 6px;
     }
 
     .player-name {
@@ -281,7 +282,7 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 55%;
+      max-width: 50%;
     }
 
     .warning-capsule {
@@ -296,7 +297,7 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 60%;
+      max-width: 55%;
     }
 
     .attendance-btn-group {
@@ -305,6 +306,7 @@
       border-radius: 6px;
       padding: 2px;
       gap: 2px;
+      flex-shrink: 0;
     }
 
     .attendance-btn {
@@ -614,6 +616,53 @@
       border-radius: 0;
     }
 
+    /* ESTILOS DE SELECTOR DE COLORES Y CÁPSULAS DE CONSULTA */
+    .color-btn {
+      flex: 1;
+      padding: 8px 4px;
+      border-radius: 8px;
+      border: 2px solid #cbd5e1;
+      font-weight: 700;
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .color-btn.active {
+      border-color: #0f172a !important;
+      box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.25);
+      transform: scale(1.03);
+    }
+
+    .consulta-capsule {
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      max-width: 55%;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+
+    .btn-vx {
+      border: none;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-weight: bold;
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
     /* Área Oculta para Renderizar el PDF (MODERNIZADO) */
     #pdfReportExportArea {
       position: absolute;
@@ -717,7 +766,7 @@
   <div class="screen active" id="screenCoachTeam">
     <button class="btn-pdf-mode" id="btnPdfMode" onclick="togglePdfMode()">📄 CREAR PDF</button>
     <div id="pdfModeBanner" class="pdf-mode-banner" style="display: none;">
-      <span>📌 Modo PDF Activo: Selecciona Entrenador y Equipo</span>
+      <span>📌 Modo PDF Activo: Selecciona Entrenador y Equipo o Consulta</span>
       <button onclick="togglePdfMode()" style="background:none; border:none; color:white; font-weight:700; cursor:pointer;">✕ Cancelar</button>
     </div>
 
@@ -762,15 +811,66 @@
   </div>
 
   <!-- MODALES DE LA APLICACIÓN -->
-  <!-- MODAL: WARNINGS -->
+  <!-- MODAL: WARNINGS CON SELECCIÓN DE 4 COLORES -->
   <div class="modal-backdrop" id="modalWarning">
-    <div class="modal-box" style="max-width: 360px;">
+    <div class="modal-box" style="max-width: 380px;">
       <div class="modal-header">
         <div class="modal-title">Motivo del Aviso</div>
         <button class="btn-close-modal" onclick="closeWarningModal()">✕</button>
       </div>
-      <input type="text" id="warningReasonInput" class="app-input" value="NO PAGADO" style="margin-bottom: 12px; font-weight:bold; color:red;">
+      <input type="text" id="warningReasonInput" class="app-input" value="NO PAGADO" style="margin-bottom: 12px; font-weight:bold; color:#ef4444;">
+      
+      <label style="font-size: 0.78rem; font-weight: 700; color: var(--azul-dark); margin-bottom: 6px; display: block;">Selecciona Color del Aviso:</label>
+      <div style="display: flex; gap: 6px; margin-bottom: 14px;" id="warningColorGroup">
+        <button type="button" class="color-btn active" data-color="ROJO" onclick="selectWarningColor('ROJO')" style="background:#ef4444; color:white; border-color:#ef4444;">🔴 Rojo</button>
+        <button type="button" class="color-btn" data-color="AZUL" onclick="selectWarningColor('AZUL')" style="background:#2563eb; color:white; border-color:#cbd5e1;">🔵 Azul</button>
+        <button type="button" class="color-btn" data-color="VERDE" onclick="selectWarningColor('VERDE')" style="background:#22c55e; color:white; border-color:#cbd5e1;">🟢 Verde</button>
+        <button type="button" class="color-btn" data-color="AMARILLO" onclick="selectWarningColor('AMARILLO')" style="background:#eab308; color:black; border-color:#cbd5e1;">🟡 Am.</button>
+      </div>
+
       <button class="btn-save-session" onclick="confirmWarningReason()">Guardar Motivo</button>
+    </div>
+  </div>
+
+  <!-- MODAL: CREAR PETICIÓN DE CONTESTACIÓN (CONSULTA) -->
+  <div class="modal-backdrop" id="modalCreateConsulta">
+    <div class="modal-box" style="max-width: 420px;">
+      <div class="modal-header">
+        <div class="modal-title">✉️ Crear Petición de Contestación</div>
+        <button class="btn-close-modal" onclick="closeCreateConsultaModal()">✕</button>
+      </div>
+
+      <label style="font-size: 0.78rem; font-weight: 700; color: var(--azul-dark); margin-bottom: 4px; display: block;">Texto de la Consulta:</label>
+      <textarea id="consultaTextInput" class="comment-input-long" style="width:100%; min-height:70px; margin-bottom:10px; font-size:0.85rem;" placeholder="Escribe aquí la consulta para los entrenadores/jugadoras..."></textarea>
+
+      <label style="font-size: 0.78rem; font-weight: 700; color: var(--azul-dark); margin-bottom: 6px; display: block;">Selecciona Color del Icono/Cápsula:</label>
+      <div style="display: flex; gap: 6px; margin-bottom: 12px;" id="consultaColorGroup">
+        <button type="button" class="color-btn active" data-color="AZUL" onclick="selectConsultaColor('AZUL')" style="background:#2563eb; color:white; border-color:#2563eb;">🔵 Azul</button>
+        <button type="button" class="color-btn" data-color="VERDE" onclick="selectConsultaColor('VERDE')" style="background:#22c55e; color:white; border-color:#cbd5e1;">🟢 Verde</button>
+        <button type="button" class="color-btn" data-color="AMARILLO" onclick="selectConsultaColor('AMARILLO')" style="background:#eab308; color:black; border-color:#cbd5e1;">🟡 Am.</button>
+        <button type="button" class="color-btn" data-color="ROJO" onclick="selectConsultaColor('ROJO')" style="background:#ef4444; color:white; border-color:#cbd5e1;">🔴 Rojo</button>
+      </div>
+
+      <label style="font-size: 0.78rem; font-weight: 700; color: var(--azul-dark); margin-bottom: 6px; display: block;">Equipos Afectados:</label>
+      <div style="margin-bottom:6px; font-size:0.75rem; color:#64748b; display:flex; justify-content:space-between; align-items:center;">
+        <span>Selecciona los equipos que deben responder:</span>
+        <button type="button" style="background:none; border:none; color:var(--morado-accent); font-weight:bold; cursor:pointer;" onclick="toggleAllConsultaTeams(this)">Seleccionar Todos</button>
+      </div>
+      <div id="consultaTeamsList" style="max-height:140px; overflow-y:auto; border:1px solid var(--gray-border); padding:8px; border-radius:6px; margin-bottom:12px; display:flex; flex-direction:column; gap:4px; background:#f8fafc;"></div>
+
+      <button class="btn-save-session" onclick="saveNewConsulta()">Guardar y Publicar Consulta</button>
+    </div>
+  </div>
+
+  <!-- MODAL: SELECCIÓN DE CONSULTA PARA GENERAR PDF -->
+  <div class="modal-backdrop" id="modalSelectConsultaPdf">
+    <div class="modal-box" style="max-width: 420px;">
+      <div class="modal-header">
+        <div class="modal-title">📄 Seleccionar Consulta para PDF</div>
+        <button class="btn-close-modal" onclick="closeSelectConsultaPdfModal()">✕</button>
+      </div>
+      <p style="font-size: 0.78rem; color: #64748b; margin-bottom: 10px;">Selecciona una consulta de Dirección NVA para generar el informe PDF:</p>
+      <div id="consultaPdfListContainer" style="max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;"></div>
     </div>
   </div>
 
@@ -942,7 +1042,7 @@
 
 </div>
 
-<!-- CONTENEDOR OCULTO PARA EXPORTACIÓN A PDF -->
+<!-- CONTENEDOR OCULTO PARA EXPORTACIÓN A PDF (ENTRENAMIENTOS) -->
 <div id="pdfReportExportArea">
   <img src="LOGO NVA.png" alt="Marca de Agua" class="pdf-watermark">
 
@@ -987,19 +1087,51 @@
   </div>
 </div>
 
+<!-- CONTENEDOR OCULTO PARA EXPORTACIÓN A PDF (CONSULTAS / PETICIONES) -->
+<div id="pdfConsultaExportArea" style="position: absolute; left: -9999px; top: -9999px; width: 800px; min-height: 1131px; background: white; padding: 35px; color: #0f172a; font-family: -apple-system, sans-serif; box-sizing: border-box;">
+  <img src="LOGO NVA.png" alt="Marca de Agua" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 380px; opacity: 0.1; pointer-events: none;">
+
+  <div style="position: relative; z-index: 1;">
+    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #0052d4; padding-bottom: 12px; margin-bottom: 18px;">
+      <img src="LOGO NVA.png" alt="Logo" style="height: 65px; width: auto;">
+      <h1 style="font-size: 24px; color: #0052d4; flex: 1; text-align: center; font-weight: 800; margin: 0 10px;">Club Nou Vòlei Alzira</h1>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 25px; background: #f8fafc; padding: 15px; border-radius: 10px; border: 1px solid #cbd5e1;">
+      <h2 style="font-size: 20px; color: #0f172a; margin-bottom: 8px; font-weight: 800;">Informe de Petición / Consulta</h2>
+      <div id="pdfConsultaTextHeader" style="font-size: 16px; color: #1e293b; font-weight: 700; margin-top: 6px;"></div>
+    </div>
+
+    <div id="pdfConsultaTeamsContainer"></div>
+  </div>
+</div>
+
 <script>
+  // Opciones y Mapas de Color Globales (ROJO, AZUL, VERDE, AMARILLO)
+  const COLOR_OPTIONS = {
+    ROJO: { name: 'ROJO', hex: '#ef4444', text: '#ffffff', icon: '🔴' },
+    AZUL: { name: 'AZUL', hex: '#2563eb', text: '#ffffff', icon: '🔵' },
+    VERDE: { name: 'VERDE', hex: '#22c55e', text: '#ffffff', icon: '🟢' },
+    AMARILLO: { name: 'AMARILLO', hex: '#eab308', text: '#000000', icon: '🟡' }
+  };
+
   // Datos iniciales
   const defaultData = {
     coaches: [
-      { id: 1, name: "Mourinho", teams: ["NVA A (Infantil)", "NVA A (Cadete)", "NVA (Juvenil)"] }
-   ],
+      { id: 1, name: "Carlos Martínez", teams: ["Cadete Femenino A (Cadete)", "Juvenil Femenino (Juvenil)"] },
+      { id: 2, name: "Eneritz", teams: ["Infantil Femenino B (Infantil)", "Senior Femenino (Senior)"] }
+    ],
     teams: [
-      { name: "NVA A", category: "Infantil" },
-      { name: "NVA A", category: "Cadete" },
-      { name: "NVA A", category: "Juvenil" }
+      { name: "Cadete Femenino A", category: "Cadete" },
+      { name: "Juvenil Femenino", category: "Juvenil" },
+      { name: "Infantil Femenino B", category: "Infantil" },
+      { name: "Senior Femenino", category: "Senior" }
     ],
     players: {
-      "NVA A (Infantil)": ["Aitana", "Lola Indigo", "Ana Mena", "Rosalia"]
+      "Cadete Femenino A (Cadete)": ["Sofia López", "Lucía Gómez", "Martina Pérez", "Elena Sanz", "Vega Ruiz"],
+      "Juvenil Femenino (Juvenil)": ["Paula Torres", "Alba Vidal", "Carla Ferrer"],
+      "Infantil Femenino B (Infantil)": ["Ainhoa Mas", "Maria Calvo", "Noelia Cano"],
+      "Senior Femenino (Senior)": ["Rocío Belda", "Patricia Gil", "Marta Soler"]
     },
     tablonText: ""
   };
@@ -1016,10 +1148,15 @@
   let sessionData = [];
   let allTrainingLogs = []; 
 
-  // Estado del Tablón y Warnings
+  // Estado de Warnings y Consultas
   let isDireccionExpanded = false;
-  let warningsData = {}; // Guarda { "Nombre Jugadora": "Motivo" }
+  let warningsData = {}; // Guarda { "Nombre Jugadora": { reason: "Motivo", color: "ROJO" } }
   let currentWarningPlayer = null;
+  let selectedWarningColor = 'ROJO';
+
+  let consultasData = JSON.parse(localStorage.getItem("NVA_CONSULTAS_DATA")) || [];
+  let selectedConsultaColor = 'AZUL';
+  let tempConsultaResponses = {}; // Respuestas temporales durante la toma de asistencia
 
   // Estado de Modo PDF y Calendario
   let isPdfMode = false;
@@ -1062,6 +1199,15 @@
     return appData.players[teamKey];
   }
 
+  function getPlayerWarning(playerName) {
+    const w = warningsData[playerName];
+    if (!w) return null;
+    if (typeof w === 'string') {
+      return { reason: w, color: 'ROJO' };
+    }
+    return w;
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     resetToTodayDate();
     renderCoachTeamSelection();
@@ -1075,6 +1221,7 @@
       syncConfigFromGitHub(true);
       fetchTrainingLogsFromGitHub();
       fetchWarningsFromGitHub();
+      fetchConsultasFromGitHub();
     }
   });
 
@@ -1093,6 +1240,20 @@
     
     if (isDireccionExpanded) {
       container.innerHTML = "";
+
+      // Botones de acción en Dirección NVA
+      const actionsDiv = document.createElement("div");
+      actionsDiv.style.display = "flex";
+      actionsDiv.style.flexDirection = "column";
+      actionsDiv.style.gap = "6px";
+      actionsDiv.style.marginBottom = "8px";
+
+      actionsDiv.innerHTML = `
+        <button class="btn-history" style="background: linear-gradient(135deg, #7e22ce, #1e3c72); width:100%; padding:10px; text-align:center; font-size:0.85rem;" onclick="openCreateConsultaModal()">✉️ Crear Petición de Contestación</button>
+        <button class="btn-history" style="background: linear-gradient(135deg, #0284c7, #0f172a); width:100%; padding:10px; text-align:center; font-size:0.85rem;" onclick="openSelectConsultaPdfModal()">📄 PDF de Consulta (Dirección)</button>
+      `;
+      container.appendChild(actionsDiv);
+
       appData.teams.forEach(team => {
         const displayName = `${team.name} (${team.category})`;
         const teamKey = getTeamKey(team);
@@ -1128,19 +1289,22 @@
     const players = getPlayersForTeamKey(currentTeam);
 
     players.forEach(playerName => {
-      const hasWarning = !!warningsData[playerName];
-      const reason = warningsData[playerName] || "";
-      
+      const warn = getPlayerWarning(playerName);
+      const hasWarning = !!warn;
+      const reason = warn ? warn.reason : "";
+      const colorKey = warn ? warn.color : "ROJO";
+      const colorObj = COLOR_OPTIONS[colorKey] || COLOR_OPTIONS.ROJO;
+
       const card = document.createElement("div");
       card.className = "player-card";
-      if (hasWarning) card.style.borderLeft = "4px solid red";
-      
+      if (hasWarning) card.style.borderLeft = `4px solid ${colorObj.hex}`;
+
       card.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center;">
-          <div style="${hasWarning ? 'color:red; font-weight:bold; max-width:60%;' : 'max-width:60%;'} overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${playerName} ${hasWarning ? `(${reason})` : ''}">
+          <div style="${hasWarning ? `color:${colorObj.hex}; font-weight:bold;` : ''} max-width:60%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${playerName} ${hasWarning ? `(${reason})` : ''}">
             ${playerName} <span style="font-size:0.75rem; color:#64748b;">${hasWarning ? `(${reason})` : ''}</span>
           </div>
-          <button style="background:${hasWarning ? 'transparent' : '#e2e8f0'}; color:${hasWarning ? 'red' : '#64748b'}; border:${hasWarning ? '1px solid red' : 'none'}; padding:4px 8px; border-radius:4px; font-weight:bold; font-size:0.75rem; cursor:pointer;" 
+          <button style="background:${hasWarning ? 'transparent' : '#e2e8f0'}; color:${hasWarning ? colorObj.hex : '#64748b'}; border:${hasWarning ? `1px solid ${colorObj.hex}` : 'none'}; padding:4px 8px; border-radius:4px; font-weight:bold; font-size:0.75rem; cursor:pointer;" 
                   onclick="toggleWarningPlayer('${playerName}')">
             ${hasWarning ? 'Quitar' : 'Marcar Warning'}
           </button>
@@ -1157,14 +1321,31 @@
     } else {
       currentWarningPlayer = playerName;
       document.getElementById("warningReasonInput").value = "NO PAGADO";
+      selectWarningColor('ROJO');
       document.getElementById("modalWarning").classList.add("active");
     }
+  }
+
+  function selectWarningColor(colorKey) {
+    selectedWarningColor = colorKey;
+    const group = document.getElementById("warningColorGroup");
+    if (!group) return;
+    group.querySelectorAll(".color-btn").forEach(btn => {
+      if (btn.getAttribute("data-color") === colorKey) {
+        btn.classList.add("active");
+      } else {
+        btn.classList.remove("active");
+      }
+    });
   }
 
   function confirmWarningReason() {
     const reason = document.getElementById("warningReasonInput").value || "NO PAGADO";
     if (currentWarningPlayer) {
-      warningsData[currentWarningPlayer] = reason;
+      warningsData[currentWarningPlayer] = {
+        reason: reason,
+        color: selectedWarningColor || 'ROJO'
+      };
     }
     document.getElementById("modalWarning").classList.remove("active");
     renderWarningPlayers();
@@ -1174,7 +1355,146 @@
     document.getElementById("modalWarning").classList.remove("active"); 
   }
 
-  /* --- MODO PDF Y SELECCIÓN DE RANGO --- */
+  /* --- PETICIONES DE CONTESTACIÓN (CONSULTAS) --- */
+
+  function openCreateConsultaModal() {
+    document.getElementById("consultaTextInput").value = "";
+    selectConsultaColor('AZUL');
+    renderConsultaTeamsList();
+    document.getElementById("modalCreateConsulta").classList.add("active");
+  }
+
+  function closeCreateConsultaModal() {
+    document.getElementById("modalCreateConsulta").classList.remove("active");
+  }
+
+  function selectConsultaColor(colorKey) {
+    selectedConsultaColor = colorKey;
+    const group = document.getElementById("consultaColorGroup");
+    if (!group) return;
+    group.querySelectorAll(".color-btn").forEach(btn => {
+      if (btn.getAttribute("data-color") === colorKey) {
+        btn.classList.add("active");
+      } else {
+        btn.classList.remove("active");
+      }
+    });
+  }
+
+  function renderConsultaTeamsList() {
+    const container = document.getElementById("consultaTeamsList");
+    container.innerHTML = "";
+
+    appData.teams.forEach(t => {
+      const key = getTeamKey(t);
+      const label = document.createElement("label");
+      label.style.fontSize = "0.8rem";
+      label.style.display = "flex";
+      label.style.alignItems = "center";
+      label.style.gap = "6px";
+      label.innerHTML = `<input type="checkbox" class="consulta-team-checkbox" value="${key}"> ${t.name} (${t.category})`;
+      container.appendChild(label);
+    });
+  }
+
+  function toggleAllConsultaTeams(btn) {
+    const checkboxes = document.querySelectorAll(".consulta-team-checkbox");
+    const anyUnchecked = Array.from(checkboxes).some(cb => !cb.checked);
+    checkboxes.forEach(cb => cb.checked = anyUnchecked);
+    btn.innerText = anyUnchecked ? "Desmarcar Todos" : "Seleccionar Todos";
+  }
+
+  function saveNewConsulta() {
+    const text = document.getElementById("consultaTextInput").value.trim();
+    if (!text) {
+      alert("Por favor escribe el texto de la consulta.");
+      return;
+    }
+
+    const selectedTeams = [];
+    document.querySelectorAll(".consulta-team-checkbox:checked").forEach(cb => {
+      selectedTeams.push(cb.value);
+    });
+
+    if (selectedTeams.length === 0) {
+      alert("Por favor selecciona al menos un equipo.");
+      return;
+    }
+
+    const colorObj = COLOR_OPTIONS[selectedConsultaColor] || COLOR_OPTIONS.AZUL;
+
+    const newConsulta = {
+      id: "c_" + Date.now(),
+      text: text,
+      color: selectedConsultaColor || 'AZUL',
+      teams: selectedTeams,
+      responses: {},
+      completed: false
+    };
+
+    consultasData.push(newConsulta);
+    saveConsultasToGitHub();
+
+    // Añadir al Tablón de Anuncios con icono del color seleccionado
+    const icon = colorObj.icon;
+    const currentTablon = document.getElementById("tablonTextarea").value;
+    const newTablonText = currentTablon ? `${currentTablon}\n${icon} ${text}` : `${icon} ${text}`;
+
+    document.getElementById("tablonTextarea").value = newTablonText;
+    appData.tablonText = newTablonText;
+    saveDataAndSyncGitHub();
+
+    closeCreateConsultaModal();
+    alert("Consulta creada y añadida al tablón de anuncios.");
+  }
+
+  function setConsultaAnswer(playerName, consultaId, val) {
+    const key = playerName + '_' + consultaId;
+    if (tempConsultaResponses[key] === val) {
+      delete tempConsultaResponses[key];
+    } else {
+      tempConsultaResponses[key] = val;
+    }
+    renderPlayersMain();
+  }
+
+  function checkAndCleanCompletedConsultas() {
+    let tablonChanged = false;
+
+    consultasData.forEach(c => {
+      let allAnswered = true;
+      c.teams.forEach(tKey => {
+        const teamPlayers = getPlayersForTeamKey(tKey);
+        teamPlayers.forEach(pName => {
+          const respKey = pName + '|' + tKey;
+          if (!c.responses || !c.responses[respKey]) {
+            allAnswered = false;
+          }
+        });
+      });
+
+      if (allAnswered && !c.completed) {
+        c.completed = true;
+        const colorObj = COLOR_OPTIONS[c.color] || COLOR_OPTIONS.AZUL;
+        const targetText = `${colorObj.icon} ${c.text}`;
+
+        if (appData.tablonText) {
+          let lines = appData.tablonText.split('\n');
+          lines = lines.filter(line => line.trim() !== targetText.trim() && line.trim() !== c.text.trim());
+          appData.tablonText = lines.join('\n').trim();
+          document.getElementById("tablonTextarea").value = appData.tablonText;
+          tablonChanged = true;
+        }
+      }
+    });
+
+    if (tablonChanged) {
+      saveDataAndSyncGitHub();
+    }
+  }
+
+  /* --- MODO PDF Y SELECCIÓN DE RANGO / CONSULTAS --- */
+
   function togglePdfMode() {
     isPdfMode = !isPdfMode;
     const banner = document.getElementById("pdfModeBanner");
@@ -1187,6 +1507,113 @@
       banner.style.display = "none";
       btn.style.opacity = "1";
     }
+  }
+
+  function openSelectConsultaPdfModal() {
+    const container = document.getElementById("consultaPdfListContainer");
+    container.innerHTML = "";
+
+    if (consultasData.length === 0) {
+      container.innerHTML = `<p style="text-align:center; color:#64748b; font-size:0.85rem; padding:15px;">No hay consultas creadas por el momento.</p>`;
+    } else {
+      consultasData.forEach(c => {
+        const cColor = COLOR_OPTIONS[c.color] || COLOR_OPTIONS.AZUL;
+        const card = document.createElement("div");
+        card.className = "history-card";
+        card.style.borderLeft = `4px solid ${cColor.hex}`;
+        card.style.cursor = "pointer";
+        card.onclick = () => generateConsultaPDF(c);
+
+        card.innerHTML = `
+          <div style="flex:1;">
+            <div style="font-weight:700; font-size:0.85rem; color:${cColor.hex};">${cColor.icon} ${c.text}</div>
+            <div style="font-size:0.72rem; color:#64748b; margin-top:2px;">
+              Equipos: ${c.teams.join(', ')}
+            </div>
+          </div>
+          <button class="btn-edit-history" style="background:${cColor.hex};">📄 Exportar PDF</button>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    document.getElementById("modalSelectConsultaPdf").classList.add("active");
+  }
+
+  function closeSelectConsultaPdfModal() {
+    document.getElementById("modalSelectConsultaPdf").classList.remove("active");
+  }
+
+  async function generateConsultaPDF(consulta) {
+    closeSelectConsultaPdfModal();
+    if (isPdfMode) togglePdfMode();
+
+    const cColor = COLOR_OPTIONS[consulta.color] || COLOR_OPTIONS.AZUL;
+    document.getElementById("pdfConsultaTextHeader").innerText = `${cColor.icon} ${consulta.text}`;
+
+    const teamsContainer = document.getElementById("pdfConsultaTeamsContainer");
+    teamsContainer.innerHTML = "";
+
+    consulta.teams.forEach(teamKey => {
+      const players = getPlayersForTeamKey(teamKey);
+      const teamSection = document.createElement("div");
+      teamSection.style.marginBottom = "20px";
+
+      let rowsHtml = "";
+      players.forEach(pName => {
+        const respKey = pName + '|' + teamKey;
+        const resp = consulta.responses ? consulta.responses[respKey] : null;
+        let respBadge = '<span style="color:#64748b; font-style:italic; font-weight:600;">Pendiente</span>';
+        if (resp === 'V') {
+          respBadge = '<span style="color:#22c55e; font-weight:bold; background:#dcfce7; padding:2px 8px; border-radius:4px;">V (Apto / Sí)</span>';
+        } else if (resp === 'X') {
+          respBadge = '<span style="color:#ef4444; font-weight:bold; background:#fee2e2; padding:2px 8px; border-radius:4px;">X (No / Rechazado)</span>';
+        }
+
+        rowsHtml += `
+          <tr>
+            <td style="padding: 6px 10px; border-bottom: 1px solid #e2e8f0; font-weight:600;">${pName}</td>
+            <td style="padding: 6px 10px; border-bottom: 1px solid #e2e8f0; text-align:center;">${respBadge}</td>
+          </tr>
+        `;
+      });
+
+      teamSection.innerHTML = `
+        <div style="background: linear-gradient(135deg, #1e3c72, #0f172a); color: white; padding: 6px 12px; border-radius: 6px 6px 0 0; font-weight: 700; font-size: 14px;">
+          🏐 ${teamKey}
+        </div>
+        <table style="width:100%; border-collapse:collapse; background:white; border:1px solid #cbd5e1; border-top:none; font-size:13px;">
+          <thead>
+            <tr style="background:#f1f5f9;">
+              <th style="padding:6px 10px; text-align:left; border-bottom:2px solid #cbd5e1; color:#334155;">Jugadora</th>
+              <th style="padding:6px 10px; text-align:center; border-bottom:2px solid #cbd5e1; color:#334155;">Respuesta</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml || '<tr><td colspan="2" style="padding:8px; text-align:center; color:#64748b;">Sin jugadoras asignadas</td></tr>'}
+          </tbody>
+        </table>
+      `;
+      teamsContainer.appendChild(teamSection);
+    });
+
+    const exportArea = document.getElementById("pdfConsultaExportArea");
+
+    setTimeout(async () => {
+      try {
+        const canvas = await html2canvas(exportArea, { scale: 2, useCORS: true });
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+
+        const imgData = canvas.toDataURL('image/png');
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, (canvas.height * pdfWidth) / canvas.width);
+        pdf.save(`Consulta_NVA_${consulta.id}.pdf`);
+      } catch (e) {
+        console.error("Error al generar PDF de consulta:", e);
+        alert("Error al generar el PDF de la consulta.");
+      }
+    }, 300);
   }
 
   function openDateRangeModal(coach, teamKey, displayName) {
@@ -1532,6 +1959,7 @@
 
     currentCoach = coach;
     currentTeam = teamKey;
+    tempConsultaResponses = {}; // Reinicia respuestas temporales
     document.getElementById("sessionTitle").innerText = `${displayName || teamKey} (${coach.name})`;
     resetToTodayDate();
     initSessionData();
@@ -1558,19 +1986,46 @@
     const container = document.getElementById("playersContainer");
     container.innerHTML = "";
 
+    // Consultas activas sin responder para este equipo
+    const activeConsultas = consultasData.filter(c => !c.completed && c.teams.includes(currentTeam));
+
     sessionData.forEach((player, index) => {
       const card = document.createElement("div");
       card.className = "player-card";
 
       // Verifica si la jugadora tiene un warning activo
-      const warningText = warningsData[player.name];
-      const nameHtml = warningText 
-        ? `<div class="warning-capsule" title="${player.name} - ${warningText}">${player.name} (${warningText})</div>`
+      const warn = getPlayerWarning(player.name);
+      const warnColorObj = warn ? (COLOR_OPTIONS[warn.color] || COLOR_OPTIONS.ROJO) : null;
+      
+      const nameHtml = warn 
+        ? `<div class="warning-capsule" style="background-color: ${warnColorObj.hex}; color: ${warnColorObj.text};" title="${player.name} - ${warn.reason}">${player.name} (${warn.reason})</div>`
         : `<div class="player-name" title="${player.name}">${player.name}</div>`;
+
+      // Consultas pendientes para esta jugadora específica
+      const playerPendingConsultas = activeConsultas.filter(c => {
+        const respKey = player.name + '|' + currentTeam;
+        return !c.responses || !c.responses[respKey];
+      });
+
+      const consultasHtml = playerPendingConsultas.map(c => {
+        const cColor = COLOR_OPTIONS[c.color] || COLOR_OPTIONS.AZUL;
+        const currentAns = tempConsultaResponses[player.name + '_' + c.id] || '';
+        
+        return `
+          <div class="consulta-capsule" style="background:${cColor.hex}; color:${cColor.text};" title="${c.text}">
+            <span style="overflow:hidden; text-overflow:ellipsis;">${c.text}</span>
+            <button type="button" class="btn-vx" style="background:${currentAns === 'V' ? '#22c55e' : 'rgba(255,255,255,0.3)'}; color:white;" onclick="setConsultaAnswer('${player.name}', '${c.id}', 'V')">V</button>
+            <button type="button" class="btn-vx" style="background:${currentAns === 'X' ? '#ef4444' : 'rgba(255,255,255,0.3)'}; color:white;" onclick="setConsultaAnswer('${player.name}', '${c.id}', 'X')">X</button>
+          </div>
+        `;
+      }).join('');
 
       card.innerHTML = `
         <div class="card-row-1">
-          ${nameHtml}
+          <div style="display:flex; align-items:center; gap:6px; flex:1; overflow:hidden;">
+            ${nameHtml}
+            ${consultasHtml}
+          </div>
           <div class="attendance-btn-group">
             <button class="attendance-btn ${player.attendance === 'presente' ? 'present' : ''}" 
                     onclick="setAttendance(${index}, 'presente')">Asiste</button>
@@ -1943,6 +2398,7 @@
     syncConfigFromGitHub();
     fetchTrainingLogsFromGitHub();
     fetchWarningsFromGitHub();
+    fetchConsultasFromGitHub();
   }
 
   function saveDataAndSyncGitHub() {
@@ -1977,7 +2433,6 @@
   }
 
   async function syncConfigFromGitHub(silent = false) {
-    // Hacemos que el token sea opcional
     if (!ghSettings.user || !ghSettings.repo) return; 
     const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/configuracion.json`;
     
@@ -2044,12 +2499,53 @@
     }
   }
 
+  async function fetchConsultasFromGitHub() {
+    if (!ghSettings.user || !ghSettings.repo) return;
+    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/Consultas.json`;
+    
+    const headers = {};
+    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
+
+    try {
+      const res = await fetch(url, { headers });
+      if (res.ok) {
+        const json = await res.json();
+        consultasData = JSON.parse(b64_to_utf8(json.content));
+        localStorage.setItem("NVA_CONSULTAS_DATA", JSON.stringify(consultasData));
+      }
+    } catch (e) { console.error("No hay Consultas.json previo o hubo error:", e); }
+  }
+
+  async function saveConsultasToGitHub() {
+    localStorage.setItem("NVA_CONSULTAS_DATA", JSON.stringify(consultasData));
+    if (ghSettings.user && ghSettings.repo && ghSettings.token) {
+      await writeGitHubFile("Consultas.json", consultasData, "Actualizar Consultas NVA");
+    }
+  }
+
   async function saveSession() {
     const selectedDate = document.getElementById("sessionDatePicker").value;
     if (!selectedDate) {
       alert("Por favor selecciona una fecha válida.");
       return;
     }
+
+    // Registrar respuestas de las consultas tomadas durante la sesión
+    Object.keys(tempConsultaResponses).forEach(key => {
+      const lastUnderscore = key.lastIndexOf('_');
+      const playerName = key.substring(0, lastUnderscore);
+      const consultaId = key.substring(lastUnderscore + 1);
+      const val = tempConsultaResponses[key];
+
+      const consulta = consultasData.find(c => c.id === consultaId);
+      if (consulta) {
+        if (!consulta.responses) consulta.responses = {};
+        consulta.responses[playerName + '|' + currentTeam] = val;
+      }
+    });
+
+    saveConsultasToGitHub();
+    checkAndCleanCompletedConsultas();
 
     const reportRecord = {
       fecha: selectedDate,
@@ -2076,6 +2572,10 @@
     } else {
       alert(`Entrenamiento del ${selectedDate} guardado en memoria local.`);
     }
+
+    // Reiniciar respuestas temporales tras guardar
+    tempConsultaResponses = {};
+    renderPlayersMain();
   }
 </script>
 </body>
