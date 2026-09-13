@@ -1328,9 +1328,30 @@
       appData.teams.forEach(team => {
         const displayName = `${team.name} (${team.category})`;
         const teamKey = getTeamKey(team);
+
+        // 1. Obtener las jugadoras/es asociadas a este equipo
+        const teamPlayers = getPlayersForTeamKey(teamKey);
+
+        // 2. Comprobar si al menos una/o tiene warning activo
+        const hasTeamWarning = teamPlayers.some(playerName => !!warningsData[playerName]);
+
+        // 3. Crear el botón aplicando una etiqueta e indicador visual si hay aviso
         const btn = document.createElement("button");
         btn.className = "team-btn";
-        btn.innerHTML = `<span>🛡️ ${displayName}</span> <span>Avisos →</span>`;
+
+        // Si tiene warning, añade una insignia "⚠️ AVISO" en rojo
+        const warningBadge = hasTeamWarning 
+          ? `<span style="background:#ef4444; color:white; font-size:0.7rem; padding:2px 6px; border-radius:10px; font-weight:800; margin-left:6px;">⚠️ AVISO</span>`
+          : '';
+
+        btn.innerHTML = `
+          <div style="display:flex; align-items:center; gap:4px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
+            <span>🛡️ ${displayName}</span>
+            ${warningBadge}
+          </div>
+          <span>Avisos →</span>
+        `;
+        
         btn.onclick = () => openWarningTeam(teamKey, displayName);
         container.appendChild(btn);
       });
