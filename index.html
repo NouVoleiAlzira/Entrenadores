@@ -96,7 +96,7 @@
     }
 
     header h1 {
-      font-size: 2rem;
+      font-size: 1.8rem;
       font-weight: 1500;
       letter-spacing: 0.5px;
       background: linear-gradient(90deg, #38bdf8, var(--rosa-brand));
@@ -827,14 +827,17 @@
 <div class="app-container">
   <!-- ENCABEZADO -->
   <header>
-    <button class="btn-header-icon btn-back" id="btnBack" onclick="goBack()">← Volver</button>
+    <button class="btn-header-icon btn-back" id="btnBack" onclick="goBack()" style="display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; gap: 4px; padding: 12px 10px; min-height: 50px;">
+      <span>Volver</span>
+      <span><<</span>
+    </button>  
     <div class="header-title-container">
       <img src="LOGO NVA.png" alt="Logo Nou Volei Alzira" class="header-logo">
       <h1>NOU VOLEI ALZIRA</h1>
     </div>
-    <div style="display: flex; align-items: center; gap: 6px;">
-      <span id="netStatusBadge" class="network-badge network-online">Online</span>
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
       <button class="btn-header-icon" title="Opciones (Propietario)" onclick="promptOwnerPassword()">⚙️</button>
+      <span id="netStatusBadge" class="network-badge network-online">Online</span>
     </div>
   </header>
 
@@ -2743,6 +2746,11 @@
     } else {
       alert("Guardados localmente. Se sincronizarán al estar online.");
     }
+ 
+    goBack()
+    toggleDireccionNVA()
+    toggleDireccionNVA()
+    
   }
 
   /* LECTURA Y ESCRITURA SEGREGADA DE CONSULTAS CON RESTAURACIÓN EN TABLÓN DE ANUNCIOS */
