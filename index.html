@@ -878,7 +878,7 @@
   <div class="screen" id="screenWarnings">
     <div class="section-title" id="warningTeamTitle">Dirección NVA - Equipo</div>
     <div id="warningPlayersContainer"></div>
-    <!--<button class="btn-save-session" style="padding:12px; font-size:0.9rem;" onclick="saveWarningsToGitHub()">Guardar Warning en GitHub</button> -->
+    <button class="btn-save-session" style="padding:12px; font-size:0.9rem;" onclick="saveWarningsToGitHub()">Guardar Warning en GitHub</button> 
   </div>
 
   <!-- MODALES DE LA APLICACIÓN -->
@@ -2168,10 +2168,10 @@
 
   function goBack() {
     
-    // Solo guarda los avisos si la pantalla actual es "screenWarnings"
+    /*// Solo guarda los avisos si la pantalla actual es "screenWarnings"
     if (document.getElementById("screenWarnings").classList.contains("active")) {
     saveWarningsToGitHub();
-    }
+    }*/
 
     showScreen("screenCoachTeam");
     document.getElementById("btnBack").style.display = "none";
