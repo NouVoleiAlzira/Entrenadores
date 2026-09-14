@@ -878,7 +878,7 @@
   <div class="screen" id="screenWarnings">
     <div class="section-title" id="warningTeamTitle">Dirección NVA - Equipo</div>
     <div id="warningPlayersContainer"></div>
-    <button class="btn-save-session" style="padding:12px; font-size:0.9rem;" onclick="saveWarningsToGitHub()">Guardar Warning en GitHub</button> 
+    <!--<button class="btn-save-session" style="padding:12px; font-size:0.9rem;" onclick="saveWarningsToGitHub()">Guardar Warning en GitHub</button> -->
   </div>
 
   <!-- MODALES DE LA APLICACIÓN -->
@@ -1585,15 +1585,7 @@
     renderPlayersMain();
   }
 
-  async function openSelectQueryPdfModal() {
-    // a) Borrar NVA_QUERIES_DATA del localStorage
-    localStorage.removeItem("NVA_QUERIES_DATA");
-    queriesData = [];
-
-    // b) Leer el archivo Consultas.json desde GitHub
-    await fetchQueriesFromGitHub();
-
-    // c) Renderizar y mostrar el modal con los datos actualizados de GitHub
+  function openSelectQueryPdfModal() {
     const container = document.getElementById("queryListPdfContainer");
     container.innerHTML = "";
 
@@ -1612,6 +1604,7 @@
         container.appendChild(btn);
       });
     }
+
     document.getElementById("modalSelectQueryPdf").classList.add("active");
   }
 
@@ -1620,7 +1613,6 @@
   }
 
   async function generateQueryPDF(queryId) {
-  
     const q = queriesData.find(x => x.id === queryId);
     if (!q) return;
 
@@ -2176,10 +2168,10 @@
 
   function goBack() {
     
-    /*// Solo guarda los avisos si la pantalla actual es "screenWarnings"
+    // Solo guarda los avisos si la pantalla actual es "screenWarnings"
     if (document.getElementById("screenWarnings").classList.contains("active")) {
     saveWarningsToGitHub();
-    }*/
+    }
 
     showScreen("screenCoachTeam");
     document.getElementById("btnBack").style.display = "none";
@@ -2524,11 +2516,30 @@
       if (res.ok) {
         const json = await res.json();
         appData = JSON.parse(b64_to_utf8(json.content));
+
+        // Limpiar completamente el localStorage local de la web
+        localStorage.clear();
+
+        // Volver a guardar las credenciales de GitHub y la contraseña para no perder la conexión/acceso
+        localStorage.setItem("NVA_GH_SETTINGS", JSON.stringify(ghSettings));
+        localStorage.setItem("NVA_OWNER_PASS", ownerPassword);
+
+        // Guardar la nueva configuración sincronizada en el localStorage limpio
         localStorage.setItem("NVA_APP_DATA", JSON.stringify(appData));
+
+        // Reiniciar las variables en memoria para la sesión actual
+        queriesData = [];
+        tablonData = { tablonText: appData.tablonText || "" };
+
         renderCoachTeamSelection();
-        if (!silent) alert("¡Configuración sincronizada desde GitHub!");
+        if (!silent) alert("¡LocalStorage limpiado y configuración sincronizada desde GitHub!");
+      } else {
+        if (!silent) alert("No se pudo obtener el archivo configuracion.json desde GitHub.");
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+      console.error(e); 
+      if (!silent) alert("Error de conexión al sincronizar desde GitHub.");
+    }
   }
 
   async function fetchTrainingLogsFromGitHub() {
