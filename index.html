@@ -1613,6 +1613,15 @@
   }
 
   async function generateQueryPDF(queryId) {
+
+      // Asegurar que leemos el estado más reciente y actualizado
+      const activeQueries = JSON.parse(localStorage.getItem("NVA_QUERIES_DATA") || "[]");
+  
+      if (!activeQueries || activeQueries.length === 0) {
+        alert("No hay consultas registradas para generar el reporte PDF.");
+        return;
+      }
+
     const q = queriesData.find(x => x.id === queryId);
     if (!q) return;
 
