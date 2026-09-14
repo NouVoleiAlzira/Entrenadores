@@ -2326,6 +2326,10 @@
     const teamKey = getTeamKey(team);
     const teamName = team.name;
 
+    // Mensaje de confirmación antes de proceder al borrado
+    const confirmDelete = confirm(`¿Estás seguro de que deseas eliminar el equipo "${team.name} (${team.category})"? Esta acción también borrará sus jugadores y asignaciones.`);
+    if (!confirmDelete) return;
+
     appData.teams.splice(idx, 1);
     delete appData.players[teamKey];
     if (teamName) delete appData.players[teamName];
