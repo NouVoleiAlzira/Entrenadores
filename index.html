@@ -52,6 +52,7 @@
       overflow: hidden;
     }
 
+    /* Marca de agua del logo del club en el fondo de todas las páginas */
     .app-container::before {
       content: "";
       position: absolute;
@@ -67,6 +68,7 @@
       z-index: 0;
     }
 
+    /* Encabezado */
     header {
       background: rgba(15, 23, 42, 0.92);
       backdrop-filter: blur(10px);
@@ -96,7 +98,7 @@
     }
 
     header h1 {
-      font-size: 1.8rem;
+      font-size: 2rem;
       font-weight: 1500;
       letter-spacing: 0.5px;
       background: linear-gradient(90deg, #38bdf8, var(--rosa-brand));
@@ -174,6 +176,7 @@
       align-items: center;
     }
 
+    /* Pantallas */
     .screen {
       display: none;
       padding: 12px;
@@ -202,6 +205,7 @@
       -webkit-text-stroke: 0.25px #000000;
     }
 
+    /* Pantalla 1: Selección Entrenador y Equipo */
     .coach-btn {
       width: 100%;
       background: rgba(255, 255, 255, 0.1);
@@ -253,6 +257,7 @@
       box-shadow: 2px 2px 4px #000000;
     }
 
+    /* Cabecera Fecha e Historial */
     .controls-bar {
       display: flex;
       gap: 8px;
@@ -297,6 +302,7 @@
       white-space: nowrap;
     }
 
+    /* Tarjetas de Jugadoras */
     .player-card {
       background: white;
       border-radius: 10px;
@@ -349,7 +355,6 @@
       gap: 4px;
       margin-left: 4px;
       flex-shrink: 0;
-      flex-wrap: wrap;
     }
 
     .query-btn {
@@ -435,7 +440,9 @@
       border-color: var(--rosa-brand);
     }
 
-    .card-row-3 { width: 100%; }
+    .card-row-3 {
+      width: 100%;
+    }
 
     .comment-input-long {
       width: 100%;
@@ -449,7 +456,9 @@
       min-height: 28px;
     }
 
-    .comment-input-long:focus { border-color: var(--morado-accent); }
+    .comment-input-long:focus {
+      border-color: var(--morado-accent);
+    }
 
     #tablonTextarea {
       width: 100%;
@@ -462,6 +471,7 @@
       box-sizing: border-box;
     }
 
+    /* Selector de Colores */
     .color-picker-container {
       display: flex;
       gap: 12px;
@@ -483,6 +493,7 @@
       transform: scale(1.18);
     }
 
+    /* Modales */
     .modal-backdrop {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -639,22 +650,9 @@
       box-shadow: 2px 2px 4px #000000;
     }
 
-    .btn-danger-action {
-      width: 100%;
-      background: linear-gradient(135deg, #dc2626, #991b1b);
-      color: white;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 10px;
-      font-weight: 700;
-      font-size: 0.8rem;
-      cursor: pointer;
-      margin-top: 8px;
-      box-shadow: 2px 2px 4px #000000;
-    }
-
     .badge { font-size: 0.68rem; padding: 2px 5px; border-radius: 4px; background: #e0e7ff; color: var(--azul-primary); font-weight: 600; }
 
+    /* Calendario Interactivo Rango */
     .calendar-header {
       display: flex;
       justify-content: space-between;
@@ -704,6 +702,7 @@
     }
 
     .cal-day:hover { background: #e2e8f0; }
+
     .cal-day.empty { background: transparent; cursor: default; }
 
     .cal-day.range-start, .cal-day.range-end {
@@ -745,7 +744,10 @@
       z-index: 0;
     }
 
-    .pdf-content-wrapper { position: relative; z-index: 1; }
+    .pdf-content-wrapper {
+      position: relative;
+      z-index: 1;
+    }
 
     .pdf-table {
       width: 100%;
@@ -777,7 +779,11 @@
 
     .pdf-table tr:nth-child(even) { background: rgba(248, 250, 252, 0.7); }
 
-    .pdf-charts-row { display: flex; gap: 20px; margin-top: 20px; }
+    .pdf-charts-row {
+      display: flex;
+      gap: 20px;
+      margin-top: 20px;
+    }
 
     .pdf-chart-box {
       flex: 1;
@@ -797,6 +803,7 @@
       font-weight: 700;
     }
 
+    /* PDF DE CONSULTAS */
     #pdfQueryExportArea {
       position: absolute;
       left: -9999px;
@@ -810,17 +817,6 @@
       overflow: hidden;
       box-sizing: border-box;
     }
-
-    .network-badge {
-      font-size: 0.65rem;
-      padding: 2px 6px;
-      border-radius: 8px;
-      font-weight: bold;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .network-online { background: #22c55e; color: white; }
-    .network-offline { background: #ef4444; color: white; }
   </style>
 </head>
 <body>
@@ -828,21 +824,15 @@
 <div class="app-container">
   <!-- ENCABEZADO -->
   <header>
-    <button class="btn-header-icon btn-back" id="btnBack" onclick="goBack()" style="display: none; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; gap: 4px; padding: 12px 10px; min-height: 50px;">
-      <span>Volver</span>
-      <span>&lt;&lt;</span>
-    </button>  
+    <button class="btn-header-icon btn-back" id="btnBack" onclick="goBack()">← Volver</button>
     <div class="header-title-container">
       <img src="LOGO NVA.png" alt="Logo Nou Volei Alzira" class="header-logo">
       <h1>NOU VOLEI ALZIRA</h1>
     </div>
-    <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
-      <button class="btn-header-icon" title="Opciones (Propietario)" onclick="promptOwnerPassword()">⚙️</button>
-      <span id="netStatusBadge" class="network-badge network-online">Online</span>
-    </div>
+    <button class="btn-header-icon" title="Opciones (Propietario)" onclick="promptOwnerPassword()">⚙️</button>
   </header>
 
-  <!-- PANTALLA 1: SELECCIÓN UNIFICADA -->
+  <!-- PANTALLA 1: SELECCIÓN UNIFICADA (ENTRENADOR Y EQUIPO) + DIRECCIÓN + TABLÓN -->
   <div class="screen active" id="screenCoachTeam">
     <div id="pdfModeBanner" class="pdf-mode-banner" style="display: none;">
       <span>📌 Modo PDF Activo: Selecciona Entrenador y Equipo</span>
@@ -884,14 +874,15 @@
     <button class="btn-save-session" style="padding:12px; font-size:0.9rem;" onclick="saveSession()">Guardar Entrenamiento en GitHub</button>
   </div>
 
-  <!-- PANTALLA 3: GESTIÓN DE WARNINGS POR EQUIPO -->
+  <!-- PANTALLA NUEVA: GESTIÓN DE WARNINGS POR EQUIPO -->
   <div class="screen" id="screenWarnings">
     <div class="section-title" id="warningTeamTitle">Dirección NVA - Equipo</div>
     <div id="warningPlayersContainer"></div>
-    <button class="btn-save-session" style="padding:12px; font-size:0.9rem;" onclick="saveWarningsToGitHub()">Guardar Warning en GitHub</button> 
+    <button class="btn-save-session" style="padding:12px; font-size:0.9rem;" onclick="saveWarningsToGitHub()">Guardar Warning en GitHub</button>
   </div>
 
   <!-- MODALES DE LA APLICACIÓN -->
+  <!-- MODAL: WARNINGS CON COLOR -->
   <div class="modal-backdrop" id="modalWarning">
     <div class="modal-box" style="max-width: 360px;">
       <div class="modal-header">
@@ -912,6 +903,7 @@
     </div>
   </div>
 
+  <!-- MODAL: CREAR CONSULTA -->
   <div class="modal-backdrop" id="modalCreateQuery">
     <div class="modal-box" style="max-width: 380px;">
       <div class="modal-header">
@@ -920,19 +912,6 @@
       </div>
       <textarea id="createQueryText" class="comment-input-long" style="min-height:70px; margin-bottom:10px;" placeholder="Escribe aquí la consulta o pregunta..."></textarea>
       
-      <div style="margin-bottom: 10px;">
-        <label style="font-size:0.75rem; color:#64748b; font-weight:600; display:block; margin-bottom:4px;">Tipo de Consulta:</label>
-        <select id="createQueryType" class="app-select" onchange="toggleQueryTypeOptions()">
-          <option value="sino">Si / No</option>
-          <option value="custom">Personalizada</option>
-        </select>
-      </div>
-
-      <div id="customOptionsContainer" style="display: none; margin-bottom: 10px;">
-        <label style="font-size:0.75rem; color:#64748b; font-weight:600; display:block; margin-bottom:4px;">Opciones de respuesta (separadas por comas):</label>
-        <input type="text" id="createQueryOptions" class="app-input" placeholder="Ej: Opción 1, Opción 2, Opción 3">
-      </div>
-
       <div style="font-size:0.75rem; color:#64748b; text-align:center; font-weight:600;">Color distintivo de la consulta:</div>
       <div class="color-picker-container" id="queryColorPicker">
         <div class="color-circle selected" data-color="#0284c7" style="background:#0284c7;" title="Azul"></div>
@@ -944,6 +923,7 @@
     </div>
   </div>
 
+  <!-- MODAL: SELECCIÓN DE EQUIPOS PARA CONSULTA -->
   <div class="modal-backdrop" id="modalQueryTeams">
     <div class="modal-box" style="max-width: 380px;">
       <div class="modal-header">
@@ -955,6 +935,7 @@
     </div>
   </div>
 
+  <!-- MODAL: ELEGIR CONSULTA PARA PDF -->
   <div class="modal-backdrop" id="modalSelectQueryPdf">
     <div class="modal-box" style="max-width: 380px;">
       <div class="modal-header">
@@ -965,6 +946,7 @@
     </div>
   </div>
 
+  <!-- MODAL: SELECCIÓN RANGO DE FECHAS PARA PDF -->
   <div class="modal-backdrop" id="modalDateRange">
     <div class="modal-box" style="max-width: 380px;">
       <div class="modal-header">
@@ -993,6 +975,7 @@
     </div>
   </div>
 
+  <!-- MODAL: REGISTROS ANTERIORES (HISTORIAL / EDICIÓN) -->
   <div class="modal-backdrop" id="modalHistory">
     <div class="modal-box">
       <div class="modal-header">
@@ -1004,6 +987,7 @@
     </div>
   </div>
 
+  <!-- MODAL: MOTIVO DE FALTA -->
   <div class="modal-backdrop" id="modalAbsence">
     <div class="modal-box" style="max-width: 380px;">
       <div class="modal-header">
@@ -1020,6 +1004,7 @@
     </div>
   </div>
 
+  <!-- MODAL: CONTRASEÑA PROPIETARIO -->
   <div class="modal-backdrop" id="modalPassword">
     <div class="modal-box" style="max-width: 360px;">
       <div class="modal-header">
@@ -1034,6 +1019,7 @@
     </div>
   </div>
 
+  <!-- MODAL: CONFIGURACIÓN -->
   <div class="modal-backdrop" id="modalOptions">
     <div class="modal-box">
       <div class="modal-header">
@@ -1047,6 +1033,7 @@
         <button class="tab-btn" onclick="switchTab(3)">Conexión GitHub</button>
       </div>
 
+      <!-- PESTAÑA 1 -->
       <div class="tab-content active" id="tabContent1">
         <div class="config-section">
           <div class="config-subtitle">Entrenadores <span class="badge" id="coachCountBadge">0</span></div>
@@ -1083,6 +1070,7 @@
         </div>
       </div>
 
+      <!-- PESTAÑA 2 -->
       <div class="tab-content" id="tabContent2">
         <div class="config-section">
           <div class="config-subtitle">Selecciona Equipo</div>
@@ -1099,6 +1087,7 @@
         </div>
       </div>
 
+      <!-- PESTAÑA 3 -->
       <div class="tab-content" id="tabContent3">
         <div class="config-section">
           <div class="config-subtitle">Repositorio de GitHub</div>
@@ -1115,10 +1104,8 @@
         </div>
 
         <div class="config-section">
-          <div class="config-subtitle">Sincronización y Mantenimiento</div>
-          <button class="btn-save-session" style="background: var(--azul-primary); padding:8px; margin-top:4px;" onclick="syncConfigFromGitHub()">Sincronizar Desde GitHub Ahora</button>
-          
-          <button class="btn-danger-action" style="padding:8px; margin-top:12px;" onclick="clearAllLocalStorageData()">🗑️ Borrar Todos los Datos Locales (Storage)</button>
+          <div class="config-subtitle">Base de Datos Remota</div>
+          <button class="btn-save-session" style="background: var(--azul-primary); padding:8px; margin-top:8px;" onclick="syncConfigFromGitHub()">Sincronizar Desde GitHub Ahora</button>
         </div>
       </div>
 
@@ -1151,7 +1138,8 @@
           <th style="text-align: center;">Strikes Totales</th>
         </tr>
       </thead>
-      <tbody id="pdfReportTableBody"></tbody>
+      <tbody id="pdfReportTableBody">
+      </tbody>
     </table>
 
     <div class="pdf-charts-row">
@@ -1190,8 +1178,8 @@
   // Datos iniciales
   const defaultData = {
     coaches: [
-      { id: 1, name: "Mourinho", teams: ["NVA A (Infantil)", "NVA A (Cadete)", "NVA A (Juvenil)"] }
-    ],
+      { id: 1, name: "Mourinho", teams: ["NVA A (Infantil)", "NVA A (Cadete)", "NVA (Juvenil)"] }
+   ],
     teams: [
       { name: "NVA A", category: "Infantil" },
       { name: "NVA A", category: "Cadete" },
@@ -1206,7 +1194,6 @@
   let ghSettings = JSON.parse(localStorage.getItem("NVA_GH_SETTINGS")) || { user: "", repo: "", token: "" };
   let appData = JSON.parse(localStorage.getItem("NVA_APP_DATA")) || defaultData;
   let tablonData = JSON.parse(localStorage.getItem("NVA_TABLON_DATA")) || { tablonText: "" };
-  let offlineQueue = JSON.parse(localStorage.getItem("NVA_OFFLINE_QUEUE")) || [];
 
   // Estado global
   let activeCoachId = null;
@@ -1214,20 +1201,20 @@
   let currentTeam = null;
   let selectedPlayerIndexForAbsence = null;
   let sessionData = [];
-  let allTrainingLogs = JSON.parse(localStorage.getItem("NVA_TRAINING_LOGS")) || [];
+  let allTrainingLogs = []; 
 
+  // Estado del Tablón, Warnings y Consultas
   let isDireccionExpanded = false;
-  let warningsData = JSON.parse(localStorage.getItem("NVA_WARNINGS_DATA")) || {};
+  let warningsData = {};
   let currentWarningPlayer = null;
   let selectedWarningColor = "#ef4444";
 
-  let queriesData = JSON.parse(localStorage.getItem("NVA_QUERIES_DATA")) || [];
+  let queriesData = [];
   let tempQueryColor = "#0284c7";
   let tempQueryText = "";
-  let tempQueryType = "sino";
-  let tempQueryOptions = ["V", "X"];
   let selectedQueryPdfId = null;
 
+  // Estado de Modo PDF y Calendario
   let isPdfMode = false;
   let pdfSelectedCoach = null;
   let pdfSelectedTeamKey = null;
@@ -1239,20 +1226,6 @@
 
   let pdfChart1 = null;
   let pdfChart2 = null;
-
-  // UTILIDADES UTF-8 Y SANITIZACIÓN PARA ARCHIVOS SEGREGADOS
-  function utf8_to_b64(str) {
-    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
-  }
-
-  function b64_to_utf8(str) {
-    return decodeURIComponent(Array.prototype.map.call(atob(str.replace(/\s/g, '')), c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
-  }
-
-  function sanitizeFileName(name) {
-    if (!name) return "general";
-    return name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9_-]/g, "_");
-  }
 
   function getTeamKey(t) {
     if (!t) return "";
@@ -1284,14 +1257,9 @@
 
   document.addEventListener("DOMContentLoaded", () => {
     resetToTodayDate();
-    updateNetworkStatusUI();
-
-    window.addEventListener("online", () => {
-      updateNetworkStatusUI();
-      processOfflineQueue();
-    });
-    window.addEventListener("offline", updateNetworkStatusUI);
-
+    queriesData = JSON.parse(localStorage.getItem("NVA_QUERIES_DATA")) || [];
+    tablonData = JSON.parse(localStorage.getItem("NVA_TABLON_DATA")) || { tablonText: appData.tablonText || "" };
+    
     renderCoachTeamSelection();
     loadGitHubSettingsUI();
     setupColorPickers();
@@ -1301,7 +1269,7 @@
       tablonEl.value = tablonData.tablonText || "";
       autoResizeTablon(tablonEl);
     }
-
+    
     if (ghSettings.user && ghSettings.repo && ghSettings.token) {
       syncConfigFromGitHub(true);
       fetchTrainingLogsFromGitHub();
@@ -1311,17 +1279,6 @@
     }
   });
 
-  function updateNetworkStatusUI() {
-    const badge = document.getElementById("netStatusBadge");
-    if (navigator.onLine) {
-      badge.innerText = "Online";
-      badge.className = "network-badge network-online";
-    } else {
-      badge.innerText = "Offline";
-      badge.className = "network-badge network-offline";
-    }
-  }
-
   function resetToTodayDate() {
     const today = new Date().toISOString().split('T')[0];
     document.getElementById("sessionDatePicker").value = today;
@@ -1329,13 +1286,17 @@
 
   function autoResizeTablon(element) {
     if (!element) return;
+    
     element.style.height = 'auto';
+    
     const style = window.getComputedStyle(element);
     let lineHeight = parseFloat(style.lineHeight);
+    
     if (isNaN(lineHeight)) {
       const fontSize = parseFloat(style.fontSize) || 14;
       lineHeight = fontSize * 1.3;
     }
+
     element.style.height = (element.scrollHeight + lineHeight) + 'px';
   }
 
@@ -1370,11 +1331,14 @@
       appData.teams.forEach(team => {
         const displayName = `${team.name} (${team.category})`;
         const teamKey = getTeamKey(team);
+
         const teamPlayers = getPlayersForTeamKey(teamKey);
+
         const hasTeamWarning = teamPlayers.some(playerName => !!warningsData[playerName]);
 
         const btn = document.createElement("button");
         btn.className = "team-btn";
+
         const warningBadge = hasTeamWarning 
           ? `<span style="background:#ef4444; color:white; font-size:0.7rem; padding:2px 6px; border-radius:10px; font-weight:800; margin-left:6px;">⚠️ AVISO</span>`
           : '';
@@ -1386,6 +1350,7 @@
           </div>
           <span>Avisos →</span>
         `;
+        
         btn.onclick = () => openWarningTeam(teamKey, displayName);
         container.appendChild(btn);
       });
@@ -1401,22 +1366,29 @@
     tablonData.tablonText = val;
     localStorage.setItem("NVA_TABLON_DATA", JSON.stringify(tablonData));
 
-    const success = await writeGitHubFile("Tablon.json", tablonData, "Actualizar texto del Tablón");
-    if (success) {
-      alert("¡Tablón guardado y sincronizado en GitHub!");
+    if (ghSettings.user && ghSettings.repo && ghSettings.token) {
+      const success = await writeGitHubFile("Tablon.json", tablonData, "Actualizar texto del Tablón");
+      if (success) {
+        alert("¡Tablón guardado y sincronizado en GitHub (Tablon.json)!");
+      } else {
+        alert("Atención: No se pudo conectar con GitHub. Se guardó localmente.");
+      }
     } else {
-      alert("Guardado localmente. Se sincronizará con GitHub cuando recupere la conexión.");
+      alert("Tablón de anuncios guardado localmente.");
     }
   }
 
   async function saveTablonToGitHub() {
     localStorage.setItem("NVA_TABLON_DATA", JSON.stringify(tablonData));
-    await writeGitHubFile("Tablon.json", tablonData, "Actualizar texto del Tablón");
+    if (ghSettings.user && ghSettings.repo && ghSettings.token) {
+      await writeGitHubFile("Tablon.json", tablonData, "Actualizar texto del Tablón");
+    }
   }
 
   async function fetchTablonFromGitHub() {
     if (!ghSettings.user || !ghSettings.repo) return;
     const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/Tablon.json`;
+    
     const headers = {};
     if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
 
@@ -1432,7 +1404,7 @@
           autoResizeTablon(tablonEl);
         }
       }
-    } catch (e) { console.error("Error al cargar Tablon.json:", e); }
+    } catch (e) { console.error("No se pudo cargar Tablon.json desde GitHub:", e); }
   }
 
   function openWarningTeam(teamKey, displayName) {
@@ -1484,6 +1456,7 @@
       const wPicker = document.getElementById("warningColorPicker");
       wPicker.querySelectorAll(".color-circle").forEach(x => x.classList.remove("selected"));
       wPicker.querySelector('[data-color="#ef4444"]').classList.add("selected");
+      
       document.getElementById("modalWarning").classList.add("active");
     }
   }
@@ -1491,7 +1464,10 @@
   function confirmWarningReason() {
     const reason = document.getElementById("warningReasonInput").value || "NO PAGADO";
     if (currentWarningPlayer) {
-      warningsData[currentWarningPlayer] = { reason: reason, color: selectedWarningColor };
+      warningsData[currentWarningPlayer] = {
+        reason: reason,
+        color: selectedWarningColor
+      };
     }
     document.getElementById("modalWarning").classList.remove("active");
     renderWarningPlayers();
@@ -1501,31 +1477,19 @@
     document.getElementById("modalWarning").classList.remove("active"); 
   }
 
+  /* ------------------- GESTIÓN DE CONSULTAS ------------------- */
   function openCreateQueryModal() {
     document.getElementById("createQueryText").value = "";
-    const typeSelect = document.getElementById("createQueryType");
-    if (typeSelect) typeSelect.value = "sino";
-    const customOpts = document.getElementById("createQueryOptions");
-    if (customOpts) customOpts.value = "";
-    toggleQueryTypeOptions();
-
     tempQueryColor = "#0284c7";
     const qPicker = document.getElementById("queryColorPicker");
     qPicker.querySelectorAll(".color-circle").forEach(x => x.classList.remove("selected"));
     qPicker.querySelector('[data-color="#0284c7"]').classList.add("selected");
+    
     document.getElementById("modalCreateQuery").classList.add("active");
   }
 
   function closeCreateQueryModal() {
     document.getElementById("modalCreateQuery").classList.remove("active");
-  }
-
-  function toggleQueryTypeOptions() {
-    const type = document.getElementById("createQueryType").value;
-    const container = document.getElementById("customOptionsContainer");
-    if (container) {
-      container.style.display = (type === "custom") ? "block" : "none";
-    }
   }
 
   function openQueryTeamsSelection() {
@@ -1534,20 +1498,6 @@
       alert("Por favor introduce una consulta o pregunta.");
       return;
     }
-
-    tempQueryType = document.getElementById("createQueryType").value;
-    if (tempQueryType === "custom") {
-      const rawOpts = document.getElementById("createQueryOptions").value;
-      const parsed = rawOpts.split(',').map(s => s.trim()).filter(s => s.length > 0);
-      if (parsed.length === 0) {
-        alert("Por favor introduce al menos una opción para la consulta personalizada (separadas por comas).");
-        return;
-      }
-      tempQueryOptions = parsed;
-    } else {
-      tempQueryOptions = ["V", "X"];
-    }
-
     closeCreateQueryModal();
 
     const container = document.getElementById("queryTeamsCheckboxes");
@@ -1571,7 +1521,7 @@
     document.getElementById("modalQueryTeams").classList.remove("active");
   }
 
-  async function confirmSaveQuery() {
+  function confirmSaveQuery() {
     const selectedTeams = [];
     document.querySelectorAll(".query-team-check:checked").forEach(cb => selectedTeams.push(cb.value));
 
@@ -1584,14 +1534,11 @@
       id: Date.now(),
       text: tempQueryText,
       color: tempQueryColor,
-      type: tempQueryType,
-      options: tempQueryOptions,
       teams: selectedTeams,
       responses: {}
     };
 
     queriesData.push(newQuery);
-    saveQueriesToLocalStorage();
 
     const colorTag = tempQueryColor === '#0284c7' ? '🔵' : (tempQueryColor === '#7e22ce' ? '🟣' : '🟠');
     const queryNotice = `${colorTag} CONSULTA: ${tempQueryText}`;
@@ -1601,9 +1548,9 @@
     autoResizeTablon(tablonEl);
 
     closeQueryTeamsModal();
-    await saveQueriesToGitHub();
-    await saveTablonToGitHub();
-    alert("Consulta creada y publicada en el tablón.");
+    saveQueriesToGitHub();
+    saveTablonToGitHub();
+    alert("Consulta creada y publicada en el tablón de anuncios.");
   }
 
   function answerQuery(queryId, playerName, option) {
@@ -1624,6 +1571,7 @@
     if (allAnswered) {
       const colorTag = q.color === '#0284c7' ? '🔵' : (q.color === '#7e22ce' ? '🟣' : '🟠');
       const queryNotice = `${colorTag} CONSULTA: ${q.text}`;
+      
       let lines = (tablonData.tablonText || "").split('\n');
       lines = lines.filter(l => l.trim() !== queryNotice.trim());
       tablonData.tablonText = lines.join('\n');
@@ -1633,7 +1581,6 @@
       saveTablonToGitHub();
     }
 
-    saveQueriesToLocalStorage();
     saveQueriesToGitHub();
     renderPlayersMain();
   }
@@ -1675,6 +1622,7 @@
 
     q.teams.forEach(teamKey => {
       const players = getPlayersForTeamKey(teamKey);
+      
       const teamBox = document.createElement("div");
       teamBox.style.marginBottom = "20px";
 
@@ -1683,8 +1631,7 @@
         const resp = q.responses ? q.responses[p] : null;
         let badge = `<span style="color:#64748b; font-weight:bold;">Pendiente</span>`;
         if (resp === 'V') badge = `<span style="color:#22c55e; font-weight:bold;">✔ (V)</span>`;
-        else if (resp === 'X') badge = `<span style="color:#ef4444; font-weight:bold;">✖ (X)</span>`;
-        else if (resp) badge = `<span style="color:#0284c7; font-weight:bold;">${resp}</span>`;
+        if (resp === 'X') badge = `<span style="color:#ef4444; font-weight:bold;">✖ (X)</span>`;
 
         rowsHtml += `
           <tr>
@@ -2036,12 +1983,14 @@
     }, 300);
   }
 
+  /* ------------------- PANTALLA 1: UNIFICADA ENTRENADOR Y EQUIPO ------------------- */
   function renderCoachTeamSelection() {
     const container = document.getElementById("coachTeamList");
     container.innerHTML = "";
 
     appData.coaches.forEach(coach => {
       const isSelected = coach.id === activeCoachId;
+
       const coachBtn = document.createElement("button");
       coachBtn.className = `coach-btn ${isSelected ? 'selected' : ''}`;
       coachBtn.innerHTML = `<span>👨‍🏫 ${coach.name}</span> <span>${isSelected ? '▼' : '►'}</span>`;
@@ -2106,6 +2055,7 @@
     }));
   }
 
+  /* ------------------- PANTALLA 2: REGISTRO COMPACTO ------------------- */
   function renderPlayersMain() {
     const container = document.getElementById("playersContainer");
     container.innerHTML = "";
@@ -2124,19 +2074,13 @@
         : `<div class="player-name" title="${player.name}">${player.name}</div>`;
 
       let queryHtml = "";
-      const pendingQuery = queriesData.find(q => q.teams && q.teams.includes(currentTeam) && (!q.responses || !q.responses[player.name]));
+      const pendingQuery = queriesData.find(q => q.teams.includes(currentTeam) && (!q.responses || !q.responses[player.name]));
       if (pendingQuery) {
-        const opts = (pendingQuery.options && pendingQuery.options.length > 0) ? pendingQuery.options : ['V', 'X'];
-        const btnsHtml = opts.map(opt => {
-          const safeOpt = opt.replace(/'/g, "\\'").replace(/"/g, "&quot;");
-          const safePlayer = player.name.replace(/'/g, "\\'").replace(/"/g, "&quot;");
-          return `<button class="query-btn" onclick="answerQuery(${pendingQuery.id}, '${safePlayer}', '${safeOpt}')">${opt}</button>`;
-        }).join('');
-
         queryHtml = `
           <div class="query-capsule" style="background:${pendingQuery.color};">
             <span>❓</span>
-            ${btnsHtml}
+            <button class="query-btn" onclick="answerQuery(${pendingQuery.id}, '${player.name}', 'V')">V</button>
+            <button class="query-btn" onclick="answerQuery(${pendingQuery.id}, '${player.name}', 'X')">X</button>
           </div>
         `;
       }
@@ -2227,162 +2171,39 @@
     document.getElementById("btnBack").style.display = "none";
   }
 
-    // ==========================================
-// GESTIÓN DEL HISTORIAL DE ENTRENAMIENTOS
-// ==========================================
-
-  async function openHistoryModal() {
-      const container = document.getElementById("historyListContainer");
-      const modal = document.getElementById("modalHistory");
-  
-      // 1. Mostramos el modal y un estado de carga mientras hace el "fetch"
-      container.innerHTML = "<p style='font-size:0.8rem; color:#64748b; text-align:center;'>Cargando registros desde GitHub...</p>";
-      modal.classList.add("active");
-
-      // Validamos que existan las credenciales
-      if (!ghSettings.user || !ghSettings.repo || !ghSettings.token) {
-        container.innerHTML = "<p style='color:#ef4444; font-size:0.8rem; text-align:center; font-weight:bold;'>Error: Configura tu token y repositorio de GitHub en Opciones.</p>";
-        return;
-      }
-
-      try {
-        // 2. Hacemos la petición a la API de GitHub apuntando a la carpeta 'registros'
-        const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/registros`;
-        const response = await fetch(url, {
-          headers: { "Authorization": `token ${ghSettings.token}` }
-        });
-
-        if (!response.ok) {
-          if (response.status === 404) {
-            container.innerHTML = "<p style='font-size:0.8rem; color:#64748b; text-align:center;'>La carpeta 'registros' está vacía o aún no existe en el repositorio.</p>";
-          } else {
-            throw new Error(`Error HTTP: ${response.status}`);
-          }
-          return;
-        }
-
-        const files = await response.json();
-    
-        // 3. Filtramos para asegurarnos de leer solo archivos .json
-        const jsonFiles = files.filter(f => f.name.endsWith('.json'));
-        let teamLogs = [];
-
-        // 4. Descargamos el contenido de cada archivo de forma concurrente
-        await Promise.all(jsonFiles.map(async (file) => {
-          // Usamos fetch directo a download_url pasando el token (necesario si es repo privado)
-          const fileRes = await fetch(file.download_url, {
-            headers: { "Authorization": `token ${ghSettings.token}` }
-          });
-      
-          if (fileRes.ok) {
-            const data = await fileRes.json();
-            // 5. Filtramos el JSON: Solo nos interesan los entrenamientos del equipo seleccionado
-            if (data.equipo === currentTeam) {
-              teamLogs.push(data);
-            }
-          }
-        }));
-
-        // 6. Ordenamos los entrenamientos por fecha (del más reciente al más antiguo)
-        teamLogs.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-
-        // 7. Renderizamos los resultados en el contenedor del modal
-        container.innerHTML = "";
-        if (teamLogs.length === 0) {
-          container.innerHTML = "<p style='font-size:0.8rem; color:#64748b; text-align:center;'>No hay entrenamientos guardados para este equipo.</p>";
-          return;
-        }
-
-        teamLogs.forEach(log => {
-          const div = document.createElement("div");
-          div.className = "history-card";
-      
-          // Mantenemos las clases CSS exactas que ya tienes definidas
-          div.innerHTML = `
-            <div>
-              <div style="font-weight:700; color:var(--azul-dark); font-size:0.85rem;">📅 ${log.fecha}</div>
-              <div style="font-size:0.75rem; color:#64748b;">Entrenador: ${log.entrenador || 'N/A'}</div>
-            </div>
-            <!-- En el futuro puedes reemplazar el alert por una función loadSession(log) -->
-            <button class="btn-edit-history" onclick="alert('Detalles del entrenamiento:\\nFecha: ${log.fecha}\\nAsistentes: ${log.jugadores.length}')">Ver Detalle</button>
-          `;
-          container.appendChild(div);
-        });
-
-      } catch (error) {
-        console.error("Error al cargar el historial desde GitHub:", error);
-        container.innerHTML = `<p style='color:#ef4444; font-size:0.8rem; text-align:center;'>Hubo un problema de conexión con GitHub.<br>${error.message}</p>`;
-      }
+  /* ------------------- REGISTROS ANTERIORES (HISTORIAL) ------------------- */
+  function openHistoryModal() {
+    renderHistoryList();
+    document.getElementById("modalHistory").classList.add("active");
   }
 
-    // Cierra el modal de historial
-    function closeHistoryModal() {
-      document.getElementById("modalHistory").classList.remove("active");
+  function closeHistoryModal() {
+    document.getElementById("modalHistory").classList.remove("active");
   }
 
-  async function renderHistoryList() {
+  function renderHistoryList() {
     const container = document.getElementById("historyListContainer");
-    container.innerHTML = `<p style="text-align:center; font-size:0.85rem; color:#64748b; padding:20px;">Cargando entrenamientos del equipo desde la carpeta "registros"...</p>`;
-    
-    let logs = [];
-
-    if (ghSettings.user && ghSettings.repo) {
-      const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/registros`;
-      const headers = {};
-      if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
-
-      try {
-        const res = await fetch(url, { headers });
-        if (res.ok) {
-          const files = await res.json();
-          const jsonFiles = files.filter(f => f.name.endsWith('.json'));
-
-          for (const file of jsonFiles) {
-            try {
-              const fileRes = await fetch(file.download_url, { headers });
-              if (fileRes.ok) {
-                const data = await fileRes.json();
-                if (Array.isArray(data)) {
-                  data.forEach(item => { if (item.equipo === currentTeam) logs.push(item); });
-                } else if (data && data.equipo === currentTeam) {
-                  logs.push(data);
-                }
-              }
-            } catch (err) {
-              console.error(`Error al leer archivo ${file.name}:`, err);
-            }
-          }
-        }
-      } catch (e) {
-        console.error("Error al consultar la carpeta 'registros' en GitHub:", e);
-      }
-    }
-
-    if (logs.length === 0) {
-      logs = allTrainingLogs.filter(log => log.equipo === currentTeam);
-    }
-
     container.innerHTML = "";
+    const teamLogs = allTrainingLogs.filter(log => log.equipo === currentTeam);
 
-    if (logs.length === 0) {
+    if (teamLogs.length === 0) {
       container.innerHTML = `<p style="text-align:center; font-size:0.85rem; color:#64748b; padding:20px;">No hay entrenamientos guardados previamente para este equipo.</p>`;
       return;
     }
 
-    logs.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-    logs.forEach((log) => {
+    teamLogs.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+    teamLogs.forEach((log) => {
       const card = document.createElement("div");
       card.className = "history-card";
-      const fechaEscapada = String(log.fecha).replace(/'/g, "\\'");
       card.innerHTML = `
         <div>
           <div style="font-weight:700; font-size:0.85rem; color:var(--azul-dark);">📅 ${log.fecha}</div>
-          <div style="font-size:0.75rem; color:#64748b;">Entrenador: ${log.entrenador || 'N/A'}</div>
+          <div style="font-size:0.75rem; color:#64748b;">Entrenador: ${log.entrenador}</div>
           <div style="font-size:0.72rem; color:#0284c7; margin-top:2px;">
-            Jugadoras: ${log.jugadores ? log.jugadores.filter(j => j.attendance === 'presente').length : 0} Asisten / ${log.jugadores ? log.jugadores.filter(j => j.attendance === 'falta').length : 0} Faltas
+            Jugadoras: ${log.jugadores.filter(j => j.attendance === 'presente').length} Asisten / ${log.jugadores.filter(j => j.attendance === 'falta').length} Faltas
           </div>
         </div>
-        <button class="btn-edit-history" onclick="loadRecordForEditing('${fechaEscapada}')">✏️ Cargar/Editar</button>
+        <button class="btn-edit-history" onclick="loadRecordForEditing('${log.fecha}')">✏️ Cargar/Editar</button>
       `;
       container.appendChild(card);
     });
@@ -2398,6 +2219,7 @@
     alert(`Se ha cargado el entrenamiento del ${log.fecha} para modificar. Al terminar pulsa "Guardar Entrenamiento en GitHub".`);
   }
 
+  /* ------------------- PROPIETARIO Y CONFIGURACIÓN ------------------- */
   function promptOwnerPassword() {
     document.getElementById("ownerPasswordInput").value = "";
     document.getElementById("modalPassword").classList.add("active");
@@ -2501,9 +2323,6 @@
     if (!team) return;
     const teamKey = getTeamKey(team);
     const teamName = team.name;
-
-    const confirmDelete = confirm(`¿Estás seguro de que deseas eliminar el equipo "${team.name} (${team.category})"? Esta acción también borrará sus jugadores y asignaciones.`);
-    if (!confirmDelete) return;
 
     appData.teams.splice(idx, 1);
     delete appData.players[teamKey];
@@ -2628,7 +2447,7 @@
     renderPlayerManagement();
   }
 
-  /* ------------------- COMUNICACIÓN REST API GITHUB CON ARQUITECTURA SEGREGADA Y COLA OFFLINE ------------------- */
+  /* ------------------- COMUNICACIÓN REST API GITHUB ------------------- */
   function loadGitHubSettingsUI() {
     document.getElementById("ghUser").value = ghSettings.user || "";
     document.getElementById("ghRepo").value = ghSettings.repo || "";
@@ -2648,36 +2467,6 @@
     fetchTablonFromGitHub();
   }
 
-  function saveQueriesToLocalStorage() {
-    localStorage.setItem("NVA_QUERIES_DATA", JSON.stringify(queriesData));
-  }
-
-  function clearAllLocalStorageData() {
-    const confirmDelete = confirm("⚠️ ATENCIÓN: ¿Estás seguro de que deseas borrar TODOS los datos guardados en el almacenamiento local de este dispositivo?\n\nEsta acción limpiará la memoria local y reajustará los ajustes.");
-    if (!confirmDelete) return;
-
-    localStorage.clear();
-    
-    ownerPassword = "NVA123";
-    appData = defaultData;
-    tablonData = { tablonText: "" };
-    offlineQueue = [];
-    allTrainingLogs = [];
-    warningsData = {};
-    queriesData = [];
-
-    localStorage.setItem("NVA_APP_DATA", JSON.stringify(appData));
-
-    loadGitHubSettingsUI();
-    renderCoachTeamSelection();
-    
-    const tablonEl = document.getElementById("tablonTextarea");
-    if (tablonEl) tablonEl.value = "";
-
-    closeOptionsModal();
-    alert("¡Se han borrado exitosamente todos los datos del almacenamiento local!");
-  }
-
   function saveDataAndSyncGitHub() {
     localStorage.setItem("NVA_APP_DATA", JSON.stringify(appData));
     renderConfigTab1();
@@ -2686,12 +2475,10 @@
     }
   }
 
-  async function writeGitHubFile(fileName, dataObject, commitMessage) {
-    if (!navigator.onLine || !ghSettings.user || !ghSettings.repo || !ghSettings.token) {
-      enqueueOfflineOp(fileName, dataObject, commitMessage);
-      return false;
-    }
+  function utf8_to_b64(str) { return window.btoa(unescape(encodeURIComponent(str))); }
+  function b64_to_utf8(str) { return decodeURIComponent(escape(window.atob(str))); }
 
+  async function writeGitHubFile(fileName, dataObject, commitMessage) {
     const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${fileName}`;
     try {
       let sha = "";
@@ -2707,62 +2494,14 @@
         headers: { "Authorization": `token ${ghSettings.token}`, "Content-Type": "application/json" },
         body: JSON.stringify(body)
       });
-
-      if (!putRes.ok) {
-        enqueueOfflineOp(fileName, dataObject, commitMessage);
-      }
       return putRes.ok;
-    } catch (e) {
-      enqueueOfflineOp(fileName, dataObject, commitMessage);
-      return false;
-    }
-  }
-
-  function enqueueOfflineOp(fileName, dataObject, commitMessage) {
-    offlineQueue.push({
-      fileName: fileName,
-      dataObject: dataObject,
-      commitMessage: commitMessage,
-      timestamp: Date.now()
-    });
-    localStorage.setItem("NVA_OFFLINE_QUEUE", JSON.stringify(offlineQueue));
-  }
-
-  async function processOfflineQueue() {
-    if (!navigator.onLine || offlineQueue.length === 0) return;
-    if (!ghSettings.user || !ghSettings.repo || !ghSettings.token) return;
-
-    const remaining = [];
-    for (const op of offlineQueue) {
-      const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${op.fileName}`;
-      try {
-        let sha = "";
-        const getRes = await fetch(url, { headers: { "Authorization": `token ${ghSettings.token}` } });
-        if (getRes.ok) {
-          const getJson = await getRes.json();
-          sha = getJson.sha;
-        }
-        const contentBase64 = utf8_to_b64(JSON.stringify(op.dataObject, null, 2));
-        const body = { message: op.commitMessage, content: contentBase64, ...(sha && { sha: sha }) };
-        const putRes = await fetch(url, {
-          method: "PUT",
-          headers: { "Authorization": `token ${ghSettings.token}`, "Content-Type": "application/json" },
-          body: JSON.stringify(body)
-        });
-
-        if (!putRes.ok) remaining.push(op);
-      } catch (e) {
-        remaining.push(op);
-      }
-    }
-
-    offlineQueue = remaining;
-    localStorage.setItem("NVA_OFFLINE_QUEUE", JSON.stringify(offlineQueue));
+    } catch (e) { return false; }
   }
 
   async function syncConfigFromGitHub(silent = false) {
     if (!ghSettings.user || !ghSettings.repo) return; 
     const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/configuracion.json`;
+    
     const headers = {};
     if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
 
@@ -2771,30 +2510,102 @@
       if (res.ok) {
         const json = await res.json();
         appData = JSON.parse(b64_to_utf8(json.content));
-
-        localStorage.setItem("NVA_GH_SETTINGS", JSON.stringify(ghSettings));
-        localStorage.setItem("NVA_OWNER_PASS", ownerPassword);
         localStorage.setItem("NVA_APP_DATA", JSON.stringify(appData));
-
         renderCoachTeamSelection();
-        if (!silent) alert("¡Configuración sincronizada desde GitHub correctamente!");
-      } else {
-        if (!silent) alert("No se pudo obtener la configuracion.json desde GitHub.");
+        if (!silent) alert("¡Configuración sincronizada desde GitHub!");
       }
-    } catch (e) { 
-      console.error(e); 
-      if (!silent) alert("Error de conexión al sincronizar desde GitHub.");
+    } catch (e) { console.error(e); }
+  }
+
+  async function fetchTrainingLogsFromGitHub() {
+    if (!ghSettings.user || !ghSettings.repo) return;
+    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/registro_entrenamientos.json`;
+    
+    const headers = {};
+    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
+
+    try {
+      const res = await fetch(url, { headers });
+      if (res.ok) {
+        const json = await res.json();
+        allTrainingLogs = JSON.parse(b64_to_utf8(json.content));
+      }
+    } catch (e) { console.error(e); }
+  }
+
+  async function fetchWarningsFromGitHub() {
+    if (!ghSettings.user || !ghSettings.repo) return;
+    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/Warning.json`;
+    
+    const headers = {};
+    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
+
+    try {
+      const res = await fetch(url, { headers });
+      if (res.ok) {
+        const json = await res.json();
+        warningsData = JSON.parse(b64_to_utf8(json.content));
+      }
+    } catch (e) { console.error("No hay Warning.json previo o hubo error:", e); }
+  }
+
+  async function saveWarningsToGitHub() {
+    if (ghSettings.user && ghSettings.repo && ghSettings.token) {
+      const success = await writeGitHubFile("Warning.json", warningsData, "Actualizar warnings de Dirección NVA");
+      if (success) {
+        alert("¡Avisos (Warnings) guardados en GitHub!");
+      } else {
+        alert("Atención: No se pudo conectar con GitHub. Solo se guardó en local.");
+      }
+    } else {
+      alert("No hay configuración de GitHub. Solo se aplicó en local temporalmente.");
     }
   }
 
-  async function saveQueriesToGitHub() {
-    saveQueriesToLocalStorage();
-    return await writeGitHubFile("Consultas.json", queriesData, "Actualizar consultas del club");
+  async function saveSession() {
+    if (!currentCoach || !currentTeam) return;
+
+    const fecha = document.getElementById("sessionDatePicker").value;
+    if (!fecha) {
+      alert("Por favor selecciona una fecha válida.");
+      return;
+    }
+
+    const logEntry = {
+      fecha: fecha,
+      entrenador: currentCoach.name,
+      equipo: currentTeam,
+      jugadores: sessionData
+    };
+
+    const existingIdx = allTrainingLogs.findIndex(l => l.equipo === currentTeam && l.fecha === fecha);
+    if (existingIdx !== -1) {
+      allTrainingLogs[existingIdx] = logEntry;
+    } else {
+      allTrainingLogs.push(logEntry);
+    }
+
+    if (ghSettings.user && ghSettings.repo && ghSettings.token) {
+      const success = await writeGitHubFile("registro_entrenamientos.json", allTrainingLogs, `Registro entrenamiento ${currentTeam} - ${fecha}`);
+      if (success) {
+        alert("¡Entrenamiento guardado y sincronizado con exito en GitHub!");
+      } else {
+        alert("Atención: No se pudo sincronizar con GitHub. Solo guardado localmente.");
+      }
+    } else {
+      alert("Atención: No hay token/repo configurado. Solo guardado localmente.");
+    }
+    goBack();
+  }
+
+  function saveQueriesToLocalStorage() {
+    localStorage.setItem("NVA_QUERIES_DATA", JSON.stringify(queriesData));
   }
 
   async function fetchQueriesFromGitHub() {
     if (!ghSettings.user || !ghSettings.repo) return;
     const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/Consultas.json`;
+    
     const headers = {};
     if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
 
@@ -2804,158 +2615,16 @@
         const json = await res.json();
         queriesData = JSON.parse(b64_to_utf8(json.content));
         saveQueriesToLocalStorage();
-        if (document.getElementById("screenAttendance").classList.contains("active")) {
-          renderPlayersMain();
-        }
       }
-    } catch (e) { console.error("Error al cargar Consultas.json:", e); }
+    } catch (e) { console.error("No hay Consultas.json previo o hubo error:", e); }
   }
 
-  async function saveSession() {
-    const dateVal = document.getElementById("sessionDatePicker").value;
-    if (!dateVal) {
-      alert("Por favor selecciona una fecha.");
-      return;
+  async function saveQueriesToGitHub() {
+    saveQueriesToLocalStorage();
+    if (ghSettings.user && ghSettings.repo && ghSettings.token) {
+      await writeGitHubFile("Consultas.json", queriesData, "Actualizar consultas");
     }
-
-    const logEntry = {
-      fecha: dateVal,
-      equipo: currentTeam,
-      entrenador: currentCoach ? currentCoach.name : "",
-      jugadores: sessionData
-    };
-
-    const existingIndex = allTrainingLogs.findIndex(l => l.equipo === currentTeam && l.fecha === dateVal);
-    if (existingIndex >= 0) {
-      allTrainingLogs[existingIndex] = logEntry;
-    } else {
-      allTrainingLogs.push(logEntry);
-    }
-
-    localStorage.setItem("NVA_TRAINING_LOGS", JSON.stringify(allTrainingLogs));
-
-    const teamFileName = `registros/Entrenamientos_${sanitizeFileName(currentTeam)}_${dateVal}.json`;
-    const success = await writeGitHubFile(teamFileName, logEntry, `Registro entrenamiento ${currentTeam} - ${dateVal}`);
-
-    if (success) {
-      alert("¡Entrenamiento guardado y sincronizado en GitHub!");
-    } else {
-      alert("Guardado localmente. Se sincronizará con GitHub cuando recupere la conexión.");
-    }
-  }
-
-  // Carga e integra todos los archivos de la carpeta "registros" desde GitHub en la variable global allTrainingLogs
-  async function fetchTrainingLogsFromGitHub() {
-    if (!ghSettings.user || !ghSettings.repo) return;
-    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/registros`;
-    const headers = {};
-    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
-
-    try {
-      const res = await fetch(url, { headers });
-      if (res.ok) {
-        const files = await res.json();
-        const jsonFiles = Array.isArray(files) ? files.filter(f => f.name.endsWith('.json')) : [];
-
-        for (const file of jsonFiles) {
-          try {
-            const fileRes = await fetch(file.download_url, { headers });
-            if (fileRes.ok) {
-              const remoteData = await fileRes.json();
-              const processLog = (remoteLog) => {
-                if (!remoteLog || !remoteLog.equipo || !remoteLog.fecha) return;
-                const idx = allTrainingLogs.findIndex(l => l.equipo === remoteLog.equipo && l.fecha === remoteLog.fecha);
-                if (idx >= 0) {
-                  allTrainingLogs[idx] = remoteLog;
-                } else {
-                  allTrainingLogs.push(remoteLog);
-                }
-              };
-
-              if (Array.isArray(remoteData)) {
-                remoteData.forEach(processLog);
-              } else if (remoteData && remoteData.fecha) {
-                processLog(remoteData);
-              }
-            }
-          } catch (err) {
-            console.error(`Error procesando archivo ${file.name}:`, err);
-          }
-        }
-        // Guardar la lista consolidada en LocalStorage
-        localStorage.setItem("NVA_TRAINING_LOGS", JSON.stringify(allTrainingLogs));
-      }
-    } catch (e) {
-      console.error("Error al sincronizar entrenamientos desde carpeta 'registros':", e);
-    }
-  }
-
-  // Renderiza la lista del historial asegurando la sincronización previa
-  async function renderHistoryList() {
-    const container = document.getElementById("historyListContainer");
-    container.innerHTML = `<p style="text-align:center; font-size:0.85rem; color:#64748b; padding:20px;">Cargando entrenamientos del equipo desde GitHub...</p>`;
-    
-    // Forzar la actualización remota de registros antes de renderizar
-    await fetchTrainingLogsFromGitHub();
-
-    // Filtrar los registros obtenidos para el equipo actual
-    const logs = allTrainingLogs.filter(log => log.equipo === currentTeam);
-
-    container.innerHTML = "";
-
-    if (logs.length === 0) {
-      container.innerHTML = `<p style="text-align:center; font-size:0.85rem; color:#64748b; padding:20px;">No hay entrenamientos guardados previamente para este equipo.</p>`;
-      return;
-    }
-
-    logs.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-    logs.forEach((log) => {
-      const card = document.createElement("div");
-      card.className = "history-card";
-      const fechaEscapada = String(log.fecha).replace(/'/g, "\\'");
-      card.innerHTML = `
-        <div>
-          <div style="font-weight:700; font-size:0.85rem; color:var(--azul-dark);">📅 ${log.fecha}</div>
-          <div style="font-size:0.75rem; color:#64748b;">Entrenador: ${log.entrenador || 'N/A'}</div>
-          <div style="font-size:0.72rem; color:#0284c7; margin-top:2px;">
-            Jugadoras: ${log.jugadores ? log.jugadores.filter(j => j.attendance === 'presente').length : 0} Asisten / ${log.jugadores ? log.jugadores.filter(j => j.attendance === 'falta').length : 0} Faltas
-          </div>
-        </div>
-        <button class="btn-edit-history" onclick="loadRecordForEditing('${fechaEscapada}')">✏️ Cargar/Editar</button>
-      `;
-      container.appendChild(card);
-    });
-  }
-
-  async function saveWarningsToGitHub() {
-    localStorage.setItem("NVA_WARNINGS_DATA", JSON.stringify(warningsData));
-    const success = await writeGitHubFile("Warnings.json", warningsData, "Actualizar warnings del club");
-    if (success) {
-      alert("¡Warnings guardados y sincronizados en GitHub!");
-    } else {
-      alert("Guardado localmente. Se sincronizará con GitHub cuando recupere la conexión.");
-    }
-  }
-
-  async function fetchWarningsFromGitHub() {
-    if (!ghSettings.user || !ghSettings.repo) return;
-    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/Warnings.json`;
-    const headers = {};
-    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
-
-    try {
-      const res = await fetch(url, { headers });
-      if (res.ok) {
-        const json = await res.json();
-        warningsData = JSON.parse(b64_to_utf8(json.content));
-        localStorage.setItem("NVA_WARNINGS_DATA", JSON.stringify(warningsData));
-        if (document.getElementById("screenWarnings").classList.contains("active")) {
-          renderWarningPlayers();
-        }
-      }
-    } catch (e) { console.error("Error al cargar Warnings.json:", e); }
   }
 </script>
-
 </body>
 </html>
