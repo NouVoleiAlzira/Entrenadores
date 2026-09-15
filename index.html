@@ -2227,10 +2227,98 @@
     document.getElementById("btnBack").style.display = "none";
   }
 
-  async function openHistoryModal() {
-    document.getElementById("modalHistory").classList.add("active");
-    await renderHistoryList();
-  }
+      // ==========================================
+    // GESTIÓN DEL HISTORIAL DE ENTRENAMIENTOS
+    // ==========================================
+
+    async function openHistoryModal() {
+      const container = document.getElementById("historyListContainer");
+      const modal = document.getElementById("modalHistory");
+  
+      // 1. Mostramos el modal y un estado de carga mientras hace el "fetch"
+      container.innerHTML = "<p style='font-size:0.8rem; color:#64748b; text-align:center;'>Cargando registros desde GitHub...</p>";
+      modal.classList.add("active");
+
+      // Validamos que existan las credenciales
+      if (!ghSettings.user || !ghSettings.repo || !ghSettings.token) {
+        container.innerHTML = "<p style='color:#ef4444; font-size:0.8rem; text-align:center; font-weight:bold;'>Error: Configura tu token y repositorio de GitHub en Opciones.</p>";
+        return;
+      }
+
+      try {
+        // 2. Hacemos la petición a la API de GitHub apuntando a la carpeta 'registros'
+        const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/registros`;
+        const response = await fetch(url, {
+          headers: { "Authorization": `token ${ghSettings.token}` }
+        });
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            container.innerHTML = "<p style='font-size:0.8rem; color:#64748b; text-align:center;'>La carpeta 'registros' está vacía o aún no existe en el repositorio.</p>";
+          } else {
+            throw new Error(`Error HTTP: ${response.status}`);
+          }
+          return;
+        }
+
+        const files = await response.json();
+    
+        // 3. Filtramos para asegurarnos de leer solo archivos .json
+        const jsonFiles = files.filter(f => f.name.endsWith('.json'));
+        let teamLogs = [];
+
+        // 4. Descargamos el contenido de cada archivo de forma concurrente
+        await Promise.all(jsonFiles.map(async (file) => {
+          // Usamos fetch directo a download_url pasando el token (necesario si es repo privado)
+          const fileRes = await fetch(file.download_url, {
+            headers: { "Authorization": `token ${ghSettings.token}` }
+          });
+      
+          if (fileRes.ok) {
+            const data = await fileRes.json();
+            // 5. Filtramos el JSON: Solo nos interesan los entrenamientos del equipo seleccionado
+            if (data.equipo === currentTeam) {
+              teamLogs.push(data);
+            }
+          }
+        }));
+
+        // 6. Ordenamos los entrenamientos por fecha (del más reciente al más antiguo)
+        teamLogs.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+        // 7. Renderizamos los resultados en el contenedor del modal
+        container.innerHTML = "";
+        if (teamLogs.length === 0) {
+          container.innerHTML = "<p style='font-size:0.8rem; color:#64748b; text-align:center;'>No hay entrenamientos guardados para este equipo.</p>";
+          return;
+        }
+
+        teamLogs.forEach(log => {
+          const div = document.createElement("div");
+          div.className = "history-card";
+      
+          // Mantenemos las clases CSS exactas que ya tienes definidas
+          div.innerHTML = `
+            <div>
+              <div style="font-weight:700; color:var(--azul-dark); font-size:0.85rem;">📅 ${log.fecha}</div>
+              <div style="font-size:0.75rem; color:#64748b;">Entrenador: ${log.entrenador || 'N/A'}</div>
+            </div>
+            <!-- En el futuro puedes reemplazar el alert por una función loadSession(log) -->
+            <button class="btn-edit-history" onclick="alert('Detalles del entrenamiento:\\nFecha: ${log.fecha}\\nAsistentes: ${log.jugadores.length}')">Ver Detalle</button>
+          `;
+          container.appendChild(div);
+        });
+
+      } catch (error) {
+        console.error("Error al cargar el historial desde GitHub:", error);
+        container.innerHTML = `<p style='color:#ef4444; font-size:0.8rem; text-align:center;'>Hubo un problema de conexión con GitHub.<br>${error.message}</p>`;
+      }
+    }
+
+    // Cierra el modal de historial
+    function closeHistoryModal() {
+      document.getElementById("modalHistory").classList.remove("active");
+    }
 
   function closeHistoryModal() {
     document.getElementById("modalHistory").classList.remove("active");
