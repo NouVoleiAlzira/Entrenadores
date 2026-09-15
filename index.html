@@ -2227,11 +2227,11 @@
     document.getElementById("btnBack").style.display = "none";
   }
 
-      // ==========================================
-    // GESTIÓN DEL HISTORIAL DE ENTRENAMIENTOS
     // ==========================================
+// GESTIÓN DEL HISTORIAL DE ENTRENAMIENTOS
+// ==========================================
 
-    async function openHistoryModal() {
+  async function openHistoryModal() {
       const container = document.getElementById("historyListContainer");
       const modal = document.getElementById("modalHistory");
   
@@ -2313,15 +2313,11 @@
         console.error("Error al cargar el historial desde GitHub:", error);
         container.innerHTML = `<p style='color:#ef4444; font-size:0.8rem; text-align:center;'>Hubo un problema de conexión con GitHub.<br>${error.message}</p>`;
       }
-    }
+  }
 
     // Cierra el modal de historial
     function closeHistoryModal() {
       document.getElementById("modalHistory").classList.remove("active");
-    }
-
-  function closeHistoryModal() {
-    document.getElementById("modalHistory").classList.remove("active");
   }
 
   async function renderHistoryList() {
