@@ -1207,7 +1207,13 @@
 
   // Carpeta del repositorio donde viven los registros de entrenamiento:
   // un fichero por equipo y por fecha, p.ej. "registros/Entrenamientos_<equipo>_<fecha>.json"
+  // Carpeta del repositorio donde viven los registros de entrenamiento:
+  // un fichero por equipo y por fecha, p.ej. "registros/Entrenamientos_<equipo>_<fecha>.json"
   const TRAINING_LOGS_FOLDER = "registros";
+
+  // Carpeta del repositorio donde viven los avisos ("warnings") de Dirección NVA:
+  // un fichero por equipo, p.ej. "warnings/warning_<equipo>.json"
+  const WARNINGS_FOLDER = "warnings";
   let appData = JSON.parse(localStorage.getItem("NVA_APP_DATA")) || defaultData;
   let tablonData = JSON.parse(localStorage.getItem("NVA_TABLON_DATA")) || { tablonText: "" };
   let offlineQueue = JSON.parse(localStorage.getItem("NVA_OFFLINE_QUEUE")) || [];
@@ -1446,12 +1452,19 @@
     } catch (e) { console.error("Error al cargar Tablon.json:", e); }
   }
 
-  function openWarningTeam(teamKey, displayName) {
+  async function openWarningTeam(teamKey, displayName) {
     currentTeam = teamKey;
     document.getElementById("warningTeamTitle").innerText = `Dirección NVA - ${displayName || teamKey}`;
-    renderWarningPlayers();
     showScreen("screenWarnings");
     document.getElementById("btnBack").style.display = "flex";
+
+    // Refresca los warnings desde GitHub para reflejar cambios guardados
+    // desde otros dispositivos antes de mostrarlos.
+    if (ghSettings.user && ghSettings.repo && navigator.onLine) {
+      await fetchWarningsFromGitHub();
+    } else {
+      renderWarningPlayers();
+    }
   }
 
   function renderWarningPlayers() {
@@ -2809,7 +2822,17 @@
 
   async function saveWarningsToGitHub() {
     localStorage.setItem("NVA_WARNINGS_DATA", JSON.stringify(warningsData));
-    const success = await writeGitHubFile("Warnings.json", warningsData, "Actualizar warnings del club");
+
+    // Un fichero por equipo, igual que los entrenamientos: solo se escriben
+    // los avisos de las jugadoras que pertenecen al equipo actual.
+    const teamPlayers = getPlayersForTeamKey(currentTeam);
+    const teamWarnings = {};
+    teamPlayers.forEach(name => {
+      if (warningsData[name]) teamWarnings[name] = warningsData[name];
+    });
+
+    const fileName = `${WARNINGS_FOLDER}/warning_${sanitizeFileName(currentTeam)}.json`;
+    const success = await writeGitHubFile(fileName, teamWarnings, `Actualizar warnings - ${currentTeam}`);
     if (success) {
       alert("¡Warnings guardados y sincronizados en GitHub!");
     } else {
@@ -2817,23 +2840,38 @@
     }
   }
 
+  // Los warnings se guardan como un fichero por equipo dentro de la carpeta
+  // "warnings/" (p.ej. warning_NVA_Alevin.json). Igual que con los
+  // entrenamientos, se lista la carpeta completa y se fusiona el contenido
+  // de cada fichero (playerName -> {reason, color}) en el objeto global
+  // warningsData, en lugar de depender de un único "Warnings.json" en la raíz.
   async function fetchWarningsFromGitHub() {
-    if (!ghSettings.user || !ghSettings.repo) return;
-    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/Warnings.json`;
+    if (!ghSettings.user || !ghSettings.repo || !navigator.onLine) return;
+
+    const files = await listGitHubFolder(WARNINGS_FOLDER);
     const headers = {};
     if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
 
-    try {
-      const res = await fetch(url, { headers });
-      if (res.ok) {
+    for (const file of files) {
+      if (!file.name || !file.name.startsWith("warning_") || !file.name.endsWith(".json")) continue;
+
+      try {
+        const res = await fetch(file.url, { headers });
+        if (!res.ok) continue;
         const json = await res.json();
-        warningsData = JSON.parse(b64_to_utf8(json.content));
-        localStorage.setItem("NVA_WARNINGS_DATA", JSON.stringify(warningsData));
-        if (document.getElementById("screenWarnings").classList.contains("active")) {
-          renderWarningPlayers();
+        const teamWarnings = JSON.parse(b64_to_utf8(json.content));
+        if (teamWarnings && typeof teamWarnings === "object" && !Array.isArray(teamWarnings)) {
+          Object.assign(warningsData, teamWarnings);
         }
+      } catch (e) {
+        console.error(`Error al leer ${file.name}:`, e);
       }
-    } catch (e) { console.error("Error al cargar Warnings.json:", e); }
+    }
+
+    localStorage.setItem("NVA_WARNINGS_DATA", JSON.stringify(warningsData));
+    if (document.getElementById("screenWarnings").classList.contains("active")) {
+      renderWarningPlayers();
+    }
   }
 </script>
 
