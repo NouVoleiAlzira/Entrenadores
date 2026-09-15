@@ -1204,6 +1204,10 @@
 
   let ownerPassword = localStorage.getItem("NVA_OWNER_PASS") || "NVA123";
   let ghSettings = JSON.parse(localStorage.getItem("NVA_GH_SETTINGS")) || { user: "", repo: "", token: "" };
+
+  // Carpeta del repositorio donde viven los registros de entrenamiento:
+  // un fichero por equipo y por fecha, p.ej. "registros/Entrenamientos_<equipo>_<fecha>.json"
+  const TRAINING_LOGS_FOLDER = "registros";
   let appData = JSON.parse(localStorage.getItem("NVA_APP_DATA")) || defaultData;
   let tablonData = JSON.parse(localStorage.getItem("NVA_TABLON_DATA")) || { tablonText: "" };
   let offlineQueue = JSON.parse(localStorage.getItem("NVA_OFFLINE_QUEUE")) || [];
@@ -2734,9 +2738,9 @@
 
     localStorage.setItem("NVA_TRAINING_LOGS", JSON.stringify(allTrainingLogs));
 
-    const teamFileName = `Entrenamientos_${sanitizeFileName(currentTeam)}.json`;
-    const teamLogs = allTrainingLogs.filter(l => l.equipo === currentTeam);
-    const success = await writeGitHubFile(teamFileName, teamLogs, `Registro entrenamiento ${currentTeam} - ${dateVal}`);
+    // Un fichero por equipo y por fecha, dentro de la carpeta "registros/"
+    const sessionFileName = `${TRAINING_LOGS_FOLDER}/Entrenamientos_${sanitizeFileName(currentTeam)}_${dateVal}.json`;
+    const success = await writeGitHubFile(sessionFileName, logEntry, `Registro entrenamiento ${currentTeam} - ${dateVal}`);
 
     if (success) {
       alert("¡Entrenamiento guardado y sincronizado en GitHub!");
@@ -2745,35 +2749,61 @@
     }
   }
 
+  async function listGitHubFolder(folderPath) {
+    if (!ghSettings.user || !ghSettings.repo || !navigator.onLine) return [];
+    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${folderPath}`;
+    const headers = {};
+    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
+
+    try {
+      const res = await fetch(url, { headers });
+      if (res.ok) {
+        const json = await res.json();
+        return Array.isArray(json) ? json : [];
+      }
+    } catch (e) {
+      console.error(`Error al listar la carpeta ${folderPath}:`, e);
+    }
+    return [];
+  }
+
+  // Los entrenamientos se guardan como un fichero por equipo y por fecha
+  // dentro de la carpeta "registros/" (p.ej. Entrenamientos_NVA_Alevin_2026-09-15.json).
+  // En lugar de intentar adivinar el nombre exacto del fichero a partir del
+  // equipo (frágil, porque nombres/categorías cambian), se lista la carpeta
+  // completa y se lee el "equipo" y la "fecha" del propio contenido de cada
+  // fichero. Así se detectan también los registros ya existentes en el repo.
   async function fetchTrainingLogsFromGitHub() {
     if (!ghSettings.user || !ghSettings.repo || !navigator.onLine) return;
-    for (const team of appData.teams) {
-      const teamKey = getTeamKey(team);
-      const fileName = `Entrenamientos_${sanitizeFileName(teamKey)}.json`;
-      const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${fileName}`;
-      const headers = {};
-      if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
+
+    const files = await listGitHubFolder(TRAINING_LOGS_FOLDER);
+    const headers = {};
+    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
+
+    for (const file of files) {
+      if (!file.name || !file.name.startsWith("Entrenamientos_") || !file.name.endsWith(".json")) continue;
 
       try {
-        const res = await fetch(url, { headers });
-        if (res.ok) {
-          const json = await res.json();
-          const logs = JSON.parse(b64_to_utf8(json.content));
-          if (Array.isArray(logs)) {
-            logs.forEach(remoteLog => {
-              const idx = allTrainingLogs.findIndex(l => l.equipo === remoteLog.equipo && l.fecha === remoteLog.fecha);
-              if (idx >= 0) {
-                allTrainingLogs[idx] = remoteLog;
-              } else {
-                allTrainingLogs.push(remoteLog);
-              }
-            });
+        const res = await fetch(file.url, { headers });
+        if (!res.ok) continue;
+        const json = await res.json();
+        const parsed = JSON.parse(b64_to_utf8(json.content));
+        const entries = Array.isArray(parsed) ? parsed : [parsed];
+
+        entries.forEach(remoteLog => {
+          if (!remoteLog || !remoteLog.equipo || !remoteLog.fecha) return;
+          const idx = allTrainingLogs.findIndex(l => l.equipo === remoteLog.equipo && l.fecha === remoteLog.fecha);
+          if (idx >= 0) {
+            allTrainingLogs[idx] = remoteLog;
+          } else {
+            allTrainingLogs.push(remoteLog);
           }
-        }
+        });
       } catch (e) {
-        console.error(`Error al cargar ${fileName}:`, e);
+        console.error(`Error al leer ${file.name}:`, e);
       }
     }
+
     localStorage.setItem("NVA_TRAINING_LOGS", JSON.stringify(allTrainingLogs));
   }
 
