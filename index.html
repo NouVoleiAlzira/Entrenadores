@@ -349,6 +349,7 @@
       gap: 4px;
       margin-left: 4px;
       flex-shrink: 0;
+      flex-wrap: wrap;
     }
 
     .query-btn {
@@ -829,7 +830,7 @@
   <header>
     <button class="btn-header-icon btn-back" id="btnBack" onclick="goBack()" style="display: none; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; gap: 4px; padding: 12px 10px; min-height: 50px;">
       <span>Volver</span>
-      <span><<</span>
+      <span>&lt;&lt;</span>
     </button>  
     <div class="header-title-container">
       <img src="LOGO NVA.png" alt="Logo Nou Volei Alzira" class="header-logo">
@@ -919,6 +920,19 @@
       </div>
       <textarea id="createQueryText" class="comment-input-long" style="min-height:70px; margin-bottom:10px;" placeholder="Escribe aquí la consulta o pregunta..."></textarea>
       
+      <div style="margin-bottom: 10px;">
+        <label style="font-size:0.75rem; color:#64748b; font-weight:600; display:block; margin-bottom:4px;">Tipo de Consulta:</label>
+        <select id="createQueryType" class="app-select" onchange="toggleQueryTypeOptions()">
+          <option value="sino">Si / No</option>
+          <option value="custom">Personalizada</option>
+        </select>
+      </div>
+
+      <div id="customOptionsContainer" style="display: none; margin-bottom: 10px;">
+        <label style="font-size:0.75rem; color:#64748b; font-weight:600; display:block; margin-bottom:4px;">Opciones de respuesta (separadas por comas):</label>
+        <input type="text" id="createQueryOptions" class="app-input" placeholder="Ej: Opción 1, Opción 2, Opción 3">
+      </div>
+
       <div style="font-size:0.75rem; color:#64748b; text-align:center; font-weight:600;">Color distintivo de la consulta:</div>
       <div class="color-picker-container" id="queryColorPicker">
         <div class="color-circle selected" data-color="#0284c7" style="background:#0284c7;" title="Azul"></div>
@@ -1104,7 +1118,6 @@
           <div class="config-subtitle">Sincronización y Mantenimiento</div>
           <button class="btn-save-session" style="background: var(--azul-primary); padding:8px; margin-top:4px;" onclick="syncConfigFromGitHub()">Sincronizar Desde GitHub Ahora</button>
           
-          <!-- REQUISITO SOLICITADO: BOTÓN DE BORRADO COMPLETO DEL STORAGE LOCAL -->
           <button class="btn-danger-action" style="padding:8px; margin-top:12px;" onclick="clearAllLocalStorageData()">🗑️ Borrar Todos los Datos Locales (Storage)</button>
         </div>
       </div>
@@ -1211,6 +1224,8 @@
   let queriesData = JSON.parse(localStorage.getItem("NVA_QUERIES_DATA")) || [];
   let tempQueryColor = "#0284c7";
   let tempQueryText = "";
+  let tempQueryType = "sino";
+  let tempQueryOptions = ["V", "X"];
   let selectedQueryPdfId = null;
 
   let isPdfMode = false;
@@ -1488,6 +1503,12 @@
 
   function openCreateQueryModal() {
     document.getElementById("createQueryText").value = "";
+    const typeSelect = document.getElementById("createQueryType");
+    if (typeSelect) typeSelect.value = "sino";
+    const customOpts = document.getElementById("createQueryOptions");
+    if (customOpts) customOpts.value = "";
+    toggleQueryTypeOptions();
+
     tempQueryColor = "#0284c7";
     const qPicker = document.getElementById("queryColorPicker");
     qPicker.querySelectorAll(".color-circle").forEach(x => x.classList.remove("selected"));
@@ -1499,12 +1520,34 @@
     document.getElementById("modalCreateQuery").classList.remove("active");
   }
 
+  function toggleQueryTypeOptions() {
+    const type = document.getElementById("createQueryType").value;
+    const container = document.getElementById("customOptionsContainer");
+    if (container) {
+      container.style.display = (type === "custom") ? "block" : "none";
+    }
+  }
+
   function openQueryTeamsSelection() {
     tempQueryText = document.getElementById("createQueryText").value.trim();
     if (!tempQueryText) {
       alert("Por favor introduce una consulta o pregunta.");
       return;
     }
+
+    tempQueryType = document.getElementById("createQueryType").value;
+    if (tempQueryType === "custom") {
+      const rawOpts = document.getElementById("createQueryOptions").value;
+      const parsed = rawOpts.split(',').map(s => s.trim()).filter(s => s.length > 0);
+      if (parsed.length === 0) {
+        alert("Por favor introduce al menos una opción para la consulta personalizada (separadas por comas).");
+        return;
+      }
+      tempQueryOptions = parsed;
+    } else {
+      tempQueryOptions = ["V", "X"];
+    }
+
     closeCreateQueryModal();
 
     const container = document.getElementById("queryTeamsCheckboxes");
@@ -1541,6 +1584,8 @@
       id: Date.now(),
       text: tempQueryText,
       color: tempQueryColor,
+      type: tempQueryType,
+      options: tempQueryOptions,
       teams: selectedTeams,
       responses: {}
     };
@@ -1638,7 +1683,8 @@
         const resp = q.responses ? q.responses[p] : null;
         let badge = `<span style="color:#64748b; font-weight:bold;">Pendiente</span>`;
         if (resp === 'V') badge = `<span style="color:#22c55e; font-weight:bold;">✔ (V)</span>`;
-        if (resp === 'X') badge = `<span style="color:#ef4444; font-weight:bold;">✖ (X)</span>`;
+        else if (resp === 'X') badge = `<span style="color:#ef4444; font-weight:bold;">✖ (X)</span>`;
+        else if (resp) badge = `<span style="color:#0284c7; font-weight:bold;">${resp}</span>`;
 
         rowsHtml += `
           <tr>
@@ -2080,11 +2126,17 @@
       let queryHtml = "";
       const pendingQuery = queriesData.find(q => q.teams && q.teams.includes(currentTeam) && (!q.responses || !q.responses[player.name]));
       if (pendingQuery) {
+        const opts = (pendingQuery.options && pendingQuery.options.length > 0) ? pendingQuery.options : ['V', 'X'];
+        const btnsHtml = opts.map(opt => {
+          const safeOpt = opt.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+          const safePlayer = player.name.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+          return `<button class="query-btn" onclick="answerQuery(${pendingQuery.id}, '${safePlayer}', '${safeOpt}')">${opt}</button>`;
+        }).join('');
+
         queryHtml = `
           <div class="query-capsule" style="background:${pendingQuery.color};">
             <span>❓</span>
-            <button class="query-btn" onclick="answerQuery(${pendingQuery.id}, '${player.name}', 'V')">V</button>
-            <button class="query-btn" onclick="answerQuery(${pendingQuery.id}, '${player.name}', 'X')">X</button>
+            ${btnsHtml}
           </div>
         `;
       }
@@ -2326,7 +2378,6 @@
     const teamKey = getTeamKey(team);
     const teamName = team.name;
 
-    // Mensaje de confirmación antes de proceder al borrado
     const confirmDelete = confirm(`¿Estás seguro de que deseas eliminar el equipo "${team.name} (${team.category})"? Esta acción también borrará sus jugadores y asignaciones.`);
     if (!confirmDelete) return;
 
@@ -2477,15 +2528,12 @@
     localStorage.setItem("NVA_QUERIES_DATA", JSON.stringify(queriesData));
   }
 
-  // FUNCIÓN PARA EL BORRADO COMPLETO DEL STORAGE LOCAL (REQUISITO ESPECÍFICO)
   function clearAllLocalStorageData() {
     const confirmDelete = confirm("⚠️ ATENCIÓN: ¿Estás seguro de que deseas borrar TODOS los datos guardados en el almacenamiento local de este dispositivo?\n\nEsta acción limpiará la memoria local y reajustará los ajustes.");
     if (!confirmDelete) return;
 
     localStorage.clear();
     
-    // Resetear variables en memoria a sus valores por defecto
-    /*ghSettings = { user: "", repo: "", token: "" };   GitHub*/ 
     ownerPassword = "NVA123";
     appData = defaultData;
     tablonData = { tablonText: "" };
@@ -2494,10 +2542,8 @@
     warningsData = {};
     queriesData = [];
 
-    // Guardar estado inicial limpio
     localStorage.setItem("NVA_APP_DATA", JSON.stringify(appData));
 
-    // Actualizar campos e interfaz
     loadGitHubSettingsUI();
     renderCoachTeamSelection();
     
@@ -2516,7 +2562,6 @@
     }
   }
 
-  // Escritura resiliente con soporte Offline Queue
   async function writeGitHubFile(fileName, dataObject, commitMessage) {
     if (!navigator.onLine || !ghSettings.user || !ghSettings.repo || !ghSettings.token) {
       enqueueOfflineOp(fileName, dataObject, commitMessage);
@@ -2618,244 +2663,125 @@
     }
   }
 
-  /* LECTURA Y ESCRITURA SEGREGADA DE REGISTROS DE ENTRENAMIENTO */
-  async function fetchTrainingLogsFromGitHub() {
+  async function saveQueriesToGitHub() {
+    saveQueriesToLocalStorage();
+    return await writeGitHubFile("Consultas.json", queriesData, "Actualizar consultas del club");
+  }
+
+  async function fetchQueriesFromGitHub() {
     if (!ghSettings.user || !ghSettings.repo) return;
+    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/Consultas.json`;
     const headers = {};
     if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
 
     try {
-      // 1. Intentar cargar mediante directorio segregado registros/
-      const listUrl = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/registros`;
-      const res = await fetch(listUrl, { headers });
-
+      const res = await fetch(url, { headers });
       if (res.ok) {
-        const files = await res.json();
-        const logsMap = new Map();
-
-        // Cargar registros locales previos
-        allTrainingLogs.forEach(l => logsMap.set(`${l.equipo}_${l.fecha}`, l));
-
-        // Descargar archivos segregados concurrentemente
-        const fetchPromises = files.filter(f => f.name.endsWith('.json')).map(async (file) => {
-          try {
-            const fileRes = await fetch(file.download_url, { headers });
-            if (fileRes.ok) {
-              const logEntry = await fileRes.json();
-              if (logEntry && logEntry.equipo && logEntry.fecha) {
-                logsMap.set(`${logEntry.equipo}_${logEntry.fecha}`, logEntry);
-              }
-            }
-          } catch(err) {}
-        });
-
-        await Promise.all(fetchPromises);
-        allTrainingLogs = Array.from(logsMap.values());
-        localStorage.setItem("NVA_TRAINING_LOGS", JSON.stringify(allTrainingLogs));
-      } else {
-        // Fallback: cargar registro único heredado si aún no se migraron los archivos segregados
-        const legacyUrl = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/registro_entrenamientos.json`;
-        const legacyRes = await fetch(legacyUrl, { headers });
-        if (legacyRes.ok) {
-          const json = await legacyRes.json();
-          allTrainingLogs = JSON.parse(b64_to_utf8(json.content));
-          localStorage.setItem("NVA_TRAINING_LOGS", JSON.stringify(allTrainingLogs));
+        const json = await res.json();
+        queriesData = JSON.parse(b64_to_utf8(json.content));
+        saveQueriesToLocalStorage();
+        if (document.getElementById("screenAttendance").classList.contains("active")) {
+          renderPlayersMain();
         }
       }
-    } catch (e) { console.error("Error cargando entrenamientos:", e); }
+    } catch (e) { console.error("Error al cargar Consultas.json:", e); }
   }
 
   async function saveSession() {
-    if (!currentCoach || !currentTeam) return;
-
-    const fecha = document.getElementById("sessionDatePicker").value;
-    if (!fecha) {
-      alert("Por favor selecciona una fecha válida.");
+    const dateVal = document.getElementById("sessionDatePicker").value;
+    if (!dateVal) {
+      alert("Por favor selecciona una fecha.");
       return;
     }
 
     const logEntry = {
-      fecha: fecha,
-      entrenador: currentCoach.name,
+      fecha: dateVal,
       equipo: currentTeam,
+      entrenador: currentCoach ? currentCoach.name : "",
       jugadores: sessionData
     };
 
-    const existingIdx = allTrainingLogs.findIndex(l => l.equipo === currentTeam && l.fecha === fecha);
-    if (existingIdx !== -1) {
-      allTrainingLogs[existingIdx] = logEntry;
+    const existingIndex = allTrainingLogs.findIndex(l => l.equipo === currentTeam && l.fecha === dateVal);
+    if (existingIndex >= 0) {
+      allTrainingLogs[existingIndex] = logEntry;
     } else {
       allTrainingLogs.push(logEntry);
     }
+
     localStorage.setItem("NVA_TRAINING_LOGS", JSON.stringify(allTrainingLogs));
 
-    // GUARDADO EN ARCHIVO SEGREGADO: registros/log_{equipo}_{fecha}.json
-    const cleanTeam = sanitizeFileName(currentTeam);
-    const fileName = `registros/log_${cleanTeam}_${fecha}.json`;
+    const teamFileName = `Entrenamientos_${sanitizeFileName(currentTeam)}.json`;
+    const teamLogs = allTrainingLogs.filter(l => l.equipo === currentTeam);
+    const success = await writeGitHubFile(teamFileName, teamLogs, `Registro entrenamiento ${currentTeam} - ${dateVal}`);
 
-    const success = await writeGitHubFile(fileName, logEntry, `Entrenamiento ${currentTeam} - ${fecha}`);
     if (success) {
       alert("¡Entrenamiento guardado y sincronizado en GitHub!");
     } else {
       alert("Guardado localmente. Se sincronizará con GitHub cuando recupere la conexión.");
     }
-    goBack();
   }
 
-  /* LECTURA Y ESCRITURA SEGREGADA DE WARNINGS */
-  async function fetchWarningsFromGitHub() {
+  async function fetchTrainingLogsFromGitHub() {
     if (!ghSettings.user || !ghSettings.repo) return;
-    const headers = {};
-    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
+    for (const team of appData.teams) {
+      const teamKey = getTeamKey(team);
+      const fileName = `Entrenamientos_${sanitizeFileName(teamKey)}.json`;
+      const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${fileName}`;
+      const headers = {};
+      if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
 
-    try {
-      const listUrl = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/warnings`;
-      const res = await fetch(listUrl, { headers });
-
-      if (res.ok) {
-        const files = await res.json();
-        const fetchPromises = files.filter(f => f.name.endsWith('.json')).map(async (file) => {
-          try {
-            const fileRes = await fetch(file.download_url, { headers });
-            if (fileRes.ok) {
-              const teamWarnings = await fileRes.json();
-              warningsData = { ...warningsData, ...teamWarnings };
-            }
-          } catch(err) {}
-        });
-        await Promise.all(fetchPromises);
-        localStorage.setItem("NVA_WARNINGS_DATA", JSON.stringify(warningsData));
-      } else {
-        const legacyUrl = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/Warning.json`;
-        const legacyRes = await fetch(legacyUrl, { headers });
-        if (legacyRes.ok) {
-          const json = await legacyRes.json();
-          warningsData = JSON.parse(b64_to_utf8(json.content));
-          localStorage.setItem("NVA_WARNINGS_DATA", JSON.stringify(warningsData));
+      try {
+        const res = await fetch(url, { headers });
+        if (res.ok) {
+          const json = await res.json();
+          const logs = JSON.parse(b64_to_utf8(json.content));
+          if (Array.isArray(logs)) {
+            logs.forEach(remoteLog => {
+              const idx = allTrainingLogs.findIndex(l => l.equipo === remoteLog.equipo && l.fecha === remoteLog.fecha);
+              if (idx >= 0) {
+                allTrainingLogs[idx] = remoteLog;
+              } else {
+                allTrainingLogs.push(remoteLog);
+              }
+            });
+          }
         }
+      } catch (e) {
+        console.error(`Error al cargar ${fileName}:`, e);
       }
-    } catch (e) { console.error("No se pudieron cargar los Warnings desde GitHub:", e); }
+    }
+    localStorage.setItem("NVA_TRAINING_LOGS", JSON.stringify(allTrainingLogs));
   }
 
   async function saveWarningsToGitHub() {
     localStorage.setItem("NVA_WARNINGS_DATA", JSON.stringify(warningsData));
-    const cleanTeam = sanitizeFileName(currentTeam || "general");
-    
-    // Segregado por equipo en carpeta warnings/
-    const fileName = `warnings/warning_${cleanTeam}.json`;
-    const success = await writeGitHubFile(fileName, warningsData, `Avisos Dirección NVA - ${currentTeam || 'General'}`);
-    
+    const success = await writeGitHubFile("Warnings.json", warningsData, "Actualizar warnings del club");
     if (success) {
-      alert("¡Avisos (Warnings) guardados y sincronizados en GitHub!");
+      alert("¡Warnings guardados y sincronizados en GitHub!");
     } else {
-      alert("Guardados localmente. Se sincronizarán al estar online.");
+      alert("Guardado localmente. Se sincronizará con GitHub cuando recupere la conexión.");
     }
- 
-    goBack()
-    toggleDireccionNVA()
-    toggleDireccionNVA()
-    
   }
 
-  /* LECTURA Y ESCRITURA SEGREGADA DE CONSULTAS CON RESTAURACIÓN EN TABLÓN DE ANUNCIOS */
-  async function fetchQueriesFromGitHub() {
+  async function fetchWarningsFromGitHub() {
     if (!ghSettings.user || !ghSettings.repo) return;
+    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/Warnings.json`;
     const headers = {};
     if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
 
     try {
-      const listUrl = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/consultas`;
-      const res = await fetch(listUrl, { headers });
-      let loadedQueries = [];
-
+      const res = await fetch(url, { headers });
       if (res.ok) {
-        const files = await res.json();
-        const fetchPromises = files.filter(f => f.name.endsWith('.json')).map(async (file) => {
-          try {
-            const fileRes = await fetch(file.download_url, { headers });
-            if (fileRes.ok) {
-              const qObj = await fileRes.json();
-              if (qObj && qObj.id) loadedQueries.push(qObj);
-            }
-          } catch(e) {}
-        });
-        await Promise.all(fetchPromises);
-      } else {
-        const legacyUrl = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/Consultas.json`;
-        const legacyRes = await fetch(legacyUrl, { headers });
-        if (legacyRes.ok) {
-          const json = await legacyRes.json();
-          loadedQueries = JSON.parse(b64_to_utf8(json.content)) || [];
+        const json = await res.json();
+        warningsData = JSON.parse(b64_to_utf8(json.content));
+        localStorage.setItem("NVA_WARNINGS_DATA", JSON.stringify(warningsData));
+        if (document.getElementById("screenWarnings").classList.contains("active")) {
+          renderWarningPlayers();
         }
       }
-
-      if (loadedQueries.length > 0) {
-        const mergedMap = new Map();
-        loadedQueries.forEach(q => mergedMap.set(q.id, q));
-        queriesData.forEach(q => {
-          if (mergedMap.has(q.id)) {
-            const remoteQ = mergedMap.get(q.id);
-            remoteQ.responses = { ...(remoteQ.responses || {}), ...(q.responses || {}) };
-            mergedMap.set(q.id, remoteQ);
-          } else {
-            mergedMap.set(q.id, q);
-          }
-        });
-
-        queriesData = Array.from(mergedMap.values());
-        saveQueriesToLocalStorage();
-      }
-
-      // LÓGICA DE REVISIÓN: RESTAURACIÓN EN EL TABLÓN PARA CONSULTAS SIN FINALIZAR
-      let tablonUpdated = false;
-      queriesData.forEach(q => {
-        let isFinished = true;
-        if (q.teams && Array.isArray(q.teams)) {
-          q.teams.forEach(teamKey => {
-            const players = getPlayersForTeamKey(teamKey);
-            players.forEach(p => {
-              if (!q.responses || !q.responses[p]) isFinished = false;
-            });
-          });
-        }
-
-        // Si la consulta no está finalizada, nos aseguramos de que esté visible en el Tablón
-        if (!isFinished) {
-          const colorTag = q.color === '#0284c7' ? '🔵' : (q.color === '#7e22ce' ? '🟣' : '🟠');
-          const queryNotice = `${colorTag} CONSULTA: ${q.text}`;
-          if (!tablonData.tablonText || !tablonData.tablonText.includes(queryNotice.trim())) {
-            tablonData.tablonText = tablonData.tablonText ? `${tablonData.tablonText}\n${queryNotice}` : queryNotice;
-            tablonUpdated = true;
-          }
-        }
-      });
-
-      if (tablonUpdated) {
-        const tablonEl = document.getElementById("tablonTextarea");
-        if (tablonEl) {
-          tablonEl.value = tablonData.tablonText;
-          autoResizeTablon(tablonEl);
-        }
-        localStorage.setItem("NVA_TABLON_DATA", JSON.stringify(tablonData));
-      }
-
-      renderPlayersMain();
-    } catch (e) {
-      console.error("Error al sincronizar consultas desde GitHub:", e);
-    }
-  }
-
-  async function saveQueriesToGitHub() {
-    saveQueriesToLocalStorage();
-    let overallSuccess = true;
-
-    for (const q of queriesData) {
-      const fileName = `consultas/consulta_${q.id}.json`;
-      const ok = await writeGitHubFile(fileName, q, `Consulta ID ${q.id}`);
-      if (!ok) overallSuccess = false;
-    }
-    return overallSuccess;
+    } catch (e) { console.error("Error al cargar Warnings.json:", e); }
   }
 </script>
+
 </body>
 </html>
