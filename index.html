@@ -2760,6 +2760,7 @@
     }
   }
 
+  // Carga e integra todos los archivos de la carpeta "registros" desde GitHub en la variable global allTrainingLogs
   async function fetchTrainingLogsFromGitHub() {
     if (!ghSettings.user || !ghSettings.repo) return;
     const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/registros`;
@@ -2770,7 +2771,7 @@
       const res = await fetch(url, { headers });
       if (res.ok) {
         const files = await res.json();
-        const jsonFiles = files.filter(f => f.name.endsWith('.json'));
+        const jsonFiles = Array.isArray(files) ? files.filter(f => f.name.endsWith('.json')) : [];
 
         for (const file of jsonFiles) {
           try {
@@ -2778,6 +2779,7 @@
             if (fileRes.ok) {
               const remoteData = await fileRes.json();
               const processLog = (remoteLog) => {
+                if (!remoteLog || !remoteLog.equipo || !remoteLog.fecha) return;
                 const idx = allTrainingLogs.findIndex(l => l.equipo === remoteLog.equipo && l.fecha === remoteLog.fecha);
                 if (idx >= 0) {
                   allTrainingLogs[idx] = remoteLog;
@@ -2796,12 +2798,49 @@
             console.error(`Error procesando archivo ${file.name}:`, err);
           }
         }
+        // Guardar la lista consolidada en LocalStorage
+        localStorage.setItem("NVA_TRAINING_LOGS", JSON.stringify(allTrainingLogs));
       }
     } catch (e) {
       console.error("Error al sincronizar entrenamientos desde carpeta 'registros':", e);
     }
+  }
 
-    localStorage.setItem("NVA_TRAINING_LOGS", JSON.stringify(allTrainingLogs));
+  // Renderiza la lista del historial asegurando la sincronización previa
+  async function renderHistoryList() {
+    const container = document.getElementById("historyListContainer");
+    container.innerHTML = `<p style="text-align:center; font-size:0.85rem; color:#64748b; padding:20px;">Cargando entrenamientos del equipo desde GitHub...</p>`;
+    
+    // Forzar la actualización remota de registros antes de renderizar
+    await fetchTrainingLogsFromGitHub();
+
+    // Filtrar los registros obtenidos para el equipo actual
+    const logs = allTrainingLogs.filter(log => log.equipo === currentTeam);
+
+    container.innerHTML = "";
+
+    if (logs.length === 0) {
+      container.innerHTML = `<p style="text-align:center; font-size:0.85rem; color:#64748b; padding:20px;">No hay entrenamientos guardados previamente para este equipo.</p>`;
+      return;
+    }
+
+    logs.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+    logs.forEach((log) => {
+      const card = document.createElement("div");
+      card.className = "history-card";
+      const fechaEscapada = String(log.fecha).replace(/'/g, "\\'");
+      card.innerHTML = `
+        <div>
+          <div style="font-weight:700; font-size:0.85rem; color:var(--azul-dark);">📅 ${log.fecha}</div>
+          <div style="font-size:0.75rem; color:#64748b;">Entrenador: ${log.entrenador || 'N/A'}</div>
+          <div style="font-size:0.72rem; color:#0284c7; margin-top:2px;">
+            Jugadoras: ${log.jugadores ? log.jugadores.filter(j => j.attendance === 'presente').length : 0} Asisten / ${log.jugadores ? log.jugadores.filter(j => j.attendance === 'falta').length : 0} Faltas
+          </div>
+        </div>
+        <button class="btn-edit-history" onclick="loadRecordForEditing('${fechaEscapada}')">✏️ Cargar/Editar</button>
+      `;
+      container.appendChild(card);
+    });
   }
 
   async function saveWarningsToGitHub() {
