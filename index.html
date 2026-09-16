@@ -1474,7 +1474,7 @@
     if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
 
     try {
-      const res = await fetch(url, { headers });
+      const res = await fetch(url, { headers, cache: "no-store" });
       if (res.ok) {
         const json = await res.json();
         tablonData = JSON.parse(b64_to_utf8(json.content));
@@ -2678,7 +2678,7 @@
     const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${fileName}`;
     try {
       let sha = "";
-      const getRes = await fetch(url, { headers: { "Authorization": `token ${ghSettings.token}` } });
+      const getRes = await fetch(url, { headers: { "Authorization": `token ${ghSettings.token}` }, cache: "no-store" });
       if (getRes.ok) {
         const getJson = await getRes.json();
         sha = getJson.sha;
@@ -2720,7 +2720,7 @@
       const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${op.fileName}`;
       try {
         let sha = "";
-        const getRes = await fetch(url, { headers: { "Authorization": `token ${ghSettings.token}` } });
+        const getRes = await fetch(url, { headers: { "Authorization": `token ${ghSettings.token}` }, cache: "no-store" });
         if (getRes.ok) {
           const getJson = await getRes.json();
           sha = getJson.sha;
@@ -2817,7 +2817,7 @@
     if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
 
     try {
-      const res = await fetch(url, { headers });
+      const res = await fetch(url, { headers, cache: "no-store" });
       if (res.ok) {
         const json = await res.json();
         appData = JSON.parse(b64_to_utf8(json.content));
@@ -2849,7 +2849,7 @@
     if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
 
     try {
-      const res = await fetch(url, { headers });
+      const res = await fetch(url, { headers, cache: "no-store" });
       if (res.ok) {
         const json = await res.json();
         queriesData = JSON.parse(b64_to_utf8(json.content));
@@ -2902,7 +2902,7 @@
     if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
 
     try {
-      const res = await fetch(url, { headers });
+      const res = await fetch(url, { headers, cache: "no-store" });
       if (res.ok) {
         const json = await res.json();
         return Array.isArray(json) ? json : [];
@@ -2934,7 +2934,7 @@
       if (!file.name || !file.name.startsWith("Entrenamientos_") || !file.name.endsWith(".json")) continue;
 
       try {
-        const res = await fetch(file.url, { headers });
+        const res = await fetch(file.url, { headers, cache: "no-store" });
         if (!res.ok) continue;
         const json = await res.json();
         const parsed = JSON.parse(b64_to_utf8(json.content));
@@ -2994,6 +2994,17 @@
     const files = await listGitHubFolder(WARNINGS_FOLDER);
     if (!files) return; // fallo de red al listar la carpeta: no tocar la caché local
 
+    // Solo se leen los ficheros de warnings que corresponden a un equipo que
+    // existe AHORA MISMO en la configuración (appData.teams). Si un equipo
+    // cambió de nombre o categoría en algún momento, el fichero antiguo
+    // "warning_<nombre-viejo>.json" se queda huérfano en el repositorio con
+    // datos obsoletos. Si se sigue leyendo ese fichero huérfano, sus avisos
+    // "resucitan" en la app aunque ya no existan en el fichero actual del
+    // equipo, que es justo el síntoma reportado.
+    const validFileNames = new Set(
+      (appData.teams || []).map(t => `warning_${sanitizeFileName(getTeamKey(t))}.json`)
+    );
+
     const headers = {};
     if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
 
@@ -3005,12 +3016,21 @@
     // ya no existían en el repositorio).
     const freshWarningsData = {};
     let allFilesReadOk = true;
+    let anyOrphanSkipped = false;
 
     for (const file of files) {
       if (!file.name || !file.name.startsWith("warning_") || !file.name.endsWith(".json")) continue;
 
+      if (!validFileNames.has(file.name)) {
+        // Fichero huérfano: no pertenece a ningún equipo actual. Se ignora
+        // para que sus datos obsoletos no vuelvan a aparecer.
+        anyOrphanSkipped = true;
+        console.warn(`Ignorando fichero de warnings huérfano (no corresponde a ningún equipo actual): ${file.name}`);
+        continue;
+      }
+
       try {
-        const res = await fetch(file.url, { headers });
+        const res = await fetch(file.url, { headers, cache: "no-store" });
         if (!res.ok) { allFilesReadOk = false; continue; }
         const json = await res.json();
         const teamWarnings = JSON.parse(b64_to_utf8(json.content));
@@ -3024,9 +3044,9 @@
     }
 
     if (allFilesReadOk) {
-      // Todos los ficheros se leyeron correctamente: freshWarningsData es el
-      // estado real y completo de GitHub, así que sustituye por completo al
-      // anterior (esto es lo que elimina los avisos "fantasma").
+      // Todos los ficheros vigentes se leyeron correctamente: freshWarningsData
+      // es el estado real y completo de GitHub, así que sustituye por completo
+      // al anterior (esto es lo que elimina los avisos "fantasma").
       warningsData = freshWarningsData;
     } else {
       // Si algún fichero falló al leerse, se conserva lo que ya había en
@@ -3036,6 +3056,9 @@
     }
 
     localStorage.setItem("NVA_WARNINGS_DATA", JSON.stringify(warningsData));
+    if (anyOrphanSkipped) {
+      localStorage.setItem("NVA_WARNINGS_ORPHAN_FILES_DETECTED", "1");
+    }
     if (document.getElementById("screenWarnings").classList.contains("active")) {
       renderWarningPlayers();
     }
