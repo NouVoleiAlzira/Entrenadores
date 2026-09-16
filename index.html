@@ -1463,7 +1463,7 @@
     if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
 
     try {
-      const res = await fetch(url, { headers });
+      const res = await fetch(url, { headers, cache: "no-store" });
       if (res.ok) {
         const json = await res.json();
         tablonData = JSON.parse(b64_to_utf8(json.content));
@@ -2650,7 +2650,7 @@
     const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${fileName}`;
     try {
       let sha = "";
-      const getRes = await fetch(url, { headers: { "Authorization": `token ${ghSettings.token}` } });
+      const getRes = await fetch(url, { headers: { "Authorization": `token ${ghSettings.token}` }, cache: "no-store" });
       if (getRes.ok) {
         const getJson = await getRes.json();
         sha = getJson.sha;
@@ -2692,7 +2692,7 @@
       const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${op.fileName}`;
       try {
         let sha = "";
-        const getRes = await fetch(url, { headers: { "Authorization": `token ${ghSettings.token}` } });
+        const getRes = await fetch(url, { headers: { "Authorization": `token ${ghSettings.token}` }, cache: "no-store" });
         if (getRes.ok) {
           const getJson = await getRes.json();
           sha = getJson.sha;
@@ -2722,7 +2722,7 @@
     if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
 
     try {
-      const res = await fetch(url, { headers });
+      const res = await fetch(url, { headers, cache: "no-store" });
       if (res.ok) {
         const json = await res.json();
         appData = JSON.parse(b64_to_utf8(json.content));
@@ -2754,7 +2754,7 @@
     if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
 
     try {
-      const res = await fetch(url, { headers });
+      const res = await fetch(url, { headers, cache: "no-store" });
       if (res.ok) {
         const json = await res.json();
         queriesData = JSON.parse(b64_to_utf8(json.content));
@@ -2807,7 +2807,7 @@
     if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
 
     try {
-      const res = await fetch(url, { headers });
+      const res = await fetch(url, { headers, cache: "no-store" });
       if (res.ok) {
         const json = await res.json();
         return Array.isArray(json) ? json : [];
@@ -2835,7 +2835,7 @@
       if (!file.name || !file.name.startsWith("Entrenamientos_") || !file.name.endsWith(".json")) continue;
 
       try {
-        const res = await fetch(file.url, { headers });
+        const res = await fetch(file.url, { headers, cache: "no-store" });
         if (!res.ok) continue;
         const json = await res.json();
         const parsed = JSON.parse(b64_to_utf8(json.content));
@@ -2906,7 +2906,7 @@
       if (!file.name || !file.name.startsWith("warning_") || !file.name.endsWith(".json")) continue;
 
       try {
-        const res = await fetch(file.url, { headers });
+        const res = await fetch(file.url, { headers, cache: "no-store" });
         if (!res.ok) continue;
         const json = await res.json();
         const teamWarnings = JSON.parse(b64_to_utf8(json.content));
