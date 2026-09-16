@@ -2665,6 +2665,13 @@
 
       if (!putRes.ok) {
         enqueueOfflineOp(fileName, dataObject, commitMessage);
+      } else {
+        // Un guardado directo que tiene éxito deja obsoleta cualquier
+        // operación pendiente en la cola para este mismo fichero (por
+        // ejemplo, un intento anterior fallido con datos más viejos). Si no
+        // se cancela, esa entrada vieja puede reenviarse más tarde y
+        // sobrescribir este guardado correcto.
+        clearQueuedOpsForFile(fileName);
       }
       return putRes.ok;
     } catch (e) {
@@ -2673,7 +2680,20 @@
     }
   }
 
+  function clearQueuedOpsForFile(fileName) {
+    const filtered = offlineQueue.filter(op => op.fileName !== fileName);
+    if (filtered.length !== offlineQueue.length) {
+      offlineQueue = filtered;
+      localStorage.setItem("NVA_OFFLINE_QUEUE", JSON.stringify(offlineQueue));
+    }
+  }
+
   function enqueueOfflineOp(fileName, dataObject, commitMessage) {
+    // Si ya había una operación pendiente para este mismo fichero, se
+    // descarta: solo debe quedar en cola el último estado deseado. Si no se
+    // depura, una entrada vieja (por ejemplo un warning ya quitado) puede
+    // reprocesarse más tarde y sobrescribir un guardado posterior correcto.
+    offlineQueue = offlineQueue.filter(op => op.fileName !== fileName);
     offlineQueue.push({
       fileName: fileName,
       dataObject: dataObject,
@@ -2687,8 +2707,15 @@
     if (!navigator.onLine || offlineQueue.length === 0) return;
     if (!ghSettings.user || !ghSettings.repo || !ghSettings.token) return;
 
+    // Depuración defensiva: si por versiones anteriores de la app ya se
+    // habían acumulado varias entradas para el mismo fichero, nos quedamos
+    // solo con la más reciente de cada una antes de reenviarlas.
+    const latestByFile = new Map();
+    offlineQueue.forEach(op => latestByFile.set(op.fileName, op));
+    const dedupedQueue = Array.from(latestByFile.values());
+
     const remaining = [];
-    for (const op of offlineQueue) {
+    for (const op of dedupedQueue) {
       const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${op.fileName}`;
       try {
         let sha = "";
