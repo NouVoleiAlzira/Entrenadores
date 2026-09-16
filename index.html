@@ -818,9 +818,11 @@
       font-weight: bold;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      transition: all 0.3s ease;
     }
     .network-online { background: #22c55e; color: white; }
     .network-offline { background: #ef4444; color: white; }
+    .network-sync { background: #eab308; color: white; }
   </style>
 </head>
 <body>
@@ -1098,7 +1100,7 @@
             <input type="text" id="newPlayerName" class="app-input" placeholder="Nombre Jugador/a">
             <button class="btn-add" onclick="addPlayer()">+</button>
           </div>
-          <div id="draggablePlayerList"></div>
+          <div id="draggablePlayerList" class="item-list"></div>
         </div>
       </div>
 
@@ -1208,20 +1210,12 @@
   let ownerPassword = localStorage.getItem("NVA_OWNER_PASS") || "NVA123";
   let ghSettings = JSON.parse(localStorage.getItem("NVA_GH_SETTINGS")) || { user: "", repo: "", token: "" };
 
-  // Carpeta del repositorio donde viven los registros de entrenamiento:
-  // un fichero por equipo y por fecha, p.ej. "registros/Entrenamientos_<equipo>_<fecha>.json"
-  // Carpeta del repositorio donde viven los registros de entrenamiento:
-  // un fichero por equipo y por fecha, p.ej. "registros/Entrenamientos_<equipo>_<fecha>.json"
   const TRAINING_LOGS_FOLDER = "registros";
-
-  // Carpeta del repositorio donde viven los avisos ("warnings") de Dirección NVA:
-  // un fichero por equipo, p.ej. "warnings/warning_<equipo>.json"
   const WARNINGS_FOLDER = "warnings";
   let appData = JSON.parse(localStorage.getItem("NVA_APP_DATA")) || defaultData;
   let tablonData = JSON.parse(localStorage.getItem("NVA_TABLON_DATA")) || { tablonText: "" };
   let offlineQueue = JSON.parse(localStorage.getItem("NVA_OFFLINE_QUEUE")) || [];
 
-  // Estado global
   let activeCoachId = null;
   let currentCoach = null;
   let currentTeam = null;
@@ -1253,7 +1247,7 @@
   let pdfChart1 = null;
   let pdfChart2 = null;
 
-  // UTILIDADES UTF-8 Y SANITIZACIÓN PARA ARCHIVOS SEGREGADOS
+  // UTILIDADES UTF-8 Y SANITIZACIÓN
   function utf8_to_b64(str) {
     return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
   }
@@ -1295,13 +1289,15 @@
     return appData.players[teamKey];
   }
 
+  // EVENTOS INICIALES Y LÓGICA DE RED
   document.addEventListener("DOMContentLoaded", async () => {
     resetToTodayDate();
     updateNetworkStatusUI();
 
-    window.addEventListener("online", () => {
+    window.addEventListener("online", async () => {
       updateNetworkStatusUI();
-      processOfflineQueue();
+      await processOfflineQueue();
+      syncAllDataSilently();
     });
     window.addEventListener("offline", updateNetworkStatusUI);
 
@@ -1315,15 +1311,10 @@
       autoResizeTablon(tablonEl);
     }
 
-    if (ghSettings.user && ghSettings.repo && ghSettings.token) {
-      // Es importante sincronizar primero la configuración (equipos/categorías)
-      // porque los nombres de los archivos de entrenamientos dependen de ella.
-      // Si se dispara en paralelo, se puede buscar/guardar con claves de equipo
-      // desactualizadas y los registros "desaparecen" al pulsar Historial o al
-      // generar el PDF.
+    if (ghSettings.user && ghSettings.repo && ghSettings.token && navigator.onLine) {
+      await processOfflineQueue();
       await syncConfigFromGitHub(true);
       await Promise.all([
-        fetchTrainingLogsFromGitHub(),
         fetchWarningsFromGitHub(),
         fetchQueriesFromGitHub(),
         fetchTablonFromGitHub()
@@ -1334,13 +1325,141 @@
   function updateNetworkStatusUI() {
     const badge = document.getElementById("netStatusBadge");
     if (navigator.onLine) {
-      badge.innerText = "Online";
-      badge.className = "network-badge network-online";
+      if (offlineQueue.length > 0) {
+        badge.innerText = "Sincronizando...";
+        badge.className = "network-badge network-sync";
+      } else {
+        badge.innerText = "Online";
+        badge.className = "network-badge network-online";
+      }
     } else {
       badge.innerText = "Offline";
       badge.className = "network-badge network-offline";
     }
   }
+
+  // --- NÚCLEO DE ESCRITURA Y COLA OFFLINE ---
+  async function writeGitHubFile(path, dataObj, message) {
+    if (!navigator.onLine) {
+      // Guardar en cola offline asegurando que se actualiza si el mismo archivo ya está en la cola
+      const existingIdx = offlineQueue.findIndex(item => item.path === path);
+      if(existingIdx >= 0) offlineQueue.splice(existingIdx, 1);
+
+      offlineQueue.push({ path, data: dataObj, message, timestamp: Date.now() });
+      localStorage.setItem("NVA_OFFLINE_QUEUE", JSON.stringify(offlineQueue));
+      updateNetworkStatusUI();
+      return false; // Escrito localmente
+    }
+    
+    try {
+      const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${path}`;
+      const headers = {
+        "Authorization": `token ${ghSettings.token}`,
+        "Accept": "application/vnd.github.v3+json",
+        "Content-Type": "application/json"
+      };
+      
+      let sha = null;
+      const getRes = await fetch(url, { headers, cache: 'no-store' });
+      if (getRes.ok) {
+        const getJson = await getRes.json();
+        sha = getJson.sha;
+      }
+
+      const content = utf8_to_b64(JSON.stringify(dataObj, null, 2));
+      const body = { message, content };
+      if (sha) body.sha = sha;
+
+      const putRes = await fetch(url, { method: "PUT", headers, body: JSON.stringify(body) });
+
+      if (putRes.ok) {
+         return true; // Éxito
+      } else {
+         throw new Error("GitHub PUT failed");
+      }
+    } catch(e) {
+      console.error(e);
+      // Fallo de red inesperado durante el fetch, guardar local.
+      const existingIdx = offlineQueue.findIndex(item => item.path === path);
+      if(existingIdx >= 0) offlineQueue.splice(existingIdx, 1);
+
+      offlineQueue.push({ path, data: dataObj, message, timestamp: Date.now() });
+      localStorage.setItem("NVA_OFFLINE_QUEUE", JSON.stringify(offlineQueue));
+      updateNetworkStatusUI();
+      return false;
+    }
+  }
+
+  async function processOfflineQueue() {
+    if (!navigator.onLine || offlineQueue.length === 0 || !ghSettings.user || !ghSettings.repo || !ghSettings.token) return;
+
+    updateNetworkStatusUI();
+
+    // Agrupamos por path para mandar solo el más reciente y optimizar llamadas a la API
+    const grouped = {};
+    offlineQueue.forEach(item => { grouped[item.path] = item; });
+
+    const failedQueue = [];
+
+    for (const path in grouped) {
+      const item = grouped[path];
+      try {
+        const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${path}`;
+        const headers = {
+          "Authorization": `token ${ghSettings.token}`,
+          "Accept": "application/vnd.github.v3+json",
+          "Content-Type": "application/json"
+        };
+        
+        let sha = null;
+        const getRes = await fetch(url, { headers, cache: 'no-store' });
+        if (getRes.ok) {
+          const getJson = await getRes.json();
+          sha = getJson.sha;
+        }
+
+        const content = utf8_to_b64(JSON.stringify(item.data, null, 2));
+        const body = { message: item.message + " (Sincronización Automática Offline)", content };
+        if (sha) body.sha = sha;
+
+        const putRes = await fetch(url, { method: "PUT", headers, body: JSON.stringify(body) });
+        if (!putRes.ok) throw new Error("Status API no válido");
+        
+        // Si tiene éxito, no lo metemos a failedQueue (se elimina efectivamente del LocalStorage después)
+      } catch(e) {
+        console.error("Error sincronizando archivo offline: " + path, e);
+        failedQueue.push(item);
+      }
+    }
+
+    // Purgar de local storage o guardar los que fallaron (fantasmas erradicados)
+    offlineQueue = failedQueue;
+    if (offlineQueue.length === 0) {
+      localStorage.removeItem("NVA_OFFLINE_QUEUE");
+    } else {
+      localStorage.setItem("NVA_OFFLINE_QUEUE", JSON.stringify(offlineQueue));
+    }
+    
+    updateNetworkStatusUI();
+  }
+
+  async function syncAllDataSilently() {
+    if (navigator.onLine && ghSettings.user && ghSettings.token) {
+      await fetchTablonFromGitHub();
+      await fetchWarningsFromGitHub();
+      await fetchQueriesFromGitHub();
+    }
+  }
+
+  // FUNCIÓN CENTRAL PARA CAMBIAR DE MENÚ/PANTALLA
+  function showScreen(id) {
+    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+    // Al cambiar la pantalla, actualizamos y sincronizamos 
+    processOfflineQueue().then(() => syncAllDataSilently());
+  }
+
+  // --- FIN DE LÓGICA DE COLA ---
 
   function resetToTodayDate() {
     const today = new Date().toISOString().split('T')[0];
@@ -1413,13 +1532,10 @@
   }
 
   function refreshDireccionAccordion() {
-    // Pliega (si estaba abierto) y vuelve a expandir el acordeón "Gestión y
-    // Avisos Individuales" para que las insignias "⚠️ AVISO" de cada equipo
-    // se reconstruyan con el warningsData recién guardado.
     if (isDireccionExpanded) {
       toggleDireccionNVA();
+      toggleDireccionNVA();
     }
-    toggleDireccionNVA();
   }
 
   function updateTablon(val) {
@@ -1435,7 +1551,7 @@
     if (success) {
       alert("¡Tablón guardado y sincronizado en GitHub!");
     } else {
-      alert("Guardado localmente. Se sincronizará con GitHub cuando recupere la conexión.");
+      alert("Guardado localmente en caché. Se sincronizará automáticamente con GitHub cuando recupere la conexión.");
     }
   }
 
@@ -1459,8 +1575,7 @@
   async function fetchTablonFromGitHub() {
     if (!ghSettings.user || !ghSettings.repo || !navigator.onLine) return;
     const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/Tablon.json`;
-    const headers = {};
-    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
+    const headers = ghSettings.token ? { "Authorization": `token ${ghSettings.token}` } : {};
 
     try {
       const res = await fetch(url, { headers, cache: "no-store" });
@@ -1483,13 +1598,10 @@
     showScreen("screenWarnings");
     document.getElementById("btnBack").style.display = "flex";
 
-    // Refresca los warnings desde GitHub para reflejar cambios guardados
-    // desde otros dispositivos antes de mostrarlos.
     if (ghSettings.user && ghSettings.repo && navigator.onLine) {
       await fetchWarningsFromGitHub();
-    } else {
-      renderWarningPlayers();
     }
+    renderWarningPlayers();
   }
 
   function renderWarningPlayers() {
@@ -1894,9 +2006,6 @@
   }
 
   async function generatePDF() {
-    // Igual que en el Historial: sincroniza antes de recopilar los registros
-    // para que el PDF incluya también entrenamientos guardados en GitHub
-    // desde otros dispositivos y no solo los que ya estaban en caché local.
     if (ghSettings.user && ghSettings.repo && navigator.onLine) {
       await fetchTrainingLogsFromGitHub();
     }
@@ -2145,9 +2254,6 @@
     resetToTodayDate();
     initSessionData();
 
-    // Refresca los warnings desde GitHub antes de pintar la lista, para que
-    // los avisos que se muestren en Asistencia vengan del fichero por equipo
-    // más reciente (warnings/warning_<equipo>.json) y no de una caché vieja.
     if (ghSettings.user && ghSettings.repo && navigator.onLine) {
       await fetchWarningsFromGitHub();
     }
@@ -2280,34 +2386,19 @@
   function setStrikes(i, c) { sessionData[i].strikes = c; renderPlayersMain(); }
   function updateComment(i, text) { sessionData[i].comments = text; }
 
-  function showScreen(id) {
-    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-    document.getElementById(id).classList.add("active");
-  }
-
   async function goBack() {
     showScreen("screenCoachTeam");
     document.getElementById("btnBack").style.display = "none";
-
-    // Refresca el Tablón cada vez que se vuelve a la pantalla principal,
-    // para ver lo que otro usuario haya modificado y guardado mientras tanto.
-    if (ghSettings.user && ghSettings.repo && navigator.onLine) {
-      await fetchTablonFromGitHub();
-    }
   }
 
   async function openHistoryModal() {
     document.getElementById("modalHistory").classList.add("active");
 
-    // Refresca los registros desde GitHub antes de listarlos, para que el
-    // Historial recoja también los entrenamientos guardados desde otros
-    // dispositivos y no solo lo que quedó cacheado en este navegador.
     if (ghSettings.user && ghSettings.repo && navigator.onLine) {
       const container = document.getElementById("historyListContainer");
       container.innerHTML = `<p style="text-align:center; font-size:0.85rem; color:#64748b; padding:20px;">Actualizando historial...</p>`;
       await fetchTrainingLogsFromGitHub();
     }
-
     renderHistoryList();
   }
 
@@ -2526,28 +2617,17 @@
     const teamKey = document.getElementById("selectTeamPlayers").value;
     const container = document.getElementById("draggablePlayerList");
     container.innerHTML = "";
+    
+    if (!teamKey) return;
+    
+    const players = ensurePlayerListExists(teamKey);
+    document.getElementById("playerCountBadge").innerText = players.length;
 
-    if (!teamKey) {
-      document.getElementById("playerCountBadge").innerText = "0";
-      return;
-    }
-
-    const playersList = getPlayersForTeamKey(teamKey);
-    document.getElementById("playerCountBadge").innerText = playersList.length;
-
-    playersList.forEach((player, index) => {
-      const item = document.createElement("div");
-      item.className = "item-row";
-      item.style.marginBottom = "4px";
-      item.innerHTML = `
-        <span style="font-weight:600;">${player}</span>
-        <div style="display:flex; gap:4px; align-items:center;">
-          <button style="border:none; background:#e2e8f0; border-radius:4px; padding:2px 5px; font-size:0.7rem;" onclick="movePlayer('${teamKey}', ${index}, -1)">▲</button>
-          <button style="border:none; background:#e2e8f0; border-radius:4px; padding:2px 5px; font-size:0.7rem;" onclick="movePlayer('${teamKey}', ${index}, 1)">▼</button>
-          <button class="btn-del" onclick="deletePlayer('${teamKey}', ${index})">✕</button>
-        </div>
-      `;
-      container.appendChild(item);
+    players.forEach((p, idx) => {
+      const row = document.createElement("div");
+      row.className = "item-row";
+      row.innerHTML = `<span>${p}</span><button class="btn-del" onclick="deletePlayer('${teamKey}', ${idx})">✕</button>`;
+      container.appendChild(row);
     });
   }
 
@@ -2557,401 +2637,177 @@
     const name = input.value.trim();
     if (!name || !teamKey) return;
 
-    const playersList = ensurePlayerListExists(teamKey);
-    playersList.push(name);
+    const players = ensurePlayerListExists(teamKey);
+    if (!players.includes(name)) {
+      players.push(name);
+      saveDataAndSyncGitHub();
+      renderPlayerManagement();
+    }
     input.value = "";
+  }
+
+  function deletePlayer(teamKey, idx) {
+    const players = ensurePlayerListExists(teamKey);
+    players.splice(idx, 1);
     saveDataAndSyncGitHub();
     renderPlayerManagement();
   }
 
-  function deletePlayer(teamKey, index) {
-    const playersList = getPlayersForTeamKey(teamKey);
-    if (playersList && playersList[index] !== undefined) playersList.splice(index, 1);
-    saveDataAndSyncGitHub();
-    renderPlayerManagement();
-  }
-
-  function movePlayer(teamKey, index, direction) {
-    const list = getPlayersForTeamKey(teamKey);
-    if (!list) return;
-    const newIndex = index + direction;
-    if (newIndex < 0 || newIndex >= list.length) return;
-    const temp = list[index];
-    list[index] = list[newIndex];
-    list[newIndex] = temp;
-    saveDataAndSyncGitHub();
-    renderPlayerManagement();
-  }
-
-  /* ------------------- COMUNICACIÓN REST API GITHUB CON ARQUITECTURA SEGREGADA Y COLA OFFLINE ------------------- */
-  function loadGitHubSettingsUI() {
-    document.getElementById("ghUser").value = ghSettings.user || "";
-    document.getElementById("ghRepo").value = ghSettings.repo || "";
-    document.getElementById("ghToken").value = ghSettings.token || "";
-  }
-
-  function saveGitHubSettings() {
-    ghSettings.user = document.getElementById("ghUser").value.trim();
-    ghSettings.repo = document.getElementById("ghRepo").value.trim();
-    ghSettings.token = document.getElementById("ghToken").value.trim();
-    localStorage.setItem("NVA_GH_SETTINGS", JSON.stringify(ghSettings));
-    alert("Configuración de GitHub guardada.");
-    syncConfigFromGitHub();
-    fetchTrainingLogsFromGitHub();
-    fetchWarningsFromGitHub();
-    fetchQueriesFromGitHub();
-    fetchTablonFromGitHub();
-  }
-
-  function saveQueriesToLocalStorage() {
-    localStorage.setItem("NVA_QUERIES_DATA", JSON.stringify(queriesData));
-  }
-
-  function clearAllLocalStorageData() {
-    const confirmDelete = confirm("⚠️ ATENCIÓN: ¿Estás seguro de que deseas borrar TODOS los datos guardados en el almacenamiento local de este dispositivo?\n\nEsta acción limpiará la memoria local y reajustará los ajustes.");
-    if (!confirmDelete) return;
-
-    localStorage.clear();
-    
-    ownerPassword = "NVA123";
-    appData = defaultData;
-    tablonData = { tablonText: "" };
-    offlineQueue = [];
-    allTrainingLogs = [];
-    warningsData = {};
-    queriesData = [];
-
+  async function saveDataAndSyncGitHub() {
     localStorage.setItem("NVA_APP_DATA", JSON.stringify(appData));
-
-    loadGitHubSettingsUI();
     renderCoachTeamSelection();
-    
-    const tablonEl = document.getElementById("tablonTextarea");
-    if (tablonEl) tablonEl.value = "";
-
-    closeOptionsModal();
-    alert("¡Se han borrado exitosamente todos los datos del almacenamiento local!");
+    await writeGitHubFile("config.json", appData, "Actualizar configuración del club (App Data)");
   }
 
-  function saveDataAndSyncGitHub() {
-    localStorage.setItem("NVA_APP_DATA", JSON.stringify(appData));
-    renderConfigTab1();
-    if (ghSettings.user && ghSettings.repo && ghSettings.token) {
-      writeGitHubFile("configuracion.json", appData, "Actualizar configuraciones del club");
-    }
-  }
-
-  async function writeGitHubFile(fileName, dataObject, commitMessage) {
-    if (!navigator.onLine || !ghSettings.user || !ghSettings.repo || !ghSettings.token) {
-      enqueueOfflineOp(fileName, dataObject, commitMessage);
-      return false;
-    }
-
-    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${fileName}`;
-    try {
-      let sha = "";
-      const getRes = await fetch(url, { headers: { "Authorization": `token ${ghSettings.token}` }, cache: "no-store" });
-      if (getRes.ok) {
-        const getJson = await getRes.json();
-        sha = getJson.sha;
-      }
-      const contentBase64 = utf8_to_b64(JSON.stringify(dataObject, null, 2));
-      const body = { message: commitMessage, content: contentBase64, ...(sha && { sha: sha }) };
-      const putRes = await fetch(url, {
-        method: "PUT",
-        headers: { "Authorization": `token ${ghSettings.token}`, "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-      });
-
-      if (!putRes.ok) {
-        enqueueOfflineOp(fileName, dataObject, commitMessage);
-      } else {
-        // Un guardado directo que tiene éxito deja obsoleta cualquier
-        // operación pendiente en la cola para este mismo fichero (por
-        // ejemplo, un intento anterior fallido con datos más viejos). Si no
-        // se cancela, esa entrada vieja puede reenviarse más tarde y
-        // sobrescribir este guardado correcto.
-        clearQueuedOpsForFile(fileName);
-      }
-      return putRes.ok;
-    } catch (e) {
-      enqueueOfflineOp(fileName, dataObject, commitMessage);
-      return false;
-    }
-  }
-
-  function clearQueuedOpsForFile(fileName) {
-    const filtered = offlineQueue.filter(op => op.fileName !== fileName);
-    if (filtered.length !== offlineQueue.length) {
-      offlineQueue = filtered;
-      localStorage.setItem("NVA_OFFLINE_QUEUE", JSON.stringify(offlineQueue));
-    }
-  }
-
-  function enqueueOfflineOp(fileName, dataObject, commitMessage) {
-    // Si ya había una operación pendiente para este mismo fichero, se
-    // descarta: solo debe quedar en cola el último estado deseado. Si no se
-    // depura, una entrada vieja (por ejemplo un warning ya quitado) puede
-    // reprocesarse más tarde y sobrescribir un guardado posterior correcto.
-    offlineQueue = offlineQueue.filter(op => op.fileName !== fileName);
-    offlineQueue.push({
-      fileName: fileName,
-      dataObject: dataObject,
-      commitMessage: commitMessage,
-      timestamp: Date.now()
-    });
-    localStorage.setItem("NVA_OFFLINE_QUEUE", JSON.stringify(offlineQueue));
-  }
-
-  async function processOfflineQueue() {
-    if (!navigator.onLine || offlineQueue.length === 0) return;
-    if (!ghSettings.user || !ghSettings.repo || !ghSettings.token) return;
-
-    // Depuración defensiva: si por versiones anteriores de la app ya se
-    // habían acumulado varias entradas para el mismo fichero, nos quedamos
-    // solo con la más reciente de cada una antes de reenviarlas.
-    const latestByFile = new Map();
-    offlineQueue.forEach(op => latestByFile.set(op.fileName, op));
-    const dedupedQueue = Array.from(latestByFile.values());
-
-    const remaining = [];
-    for (const op of dedupedQueue) {
-      const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${op.fileName}`;
-      try {
-        let sha = "";
-        const getRes = await fetch(url, { headers: { "Authorization": `token ${ghSettings.token}` }, cache: "no-store" });
-        if (getRes.ok) {
-          const getJson = await getRes.json();
-          sha = getJson.sha;
-        }
-        const contentBase64 = utf8_to_b64(JSON.stringify(op.dataObject, null, 2));
-        const body = { message: op.commitMessage, content: contentBase64, ...(sha && { sha: sha }) };
-        const putRes = await fetch(url, {
-          method: "PUT",
-          headers: { "Authorization": `token ${ghSettings.token}`, "Content-Type": "application/json" },
-          body: JSON.stringify(body)
-        });
-
-        if (!putRes.ok) remaining.push(op);
-      } catch (e) {
-        remaining.push(op);
-      }
-    }
-
-    offlineQueue = remaining;
-    localStorage.setItem("NVA_OFFLINE_QUEUE", JSON.stringify(offlineQueue));
-  }
-
+  // API DE GITHUB: SINCRONIZACIÓN Y EXTRACCIÓN DE DATOS
   async function syncConfigFromGitHub(silent = false) {
-    if (!ghSettings.user || !ghSettings.repo) return; 
-    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/configuracion.json`;
-    const headers = {};
-    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
-
+    if (!ghSettings.user || !ghSettings.repo || !navigator.onLine) return;
+    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/config.json`;
+    const headers = ghSettings.token ? { "Authorization": `token ${ghSettings.token}` } : {};
     try {
       const res = await fetch(url, { headers, cache: "no-store" });
       if (res.ok) {
         const json = await res.json();
         appData = JSON.parse(b64_to_utf8(json.content));
-
-        localStorage.setItem("NVA_GH_SETTINGS", JSON.stringify(ghSettings));
-        localStorage.setItem("NVA_OWNER_PASS", ownerPassword);
         localStorage.setItem("NVA_APP_DATA", JSON.stringify(appData));
-
         renderCoachTeamSelection();
-        if (!silent) alert("¡Configuración sincronizada desde GitHub correctamente!");
-      } else {
-        if (!silent) alert("No se pudo obtener la configuracion.json desde GitHub.");
+        if(!silent) alert("Configuración sincronizada desde GitHub");
       }
-    } catch (e) { 
-      console.error(e); 
-      if (!silent) alert("Error de conexión al sincronizar desde GitHub.");
+    } catch (e) {
+      console.error("Error al sincronizar configuración desde GitHub", e);
     }
   }
 
-  async function saveQueriesToGitHub() {
-    saveQueriesToLocalStorage();
-    return await writeGitHubFile("Consultas.json", queriesData, "Actualizar consultas del club");
+  async function fetchTrainingLogsFromGitHub() {
+    if (!ghSettings.user || !ghSettings.repo || !navigator.onLine) return;
+    try {
+      const treeUrl = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${TRAINING_LOGS_FOLDER}`;
+      const headers = ghSettings.token ? { "Authorization": `token ${ghSettings.token}` } : {};
+      
+      const res = await fetch(treeUrl, { headers, cache: "no-store" });
+      if (res.ok) {
+        const files = await res.json();
+        let newLogs = [];
+        for (let file of files) {
+          if (file.name.endsWith(".json")) {
+             const fRes = await fetch(file.download_url, { cache: "no-store" });
+             if (fRes.ok) {
+               const data = await fRes.json();
+               newLogs.push(data);
+             }
+          }
+        }
+        if (newLogs.length > 0) {
+          allTrainingLogs = newLogs;
+          localStorage.setItem("NVA_TRAINING_LOGS", JSON.stringify(allTrainingLogs));
+        }
+      }
+    } catch (e) {
+      console.error("Error obteniendo logs de entrenamiento de GitHub", e);
+    }
+  }
+
+  async function fetchWarningsFromGitHub() {
+    if (!ghSettings.user || !ghSettings.repo || !navigator.onLine) return;
+    try {
+      const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/Warnings.json`;
+      const headers = ghSettings.token ? { "Authorization": `token ${ghSettings.token}` } : {};
+      const res = await fetch(url, { headers, cache: "no-store" });
+      if (res.ok) {
+        const json = await res.json();
+        warningsData = JSON.parse(b64_to_utf8(json.content));
+        localStorage.setItem("NVA_WARNINGS_DATA", JSON.stringify(warningsData));
+      }
+    } catch (e) {
+      console.error("Error obteniendo Avisos desde GitHub", e);
+    }
   }
 
   async function fetchQueriesFromGitHub() {
-    if (!ghSettings.user || !ghSettings.repo) return;
-    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/Consultas.json`;
-    const headers = {};
-    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
-
+    if (!ghSettings.user || !ghSettings.repo || !navigator.onLine) return;
     try {
+      const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/Queries.json`;
+      const headers = ghSettings.token ? { "Authorization": `token ${ghSettings.token}` } : {};
       const res = await fetch(url, { headers, cache: "no-store" });
       if (res.ok) {
         const json = await res.json();
         queriesData = JSON.parse(b64_to_utf8(json.content));
-        saveQueriesToLocalStorage();
-        if (document.getElementById("screenAttendance").classList.contains("active")) {
-          renderPlayersMain();
-        }
+        localStorage.setItem("NVA_QUERIES_DATA", JSON.stringify(queriesData));
       }
-    } catch (e) { console.error("Error al cargar Consultas.json:", e); }
+    } catch (e) {
+      console.error("Error obteniendo Consultas desde GitHub", e);
+    }
   }
 
   async function saveSession() {
-    const dateVal = document.getElementById("sessionDatePicker").value;
-    if (!dateVal) {
-      alert("Por favor selecciona una fecha.");
-      return;
-    }
-
-    const logEntry = {
-      fecha: dateVal,
+    const date = document.getElementById("sessionDatePicker").value;
+    const log = {
+      fecha: date,
       equipo: currentTeam,
-      entrenador: currentCoach ? currentCoach.name : "",
+      entrenador: currentCoach.name,
       jugadores: sessionData
     };
-
-    const existingIndex = allTrainingLogs.findIndex(l => l.equipo === currentTeam && l.fecha === dateVal);
-    if (existingIndex >= 0) {
-      allTrainingLogs[existingIndex] = logEntry;
-    } else {
-      allTrainingLogs.push(logEntry);
-    }
-
+    
+    const existingIdx = allTrainingLogs.findIndex(l => l.equipo === currentTeam && l.fecha === date);
+    if (existingIdx >= 0) allTrainingLogs[existingIdx] = log;
+    else allTrainingLogs.push(log);
+    
     localStorage.setItem("NVA_TRAINING_LOGS", JSON.stringify(allTrainingLogs));
-
-    // Un fichero por equipo y por fecha, dentro de la carpeta "registros/"
-    const sessionFileName = `${TRAINING_LOGS_FOLDER}/Entrenamientos_${sanitizeFileName(currentTeam)}_${dateVal}.json`;
-    const success = await writeGitHubFile(sessionFileName, logEntry, `Registro entrenamiento ${currentTeam} - ${dateVal}`);
-
+    
+    const safeTeamName = sanitizeFileName(currentTeam);
+    const filename = `${TRAINING_LOGS_FOLDER}/Entrenamientos_${safeTeamName}_${date}.json`;
+    
+    const success = await writeGitHubFile(filename, log, `Registro entrenamiento ${currentTeam} en fecha ${date}`);
+    
     if (success) {
-      alert("¡Entrenamiento guardado y sincronizado en GitHub!");
+       alert("Entrenamiento guardado y enviado a GitHub correctamente.");
     } else {
-      alert("Guardado localmente. Se sincronizará con GitHub cuando recupere la conexión.");
+       alert("Guardado en modo Offline local. Se sincronizará automáticamente al detectar conexión a internet.");
     }
   }
-
-  async function listGitHubFolder(folderPath) {
-    if (!ghSettings.user || !ghSettings.repo || !navigator.onLine) return [];
-    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${folderPath}`;
-    const headers = {};
-    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
-
-    try {
-      const res = await fetch(url, { headers, cache: "no-store" });
-      if (res.ok) {
-        const json = await res.json();
-        return Array.isArray(json) ? json : [];
-      }
-    } catch (e) {
-      console.error(`Error al listar la carpeta ${folderPath}:`, e);
-    }
-    return [];
-  }
-
-  // Los entrenamientos se guardan como un fichero por equipo y por fecha
-  // dentro de la carpeta "registros/" (p.ej. Entrenamientos_NVA_Alevin_2026-09-15.json).
-  // En lugar de intentar adivinar el nombre exacto del fichero a partir del
-  // equipo (frágil, porque nombres/categorías cambian), se lista la carpeta
-  // completa y se lee el "equipo" y la "fecha" del propio contenido de cada
-  // fichero. Así se detectan también los registros ya existentes en el repo.
-  async function fetchTrainingLogsFromGitHub() {
-    if (!ghSettings.user || !ghSettings.repo || !navigator.onLine) return;
-
-    const files = await listGitHubFolder(TRAINING_LOGS_FOLDER);
-    const headers = {};
-    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
-
-    for (const file of files) {
-      if (!file.name || !file.name.startsWith("Entrenamientos_") || !file.name.endsWith(".json")) continue;
-
-      try {
-        const res = await fetch(file.url, { headers, cache: "no-store" });
-        if (!res.ok) continue;
-        const json = await res.json();
-        const parsed = JSON.parse(b64_to_utf8(json.content));
-        const entries = Array.isArray(parsed) ? parsed : [parsed];
-
-        entries.forEach(remoteLog => {
-          if (!remoteLog || !remoteLog.equipo || !remoteLog.fecha) return;
-          const idx = allTrainingLogs.findIndex(l => l.equipo === remoteLog.equipo && l.fecha === remoteLog.fecha);
-          if (idx >= 0) {
-            allTrainingLogs[idx] = remoteLog;
-          } else {
-            allTrainingLogs.push(remoteLog);
-          }
-        });
-      } catch (e) {
-        console.error(`Error al leer ${file.name}:`, e);
-      }
-    }
-
-    localStorage.setItem("NVA_TRAINING_LOGS", JSON.stringify(allTrainingLogs));
-  }
-
+  
   async function saveWarningsToGitHub() {
     localStorage.setItem("NVA_WARNINGS_DATA", JSON.stringify(warningsData));
-
-    // Un fichero por equipo, igual que los entrenamientos: solo se escriben
-    // los avisos de las jugadoras que pertenecen al equipo actual.
-    const teamPlayers = getPlayersForTeamKey(currentTeam);
-    const teamWarnings = {};
-    teamPlayers.forEach(name => {
-      if (warningsData[name]) teamWarnings[name] = warningsData[name];
-    });
-
-    const fileName = `${WARNINGS_FOLDER}/warning_${sanitizeFileName(currentTeam)}.json`;
-    const success = await writeGitHubFile(fileName, teamWarnings, `Actualizar warnings - ${currentTeam}`);
+    const success = await writeGitHubFile("Warnings.json", warningsData, "Actualizar Registro de Avisos / Warnings");
     if (success) {
-      alert("¡Warnings guardados y sincronizados en GitHub!");
+       alert("Avisos guardados y sincronizados correctamente con GitHub.");
     } else {
-      alert("Guardado localmente. Se sincronizará con GitHub cuando recupere la conexión.");
+       alert("Avisos guardados de forma local (Sin Conexión). Se enviarán a GitHub en cuanto haya red.");
     }
-
-    // Vuelve a la pantalla principal y refresca el acordeón de "Gestión y
-    // Avisos Individuales" para que quede con los avisos actualizados.
-    showScreen("screenCoachTeam");
-    document.getElementById("btnBack").style.display = "none";
     refreshDireccionAccordion();
   }
 
-  // Los warnings se guardan como un fichero por equipo dentro de la carpeta
-  // "warnings/" (p.ej. warning_NVA_Alevin.json). Igual que con los
-  // entrenamientos, se lista la carpeta completa y se fusiona el contenido
-  // de cada fichero (playerName -> {reason, color}) en el objeto global
-  // warningsData, en lugar de depender de un único "Warnings.json" en la raíz.
-  async function fetchWarningsFromGitHub() {
-    if (!ghSettings.user || !ghSettings.repo || !navigator.onLine) return;
+  function saveQueriesToLocalStorage() {
+     localStorage.setItem("NVA_QUERIES_DATA", JSON.stringify(queriesData));
+  }
 
-    const files = await listGitHubFolder(WARNINGS_FOLDER);
-    const headers = {};
-    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
+  async function saveQueriesToGitHub() {
+     await writeGitHubFile("Queries.json", queriesData, "Actualizar Consultas de Dirección");
+  }
 
-    // Se reconstruye desde cero (no se fusiona sobre el warningsData
-    // anterior) para que los avisos ya quitados y guardados no "resuciten"
-    // por quedar cacheados en memoria o en localStorage: el resultado final
-    // debe ser exactamente lo que hay ahora mismo en los ficheros remotos.
-    const freshWarningsData = {};
+  function loadGitHubSettingsUI() {
+    document.getElementById("ghUser").value = ghSettings.user || "";
+    document.getElementById("ghRepo").value = ghSettings.repo || "";
+    document.getElementById("ghToken").value = ghSettings.token || "";
+  }
+  
+  function saveGitHubSettings() {
+    ghSettings = {
+      user: document.getElementById("ghUser").value.trim(),
+      repo: document.getElementById("ghRepo").value.trim(),
+      token: document.getElementById("ghToken").value.trim()
+    };
+    localStorage.setItem("NVA_GH_SETTINGS", JSON.stringify(ghSettings));
+    alert("Ajustes de GitHub guardados exitosamente.");
+    processOfflineQueue();
+  }
 
-    for (const file of files) {
-      if (!file.name || !file.name.startsWith("warning_") || !file.name.endsWith(".json")) continue;
-
-      try {
-        const res = await fetch(file.url, { headers, cache: "no-store" });
-        if (!res.ok) continue;
-        const json = await res.json();
-        const teamWarnings = JSON.parse(b64_to_utf8(json.content));
-        if (teamWarnings && typeof teamWarnings === "object" && !Array.isArray(teamWarnings)) {
-          Object.assign(freshWarningsData, teamWarnings);
-        }
-      } catch (e) {
-        console.error(`Error al leer ${file.name}:`, e);
-      }
-    }
-
-    warningsData = freshWarningsData;
-    localStorage.setItem("NVA_WARNINGS_DATA", JSON.stringify(warningsData));
-    if (document.getElementById("screenWarnings").classList.contains("active")) {
-      renderWarningPlayers();
+  function clearAllLocalStorageData() {
+    if(confirm("¿Estás 100% seguro de que deseas borrar todos los datos locales de tu navegador? (Esta acción no borrará nada de GitHub, pero eliminará datos en caché que no se hayan sincronizado aún)")) {
+       localStorage.clear();
+       location.reload();
     }
   }
 </script>
-
 </body>
 </html>
