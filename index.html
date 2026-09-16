@@ -2896,6 +2896,12 @@
     const headers = {};
     if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
 
+    // Se reconstruye desde cero (no se fusiona sobre el warningsData
+    // anterior) para que los avisos ya quitados y guardados no "resuciten"
+    // por quedar cacheados en memoria o en localStorage: el resultado final
+    // debe ser exactamente lo que hay ahora mismo en los ficheros remotos.
+    const freshWarningsData = {};
+
     for (const file of files) {
       if (!file.name || !file.name.startsWith("warning_") || !file.name.endsWith(".json")) continue;
 
@@ -2905,13 +2911,14 @@
         const json = await res.json();
         const teamWarnings = JSON.parse(b64_to_utf8(json.content));
         if (teamWarnings && typeof teamWarnings === "object" && !Array.isArray(teamWarnings)) {
-          Object.assign(warningsData, teamWarnings);
+          Object.assign(freshWarningsData, teamWarnings);
         }
       } catch (e) {
         console.error(`Error al leer ${file.name}:`, e);
       }
     }
 
+    warningsData = freshWarningsData;
     localStorage.setItem("NVA_WARNINGS_DATA", JSON.stringify(warningsData));
     if (document.getElementById("screenWarnings").classList.contains("active")) {
       renderWarningPlayers();
