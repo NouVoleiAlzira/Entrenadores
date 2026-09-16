@@ -2896,7 +2896,7 @@
   }
 
   async function listGitHubFolder(folderPath) {
-    if (!ghSettings.user || !ghSettings.repo || !navigator.onLine) return [];
+    if (!ghSettings.user || !ghSettings.repo || !navigator.onLine) return null;
     const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${folderPath}`;
     const headers = {};
     if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
@@ -2907,10 +2907,13 @@
         const json = await res.json();
         return Array.isArray(json) ? json : [];
       }
+      if (res.status === 404) return []; // la carpeta aún no existe = no hay ficheros, no es un error
+      console.error(`Error HTTP ${res.status} al listar la carpeta ${folderPath}`);
     } catch (e) {
       console.error(`Error al listar la carpeta ${folderPath}:`, e);
+      return null; // fallo real de red: se distingue de "carpeta vacía"
     }
-    return [];
+    return null;
   }
 
   // Los entrenamientos se guardan como un fichero por equipo y por fecha
@@ -2923,6 +2926,7 @@
     if (!ghSettings.user || !ghSettings.repo || !navigator.onLine) return;
 
     const files = await listGitHubFolder(TRAINING_LOGS_FOLDER);
+    if (!files) return; // fallo de red al listar la carpeta: no tocar la caché local
     const headers = {};
     if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
 
@@ -2988,23 +2992,47 @@
     if (!ghSettings.user || !ghSettings.repo || !navigator.onLine) return;
 
     const files = await listGitHubFolder(WARNINGS_FOLDER);
+    if (!files) return; // fallo de red al listar la carpeta: no tocar la caché local
+
     const headers = {};
     if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
+
+    // Cada fichero "warning_<equipo>.json" contiene el estado COMPLETO de
+    // avisos de ese equipo (solo las jugadoras que tienen aviso ahora mismo).
+    // Por eso, para que un aviso borrado en GitHub también desaparezca aquí,
+    // se reconstruye warningsData desde cero en vez de solo fusionar claves
+    // nuevas sobre el objeto anterior (lo cual dejaba avisos "fantasma" que
+    // ya no existían en el repositorio).
+    const freshWarningsData = {};
+    let allFilesReadOk = true;
 
     for (const file of files) {
       if (!file.name || !file.name.startsWith("warning_") || !file.name.endsWith(".json")) continue;
 
       try {
         const res = await fetch(file.url, { headers });
-        if (!res.ok) continue;
+        if (!res.ok) { allFilesReadOk = false; continue; }
         const json = await res.json();
         const teamWarnings = JSON.parse(b64_to_utf8(json.content));
         if (teamWarnings && typeof teamWarnings === "object" && !Array.isArray(teamWarnings)) {
-          Object.assign(warningsData, teamWarnings);
+          Object.assign(freshWarningsData, teamWarnings);
         }
       } catch (e) {
         console.error(`Error al leer ${file.name}:`, e);
+        allFilesReadOk = false;
       }
+    }
+
+    if (allFilesReadOk) {
+      // Todos los ficheros se leyeron correctamente: freshWarningsData es el
+      // estado real y completo de GitHub, así que sustituye por completo al
+      // anterior (esto es lo que elimina los avisos "fantasma").
+      warningsData = freshWarningsData;
+    } else {
+      // Si algún fichero falló al leerse, se conserva lo que ya había en
+      // caché y solo se actualiza con lo que sí se pudo leer, para no borrar
+      // avisos reales por un fallo puntual de red.
+      Object.assign(warningsData, freshWarningsData);
     }
 
     localStorage.setItem("NVA_WARNINGS_DATA", JSON.stringify(warningsData));
