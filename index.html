@@ -2133,7 +2133,7 @@
     renderCoachTeamSelection();
   }
 
-  function selectCoachAndTeam(coach, teamKey, displayName) {
+  async function selectCoachAndTeam(coach, teamKey, displayName) {
     if (isPdfMode) {
       openDateRangeModal(coach, teamKey, displayName);
       return;
@@ -2144,6 +2144,13 @@
     document.getElementById("sessionTitle").innerText = `${displayName || teamKey} (${coach.name})`;
     resetToTodayDate();
     initSessionData();
+
+    // Refresca los warnings desde GitHub antes de pintar la lista, para que
+    // los avisos que se muestren en Asistencia vengan del fichero por equipo
+    // más reciente (warnings/warning_<equipo>.json) y no de una caché vieja.
+    if (ghSettings.user && ghSettings.repo && navigator.onLine) {
+      await fetchWarningsFromGitHub();
+    }
     renderPlayersMain();
 
     showScreen("screenAttendance");
