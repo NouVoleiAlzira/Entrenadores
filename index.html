@@ -21,6 +21,9 @@
       --gray-light: #f8fafc;
       --gray-border: #cbd5e1;
       --rojo: #fc0341;
+      --fondo-verdefino: #dcffd9;
+      --fondo-rojofino: #f9bcbc;
+      --fondo-amarillofino: #fcffdc;
     }
 
     * {
@@ -300,14 +303,39 @@
     .player-card {
       background: white;
       border-radius: 10px;
-      padding: 8px 10px;
+      padding: 8px 10px 8px 18px;
       margin-bottom: 8px;
-      border-left: 4px solid var(--morado-accent);
+      position: relative;
       box-shadow: 2px 2px 4px #000000;
       display: flex;
       flex-direction: column;
       gap: 6px;
+      transition: background-color 0.2s ease;
     }
+
+    /* Borde lateral dinámico: zona ampliada para facilitar el toque,
+       con la barra de color visible (equivalente a border-l-4) dentro. */
+    .state-strip {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: stretch;
+      border-top-left-radius: 10px;
+      border-bottom-left-radius: 10px;
+      overflow: hidden;
+    }
+
+    .state-strip-bar {
+      width: 10px;
+      height: 100%;
+      transition: background-color 0.15s ease;
+    }
+
+    .state-strip:hover .state-strip-bar { width: 14px; }
 
     .card-row-1 {
       display: flex;
@@ -317,7 +345,7 @@
 
     .player-name {
       font-weight: 700;
-      font-size: 0.88rem;
+      font-size: 1rem;
       color: var(--azul-dark);
       white-space: nowrap;
       overflow: hidden;
@@ -329,7 +357,7 @@
       color: white;
       padding: 4px 8px;
       border-radius: 12px;
-      font-size: 0.75rem;
+      font-size: 0.9rem;
       font-weight: 700;
       display: inline-flex;
       align-items: center;
@@ -391,10 +419,11 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: #f8fafc;
+      gap: 16px;
+      background: transparent;
       padding: 4px 8px;
       border-radius: 6px;
-      border: 1px solid #f1f5f9;
+      border: 1px solid transparent;
     }
 
     .mini-group {
@@ -412,6 +441,67 @@
     .stars { display: flex; gap: 2px; font-size: 1.05rem; cursor: pointer; }
     .star { color: #cbd5e1; }
     .star.active { color: #f59e0b; }
+
+    .strikes-xxx { display: flex; gap: 3px; font-size: 1rem; cursor: pointer; font-weight: 800; margin-right: 14px; }
+    .xmark { color: #cbd5e1; }
+    .xmark.active { color: #ef4444; }
+
+    .comment-toggle-wrap {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .comment-bubble-btn {
+      border: none;
+      background: transparent;
+      font-size: 1rem;
+      line-height: 1;
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 6px;
+      flex-shrink: 0;
+      opacity: 0.55;
+    }
+
+    .comment-bubble-btn.has-comment { opacity: 1; }
+
+    .comment-compact-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .comment-compact-input {
+      flex: 1;
+      min-width: 0;
+      padding: 4px 6px;
+      border: 1px solid var(--gray-border);
+      border-radius: 6px;
+      font-size: 0.75rem;
+      outline: none;
+      background: #fff;
+    }
+
+    .comment-compact-input:focus { border-color: var(--morado-accent); }
+
+    .mic-btn {
+      border: none;
+      background: #f1f5f9;
+      color: #64748b;
+      font-size: 0.85rem;
+      line-height: 1;
+      cursor: pointer;
+      padding: 4px 6px;
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+
+    .mic-btn.recording { background: #ef4444; color: white; }
 
     .strikes-selector { display: flex; gap: 4px; }
     .strike-pill {
@@ -2183,11 +2273,89 @@
     sessionData = playerNames.map(name => ({
       name: name,
       attendance: "presente",
+      absenceType: "",
       absenceReason: "",
       quality: 3,
       strikes: 0,
       comments: ""
     }));
+  }
+
+  // Controla, por índice de jugadora, si el mini-campo de comentarios
+  // está desplegado en la tarjeta de asistencia.
+  let commentBoxOpen = {};
+
+  function getAttendanceStateColor(player) {
+    if (player.attendance === 'falta') {
+      const type = player.absenceType || 'injustificada';
+      return type === 'justificada' ? '#f59e0b' : '#ef4444'; // amarillo / rojo
+    }
+    return '#22c55e'; // verde: presente
+  }
+
+  // Versión suave del color de estado, para el fondo de la tarjeta.
+  function getAttendanceStateSoftColor(player) {
+    if (player.attendance === 'falta') {
+      const type = player.absenceType || 'injustificada';
+      return type === 'justificada' ? '#fef3c7' : '#fee2e2'; // amarillo / rojo suaves
+    }
+    return '#dcfce7'; // verde suave: presente
+  }
+
+  // Ciclo del borde lateral: Presente (verde) -> Falta Injustificada (rojo)
+  // -> Falta Justificada (amarillo) -> Presente...
+  function cycleAttendanceState(index) {
+    const player = sessionData[index];
+    if (player.attendance !== 'falta') {
+      player.attendance = 'falta';
+      player.absenceType = 'injustificada';
+    } else if ((player.absenceType || 'injustificada') === 'injustificada') {
+      player.absenceType = 'justificada';
+    } else {
+      player.attendance = 'presente';
+      player.absenceType = '';
+    }
+    renderPlayersMain();
+  }
+
+  function toggleCommentBox(index) {
+    commentBoxOpen[index] = !commentBoxOpen[index];
+    renderPlayersMain();
+  }
+
+  function startDictation(index) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("El dictado por voz no está disponible en este navegador.");
+      return;
+    }
+    commentBoxOpen[index] = true;
+    const micBtn = document.getElementById(`micBtn-${index}`);
+    if (micBtn) micBtn.classList.add("recording");
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'es-ES';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      const current = sessionData[index].comments || "";
+      sessionData[index].comments = (current ? current + " " : "") + transcript;
+      renderPlayersMain();
+    };
+    recognition.onerror = () => {
+      if (micBtn) micBtn.classList.remove("recording");
+    };
+    recognition.onend = () => {
+      if (micBtn) micBtn.classList.remove("recording");
+    };
+
+    try {
+      recognition.start();
+    } catch (e) {
+      if (micBtn) micBtn.classList.remove("recording");
+    }
   }
 
   function renderPlayersMain() {
@@ -2225,66 +2393,68 @@
         `;
       }
 
+      const stateColor = getAttendanceStateColor(player);
+      card.style.backgroundColor = getAttendanceStateSoftColor(player);
+      const stateLabel = player.attendance === 'falta'
+        ? ((player.absenceType || 'injustificada') === 'justificada' ? 'Falta Justificada' : 'Falta Injustificada')
+        : 'Presente';
+
+      const isCommentOpen = !!commentBoxOpen[index];
+      const safeComment = (player.comments || "").replace(/"/g, "&quot;");
+
       card.innerHTML = `
+        <div class="state-strip" onclick="cycleAttendanceState(${index})" title="Estado: ${stateLabel} (pulsa para cambiar)">
+          <div class="state-strip-bar" style="background:${stateColor};"></div>
+        </div>
+
         <div class="card-row-1">
           <div style="display:flex; align-items:center; gap:4px; flex:1; min-width:0; overflow:hidden;">
             ${nameHtml}
             ${queryHtml}
           </div>
-          <div class="attendance-btn-group">
-            <button class="attendance-btn ${player.attendance === 'presente' ? 'present' : ''}" 
-                    onclick="setAttendance(${index}, 'presente')">Asiste</button>
-            <button class="attendance-btn ${player.attendance === 'falta' ? 'absent' : ''}" 
-                    onclick="setAttendance(${index}, 'falta')">Falta</button>
-          </div>
         </div>
 
-        ${player.attendance === 'falta' ? '' : `
         <div class="card-row-2">
-          <div class="mini-group">
-            <span class="mini-label">Calidad:</span>
-            <div class="stars">
-              ${[1, 2, 3, 4, 5].map(star => `
-                <span class="star ${star <= player.quality ? 'active' : ''}" 
-                      onclick="setQuality(${index}, ${star})">★</span>
-              `).join('')}
+          <div class="comment-toggle-wrap">
+            <button type="button" class="comment-bubble-btn ${player.comments ? 'has-comment' : ''}" 
+                    onclick="toggleCommentBox(${index})" title="Comentarios">💬</button>
+            <div class="comment-compact-row" style="display:${isCommentOpen ? 'flex' : 'none'};">
+              <input type="text" class="comment-compact-input" value="${safeComment}" 
+                     placeholder="Comentario u observación..." 
+                     onchange="updateComment(${index}, this.value)">
+              <button type="button" id="micBtn-${index}" class="mic-btn" 
+                      onclick="startDictation(${index})" title="Dictar por voz">🎤</button>
             </div>
           </div>
 
-          <div class="mini-group">
-            <span class="mini-label">Strikes:</span>
-            <div class="strikes-selector">
-              ${[0, 1, 2, 3].map(s => `
-                <div class="strike-pill ${player.strikes === s ? 'active' : ''}" 
-                     onclick="setStrikes(${index}, ${s})">${s}</div>
-              `).join('')}
-            </div>
+          <div class="strikes-xxx">
+            ${[1, 2, 3].map(n => `
+              <span class="xmark ${n <= player.strikes ? 'active' : ''}" 
+                    onclick="setStrikes(${index}, ${player.strikes === n ? n - 1 : n})">✕</span>
+            `).join('')}
           </div>
-        </div>
-        `}
 
-        <div class="card-row-3">
-          <textarea class="comment-input-long" 
-                    placeholder="Escribir comentario u observación..." 
-                    onchange="updateComment(${index}, this.value)">${player.comments}</textarea>
+          <div class="stars">
+            ${[1, 2, 3, 4, 5].map(star => `
+              <span class="star ${star <= player.quality ? 'active' : ''}" 
+                    onclick="setQuality(${index}, ${star})">★</span>
+            `).join('')}
+          </div>
         </div>
       `;
       container.appendChild(card);
     });
   }
 
-  function setAttendance(index, status) {
-    sessionData[index].attendance = status;
-    if (status === 'falta') {
-      selectedPlayerIndexForAbsence = index;
-      document.getElementById("modalPlayerName").innerText = `Motivo de falta: ${sessionData[index].name}`;
-      document.getElementById("customReason").value = "";
-      document.getElementById("modalAbsence").classList.add("active");
-    } else {
-      renderPlayersMain();
-    }
-  }
+  function setQuality(i, r) { sessionData[i].quality = r; renderPlayersMain(); }
+  function setStrikes(i, c) { sessionData[i].strikes = c; renderPlayersMain(); }
+  function updateComment(i, text) { sessionData[i].comments = text; }
 
+  // Las funciones siguientes pertenecen al antiguo modal de "Motivo de la
+  // Falta" (modalAbsence). Ya no se invocan desde el flujo de asistencia
+  // (el estado se marca ahora con el borde lateral y el motivo, si se desea,
+  // se anota en el campo de comentarios), pero se conservan intactas por si
+  // el modal se usa en algún otro punto.
   function selectReason(reason) { document.getElementById("customReason").value = reason; }
 
   function confirmAbsence() {
@@ -2296,10 +2466,6 @@
     document.getElementById("modalAbsence").classList.remove("active");
     renderPlayersMain();
   }
-
-  function setQuality(i, r) { sessionData[i].quality = r; renderPlayersMain(); }
-  function setStrikes(i, c) { sessionData[i].strikes = c; renderPlayersMain(); }
-  function updateComment(i, text) { sessionData[i].comments = text; }
 
   function showScreen(id) {
     document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
