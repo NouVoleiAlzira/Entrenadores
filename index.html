@@ -2269,6 +2269,7 @@
   }
 
   function initSessionData() {
+    commentBoxOpen = {};
     const playerNames = getPlayersForTeamKey(currentTeam);
     sessionData = playerNames.map(name => ({
       name: name,
