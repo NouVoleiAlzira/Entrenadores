@@ -141,18 +141,19 @@
     }
 
     .btn-header-icon {
-      background: rgba(255, 255, 255, 0.2);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: transparent;
+      border: 0px solid rgba(255, 255, 255, 0.08);
       color: white;
       height: 34px;
       padding: 2px 6px;
-      border-radius: 8px;
-      font-size: 0.85rem;
+      /*border-radius: 8px;*/
+      font-size: 2rem;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 4px;
-      box-shadow: 2px 2px 4px #000000;
+      /*box-shadow: 2px 2px 4px #000000;*/
+      text-shadow: 0 0 6px rgba(10, 10, 255, 1), 0 0 14px rgba(255, 255, 255, 0.75);
     }
 
     /*.btn-back { display: none; }*/
@@ -238,15 +239,16 @@
     }
 
     .section-title {
-      color: #000000;
+      color: white;
       font-size: 1.3rem;
       margin-bottom: 12px;
-      font-weight: 800;
+      font-weight: 600;
+      text-shadow: 0 0 2px rgba(0, 0, 0, 1), 0 0 10px rgba(255, 255, 255, 0.7);
       text-align: center;
-      background: linear-gradient(120deg, #e0041a, #0320ff);
+      /*background: linear-gradient(120deg, #e0041a, #0320ff);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      -webkit-text-stroke: 0.25px #ffffff;
+      -webkit-text-stroke: 0.25px #ffffff;*/
       
     }
 
@@ -336,7 +338,7 @@
     }
 
     .btn-history {
-      background: var(--btn-fondorojo);
+      background: var(--btn-fondorAzul);
       color: white;
       border: none;
       padding: 6px 9px;
@@ -357,8 +359,8 @@
     .player-card {
       background: white;
       border-radius: 10px;
-      padding: 8px 10px 8px 18px;
-      margin-bottom: 8px;
+      padding: 4px 6px 4px 18px;
+      margin-bottom: 6px;
       position: relative;
       box-shadow: 2px 2px 4px #000000;
       display: flex;
@@ -389,11 +391,11 @@
       transition: background-color 0.15s ease;
     }
 
-    .state-strip:hover .state-strip-bar { width: 14px; }
+    .state-strip:hover .state-strip-bar { width: 16px; filter: blur(2px); }
 
     .card-row-1 {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-start;
       align-items: center;
     }
 
@@ -472,11 +474,12 @@
     /*VIC tarjeta de jugadoras*/
     .card-row-2 {
       display: flex;
-      justify-content: space-between;
+      /*justify-content: space-between;*/
+      justify-content: flex-start;
       align-items: center;
-      gap: 16px;
+      gap: 4px;
       background: transparent;
-      padding: 2px 8px;
+      padding: 2px 6px;
       border-radius: 6px;
       /*border: 1px solid transparent;*/
     }
@@ -662,14 +665,15 @@
 
     .comment-input-long {
       width: 100%;
-      padding: 6px 8px;
-      border: 1px solid var(--gray-border);
+      padding: 6px 6px;
+      border: 1px solid var(#000000);
       border-radius: 6px;
       font-size: 0.78rem;
       outline: none;
       background: #fff;
       resize: vertical;
       min-height: 28px;
+      opacity: 0.65;
     }
 
     .comment-input-long:focus { border-color: var(--morado-accent); }
@@ -1264,8 +1268,7 @@
   <!-- ENCABEZADO -->
   <header>
     <button class="btn-header-icon btn-back" id="btnBack" onclick="withLoading(goBack, 'Sincronizando datos...')" style="display: none; visibility: visible; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; gap: 4px; padding: 12px 10px; min-height: 50px;">
-      <span>Volver</span>
-      <span>&lt;&lt;</span>
+      <span>❰❰</span>
     </button>  
     <div class="header-title-container">
       <h1>NOU VOLEI ALZIRA</h1>
@@ -1945,7 +1948,7 @@
             <span>🛡️ ${displayName}</span>
             ${warningBadge}
           </div>
-          <span>Avisos →</span>
+          <span>➤</span>
         `;
         btn.onclick = () => openWarningTeam(teamKey, displayName);
         container.appendChild(btn);
@@ -2799,7 +2802,7 @@
 
             const teamBtn = document.createElement("button");
             teamBtn.className = "team-btn";
-            teamBtn.innerHTML = `<span>🏐 ${displayName}</span> <span>${isPdfMode ? 'Generar PDF →' : 'Ingresar ➤'}</span>`;
+            teamBtn.innerHTML = `<span>🏐 ${displayName}</span> <span>${isPdfMode ? 'Generar PDF →' : ' ➤'}</span>`;
             teamBtn.onclick = () => selectCoachAndTeam(coach, teamKey, displayName);
             teamsDiv.appendChild(teamBtn);
           });
