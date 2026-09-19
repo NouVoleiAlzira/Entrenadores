@@ -16,7 +16,8 @@
       --azul-dark: #0f172a;
       --morado-accent: #7e22ce;
       --rosa-brand: #ec4899;
-      --bg-gradient: linear-gradient(135deg, #1e1b4b 0%, #311042 50%, #1e3c72 100%);
+      --bg-gradient: linear-gradient(135deg, #000587 0%, #360347 100%);
+      --bg-gradient1: linear-gradient(135deg, #690410 0%, #0b0157 100%);
       --text-dark: #1e293b;
       --gray-light: #f8fafc;
       --gray-border: #cbd5e1;
@@ -24,6 +25,11 @@
       --fondo-verdefino: #dcffd9;
       --fondo-rojofino: #f9bcbc;
       --fondo-amarillofino: #fcffdc;
+      --btn-fondoMorado: linear-gradient(180deg, #a855f7, #2c024d);
+      --btn-fondoVerde: linear-gradient(180deg, #42db1f, #023608);
+      --btn-fondorojo: linear-gradient(180deg, #f70a2e, #2e0108);
+      --btn-fondorAzul: linear-gradient(180deg, #0509eb, #0e044a);
+      --btn-fondoAmarillo: linear-gradient(180deg, #edf518, #363801);
     }
 
     * {
@@ -61,24 +67,24 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 320px;
-      height: 320px;
+      width: 100vw;
+      height: 100vh;
       background: url('LOGO NVA.png') no-repeat center center;
       background-size: contain;
-      opacity: 0.08;
+      opacity: 0.05;
       pointer-events: none;
       z-index: 0;
     }
 
     header {
-      background: rgba(15, 23, 42, 0.92);
+      background: var(--bg-gradient1);
       backdrop-filter: blur(10px);
       padding: 12px 16px;
       color: white;
       position: sticky;
       top: 0;
       z-index: 20;
-      border-bottom: 2px solid var(--rosa-brand);
+      border-bottom: 6px groove #4a0044;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -88,13 +94,14 @@
     header::before {
       content: "";
       position: absolute;
-      top: 0;
-      left: 0;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
       width: 100%;
-      height: 100%;
+      height: 200%;
       background: url('LOGO NVA.png') no-repeat center center;
-      background-size: 40%;
-      opacity: 0.35;
+      background-size: contain; /* logo completo, centrado, en la capa inferior (detrás del título) */
+      opacity: 0.25;
       pointer-events: none;
       z-index: 0;
     }
@@ -106,19 +113,27 @@
       z-index: 1; /* Asegura que el texto y los botones queden por encima de la capa del logo */
     }
 
+    /* El título se centra respecto al ANCHO COMPLETO de la cabecera (no del
+       espacio que dejan los botones laterales). Se reservan los laterales para
+       que nunca quede tapado por Volver / ⚙️ y no bloquea sus clics. */
     .header-title-container {
+      position: absolute;
+      top: 0; bottom: 0; left: 0; right: 0;
+      padding: 0 88px;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 10px;
-      flex: 1;
+      pointer-events: none;
+      z-index: 1; /* por encima del logo (::before, z-index 0) */
     }
 
     header h1 {
-      font-size: 1.8rem;
+      font-size: clamp(1rem, 4.9vw, 1.8rem);
+      white-space: nowrap;
       font-weight: 1500;
       letter-spacing: 0.5px;
-      background: linear-gradient(90deg, #38bdf8, var(--rosa-brand));
+      background: linear-gradient(120deg, #0522fa, #e0041a);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       text-align: center;
@@ -126,11 +141,11 @@
     }
 
     .btn-header-icon {
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.2);
       border: 1px solid rgba(255, 255, 255, 0.08);
       color: white;
       height: 34px;
-      padding: 0 10px;
+      padding: 2px 6px;
       border-radius: 8px;
       font-size: 0.85rem;
       cursor: pointer;
@@ -157,7 +172,7 @@
 
     .btn-pdf-mode {
       width: 100%;
-      background: linear-gradient(135deg, #a855f7, #581c87);
+      background: var(--btn-fondoMorado);
       color: white;
       border: none;
       padding: 8px 12px;
@@ -176,7 +191,7 @@
 
     .btn-pdf-mode2 {
       width: 100%;
-      background: linear-gradient(135deg, #035efc, #581c87);
+      background: var(--btn-fondorAzul);
       color: white;
       border: none;
       padding: 8px 12px;
@@ -194,7 +209,7 @@
     }
 
     .pdf-mode-banner {
-      background: linear-gradient(135deg, #ba6a09, #ba091e);
+      background: linear-gradient(180deg, #ba6a09, #ba091e);
       color: white;
       padding: 8px 12px;
       border-radius: 8px;
@@ -223,15 +238,16 @@
     }
 
     .section-title {
-      color: white;
-      font-size: 1.2rem;
+      color: #000000;
+      font-size: 1.3rem;
       margin-bottom: 12px;
       font-weight: 800;
       text-align: center;
-      background: linear-gradient(90deg, #38bdf8, var(--rosa-brand));
+      background: linear-gradient(120deg, #e0041a, #0320ff);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      -webkit-text-stroke: 0.25px #000000;
+      -webkit-text-stroke: 0.25px #ffffff;
+      
     }
 
     .coach-btn {
@@ -254,7 +270,8 @@
     }
 
     .coach-btn.selected {
-      background: linear-gradient(135deg, var(--morado-accent), var(--azul-primary));
+      /*background: linear-gradient(180deg, var(--morado-accent), var(--azul-primary));*/
+      background: rgba(255, 255, 255, 0.35);
       border-color: var(--rosa-brand);
       box-shadow: 2px 2px 4px #000000;
     }
@@ -294,7 +311,7 @@
 
     .date-container {
       width: fit-content;
-      background: rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.15);
       border: 1px solid rgba(255, 255, 255, 0.2);
       border-radius: 10px;
       padding: 6px 6px;
@@ -319,7 +336,7 @@
     }
 
     .btn-history {
-      background: linear-gradient(135deg, #0284c7, #0369a1);
+      background: var(--btn-fondorojo);
       color: white;
       border: none;
       padding: 6px 9px;
@@ -452,15 +469,16 @@
     .attendance-btn.present { background: #22c55e; color: white; }
     .attendance-btn.absent { background: #ef4444; color: white; }
 
+    /*VIC tarjeta de jugadoras*/
     .card-row-2 {
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 16px;
       background: transparent;
-      padding: 4px 8px;
+      padding: 2px 8px;
       border-radius: 6px;
-      border: 1px solid transparent;
+      /*border: 1px solid transparent;*/
     }
 
     .mini-group {
@@ -475,13 +493,14 @@
       color: #64748b;
     }
 
-    .stars { display: flex; gap: 2px; font-size: 1.05rem; cursor: pointer; }
+    .stars { display: flex; gap: 0px; font-size: 1.2rem; cursor: pointer; }
     .star { color: #cbd5e1; }
     .star.active { color: #f59e0b; }
 
-    .strikes-xxx { display: flex; gap: 3px; font-size: 1rem; cursor: pointer; font-weight: 800; margin-right: 14px; }
+    .strikes-xxx { display: flex; gap: 0px; font-size: 1rem; cursor: pointer; font-weight: 800; margin-right: 2px; }
     .xmark { color: #cbd5e1; }
     .xmark.active { color: #ef4444; }
+    .xmark:not(.active) { opacity: 0.45; } /* ✖️ apagado; ❌ (activo) a plena intensidad */
 
     .comment-toggle-wrap {
       display: flex;
@@ -868,7 +887,7 @@
 
     .btn-save-session {
       width: 100%;
-      background: linear-gradient(135deg, var(--rojo), var(--morado-accent));
+      background: var(--btn-fondorojo);
       color: white;
       border: none;
       padding: 8px 12px;
@@ -967,7 +986,7 @@
       top: -9999px;
       width: 800px;
       min-height: 1131px; 
-      background: linear-gradient(135deg, rgba(0, 102, 255, 0.3) 0%, rgba(67, 100, 247, 0.3) 50%, rgba(0, 210, 255, 0.3) 100%);
+      background: linear-gradient(180deg, rgba(0, 102, 255, 0.3) 0%, rgba(67, 100, 247, 0.3) 50%, rgba(0, 210, 255, 0.3) 100%);
       padding: 35px;
       color: #0f172a;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -1003,7 +1022,7 @@
     }
 
     .pdf-table th {
-      background: linear-gradient(135deg, #0052d4, #4364f7);
+      background: linear-gradient(180deg, #0052d4, #4364f7);
       color: white;
       padding: 10px 12px;
       text-align: left;
@@ -1044,7 +1063,78 @@
       top: -9999px;
       width: 800px;
       min-height: 1131px; 
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(241, 245, 249, 0.95) 100%);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(241, 245, 249, 0.95) 100%);
+      padding: 35px;
+      color: #0f172a;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+
+    /* ===== OTROS: botones de información ===== */
+    .coach-btn.otros-nuevo {
+      justify-content: center;
+      border-style: dashed;
+      font-weight: 800;
+      background: rgba(255, 255, 255, 0.18);
+    }
+    .otros-panel {
+      background: #ffffff;
+      color: #0f172a;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin: -2px 0 10px 0;
+      font-size: 0.86rem;
+      line-height: 1.5;
+      box-shadow: 2px 2px 4px #000000;
+      overflow-wrap: anywhere;
+    }
+    .otros-panel h3, .otros-panel h4 { font-size: 0.95rem; margin: 10px 0 4px 0; color: #0f172a; }
+    .otros-panel ul, .otros-panel ol { margin: 4px 0 8px 20px; }
+    .otros-panel li { margin-bottom: 3px; }
+    .otros-panel a { color: #0369a1; font-weight: 600; }
+    .otros-block { border-left: 5px solid #94a3b8; background: #f8fafc; border-radius: 8px; padding: 8px 10px; margin: 10px 0; }
+    .otros-block h4 { margin: 0 0 4px 0; }
+    .otros-actions { display: flex; gap: 8px; margin-top: 10px; padding-top: 8px; border-top: 1px solid #e2e8f0; }
+    .otros-actions button {
+      flex: 1; border: none; border-radius: 8px; padding: 7px 8px; font-weight: 700;
+      font-size: 0.75rem; color: white; cursor: pointer; box-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+    }
+    .rte-toolbar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+    .rte-toolbar button {
+      min-width: 36px; height: 32px; padding: 0 8px; border: 1px solid var(--gray-border);
+      background: #f1f5f9; color: #0f172a; border-radius: 8px; font-size: 0.85rem; cursor: pointer;
+    }
+    .rte-toolbar button:active { background: #cbd5e1; }
+    .rte-editor {
+      border: 1px solid var(--gray-border);
+      border-radius: 8px;
+      padding: 10px;
+      min-height: 150px;
+      max-height: 42vh;
+      overflow-y: auto;
+      font-size: 0.88rem;
+      line-height: 1.45;
+      outline: none;
+      background: #fff;
+      color: #0f172a;
+    }
+    .rte-editor:focus { border-color: #0284c7; }
+    .rte-editor:empty:before { content: attr(data-placeholder); color: #94a3b8; }
+    .rte-editor ul, .rte-editor ol { margin-left: 20px; }
+    .rte-editor h3 { font-size: 1rem; margin: 6px 0 2px 0; }
+
+    #pdfResultsExportArea {
+      position: absolute;
+      left: -9999px;
+      top: -9999px;
+    }
+
+    .pdf-results-page {
+      position: relative;
+      width: 800px;
+      height: 1131px;
+      background: linear-gradient(180deg, rgba(0, 102, 255, 0.18) 0%, rgba(67, 100, 247, 0.18) 50%, rgba(0, 210, 255, 0.18) 100%), #ffffff;
       padding: 35px;
       color: #0f172a;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -1173,14 +1263,14 @@
   </div>
   <!-- ENCABEZADO -->
   <header>
-    <button class="btn-header-icon btn-back" id="btnBack" onclick="withLoading(goBack, 'Sincronizando datos...')" style="visibility: visible; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; gap: 4px; padding: 12px 10px; min-height: 50px;">
+    <button class="btn-header-icon btn-back" id="btnBack" onclick="withLoading(goBack, 'Sincronizando datos...')" style="display: none; visibility: visible; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; gap: 4px; padding: 12px 10px; min-height: 50px;">
       <span>Volver</span>
       <span>&lt;&lt;</span>
     </button>  
     <div class="header-title-container">
       <h1>NOU VOLEI ALZIRA</h1>
     </div>
-    <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; margin-left: auto;">
       <button class="btn-header-icon" title="Opciones (Propietario)" onclick="promptOwnerPassword()">⚙️</button>
       <span id="netStatusBadge" class="network-badge network-online">Online</span>
     </div>
@@ -1193,26 +1283,38 @@
       <button onclick="togglePdfMode()" style="background:none; border:none; color:white; font-weight:700; cursor:pointer;">✕ Cancelar</button>
     </div>
 
-    <div class="section-title">Entrenamientos y Partidos</div>
+    <div class="section-title">🔗 Entrenamientos y Partidos</div>
     <div id="coachTeamList"></div>
     
-    <button class="btn-pdf-mode" id="btnPdfMode" onclick="togglePdfMode()" style="margin-top:10px;">📄 CREAR PDF</button>
-
-    <div class="section-title" style="margin-top:20px;">Tablón de Consultas y Pendientes</div>
-    <textarea id="tablonTextarea" class="comment-input-long" placeholder="Escribe aquí las noticias del club..." oninput="autoResizeTablon(this)" onchange="updateTablon(this.value)"></textarea>
-    <div style="display:flex; gap:8px;">
-      <button class="btn-save-session" style="flex:1;" onclick="withLoading(saveTablon, 'Guardando Tablón en GitHub...')">Guardar Tablón</button>
-      <button class="btn-save-session" style="flex:1; background: linear-gradient(135deg, #0284c7, #1e3c72);" onclick="withLoading(refreshTablon, 'Refrescando Tablón...')">🔄 Refrescar</button>
+    <div style="display:flex; gap:8px; margin-top:10px;">
+      <button class="btn-pdf-mode" id="btnPdfMode" onclick="togglePdfMode()" style="flex:1; min-width:0; margin-bottom:0;">📊 PDF ENTRENAMIENTOS</button>
+      <button class="btn-pdf-mode" id="btnPdfResultados" onclick="openResultsRangeModal()" style="flex:1; min-width:0; margin-bottom:0;">🏆 PDF RESULTADOS</button>
     </div>
 
-    <div class="section-title" style="margin-top:20px;">Dirección NVA</div>
+    <div class="section-title" style="margin-top:20px;">📝 Tablón de Consultas</div>
+    <textarea id="tablonTextarea" class="comment-input-long" placeholder="Escribe aquí las noticias del club..." oninput="autoResizeTablon(this)" onchange="updateTablon(this.value)"></textarea>
+    <div style="display:flex; gap:8px;">
+      <button class="btn-save-session" style="flex:1;" onclick="withLoading(saveTablon, 'Guardando Tablón en GitHub...')">💾 Guardar Tablón</button>
+      <button class="btn-save-session" style="flex:1; background: var(--btn-fondoVerde);" onclick="withLoading(refreshTablon, 'Refrescando Tablón...')">🔄 Refrescar</button>
+      <button class="btn-save-session" style="flex:1; background: var(--btn-fondoAmarillo);" onclick="openOtros()">🗃️ OTROS</button>
+    </div>
+
+    <div class="section-title" style="margin-top:20px;">💼 Dirección NVA</div>
     <button class="coach-btn" id="btnDireccionNVA" onclick="toggleDireccionNVA()">
-      <span>🏢 Gestión y Avisos Individuales</span> <span id="iconDireccionNVA">►</span>
+      <span>🔔 Gestión y Avisos Individuales</span> <span id="iconDireccionNVA">➤</span>
     </button>
     <div id="direccionTeamsContainer" class="teams-container" style="display: none;"></div>
 
-    <button class="btn-pdf-mode2" style="margin-top: 10px;" onclick="openCreateQueryModal()">❓ Crear Consulta</button>
-    <button class="btn-pdf-mode" style="margin-top: 4px;" onclick="openSelectQueryPdfModal()">📄 Crear PDF de Consulta</button>
+    <div style="display:flex; gap:8px; margin-top:10px;">
+      <button class="btn-pdf-mode2" style="flex:1; min-width:0; margin-bottom:0;" onclick="openCreateQueryModal()">📨 Nueva CONSULTA</button>
+      <button class="btn-pdf-mode" style="flex:1; min-width:0; margin-bottom:0;" onclick="openSelectQueryPdfModal()">📝 PDF CONSULTA</button>
+    </div>
+  </div>
+
+  <!-- PANTALLA OTROS: botones de información e instrucciones -->
+  <div class="screen" id="screenOtros">
+    <div class="section-title">Otros · Información e Instrucciones</div>
+    <div id="otrosList"></div>
   </div>
 
   <!-- PANTALLA 2: REGISTRO DE ENTRENAMIENTO -->
@@ -1229,7 +1331,7 @@
     </div>
 
     <div id="playersContainer"></div>
-    <button class="btn-save-session" style="padding:12px; font-size:0.9rem;" onclick="withLoading(saveSession, 'Guardando entrenamiento en GitHub...')">Guardar Entrenamiento en GitHub</button>
+    <button class="btn-save-session" style="padding:12px; font-size:0.9rem;" onclick="withLoading(saveSession, 'Guardando entrenamiento en GitHub...')">💾 Guardar Entrenamiento en GitHub</button>
   </div>
 
   <!-- PANTALLA: REGISTRO DE PARTIDO -->
@@ -1248,14 +1350,14 @@
     <div id="matchScoreboard" class="match-scoreboard"></div>
 
     <div id="matchPlayersContainer"></div>
-    <button class="btn-save-session" style="padding:12px; font-size:0.9rem;" onclick="withLoading(saveMatch, 'Guardando partido en GitHub...')">Guardar Partido en GitHub</button>
+    <button class="btn-save-session" style="padding:12px; font-size:0.9rem;" onclick="withLoading(saveMatch, 'Guardando partido en GitHub...')">💾 Guardar Partido en GitHub</button>
   </div>
 
   <!-- PANTALLA 3: GESTIÓN DE WARNINGS POR EQUIPO -->
   <div class="screen" id="screenWarnings">
     <div class="section-title" id="warningTeamTitle">Dirección NVA - Equipo</div>
     <div id="warningPlayersContainer"></div>
-    <button class="btn-save-session" style="padding:12px; font-size:0.9rem;" onclick="withLoading(saveWarningsToGitHub, 'Guardando amonestaciones en GitHub...')">Guardar Warning en GitHub</button> 
+    <button class="btn-save-session" style="padding:12px; font-size:0.9rem;" onclick="withLoading(saveWarningsToGitHub, 'Guardando amonestaciones en GitHub...')">💾 Guardar Warning en GitHub</button> 
   </div>
 
   <!-- MODALES DE LA APLICACIÓN -->
@@ -1275,7 +1377,30 @@
         <div class="color-circle" data-color="#eab308" style="background:#eab308;" title="Amarillo"></div>
       </div>
 
-      <button class="btn-save-session" onclick="confirmWarningReason()">Guardar Motivo</button>
+      <button class="btn-save-session" onclick="confirmWarningReason()">💾 Guardar Motivo</button>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modalOtrosEditor">
+    <div class="modal-box" style="max-width: 420px;">
+      <div class="modal-header">
+        <div class="modal-title" id="otrosEditorTitle">➕ Nuevo botón</div>
+        <button class="btn-close-modal" onclick="closeOtrosEditor()">✕</button>
+      </div>
+      <label style="font-size:0.75rem; color:#64748b; font-weight:600; display:block; margin-bottom:4px;">Nombre del botón:</label>
+      <input type="text" id="otrosEditorName" class="app-input" maxlength="60" placeholder="Ej: Horarios de pabellón" style="margin-bottom:10px;">
+      <label style="font-size:0.75rem; color:#64748b; font-weight:600; display:block; margin-bottom:4px;">Información:</label>
+      <div class="rte-toolbar">
+        <button type="button" title="Negrita" onmousedown="event.preventDefault()" onclick="otrosFormat('bold')"><b>N</b></button>
+        <button type="button" title="Cursiva" onmousedown="event.preventDefault()" onclick="otrosFormat('italic')"><i>K</i></button>
+        <button type="button" title="Subrayado" onmousedown="event.preventDefault()" onclick="otrosFormat('underline')"><u>S</u></button>
+        <button type="button" title="Título" onmousedown="event.preventDefault()" onclick="otrosFormat('title')">T</button>
+        <button type="button" title="Lista con viñetas" onmousedown="event.preventDefault()" onclick="otrosFormat('insertUnorderedList')">• Lista</button>
+        <button type="button" title="Lista numerada" onmousedown="event.preventDefault()" onclick="otrosFormat('insertOrderedList')">1. Lista</button>
+        <button type="button" title="Quitar formato" onmousedown="event.preventDefault()" onclick="otrosFormat('removeFormat')">✖ Formato</button>
+      </div>
+      <div id="otrosEditorBody" class="rte-editor" contenteditable="true" data-placeholder="Escribe aquí la información..."></div>
+      <button class="btn-save-session" onclick="saveOtrosEditor()">Aceptar</button>
     </div>
   </div>
 
@@ -1516,7 +1641,7 @@
           <label style="font-size:0.72rem; color:#64748b;">Token de Acceso Personal (PAT):</label>
           <input type="password" id="ghToken" class="app-input" placeholder="ghp_xxxxxxxxxxxx" style="margin-bottom: 6px;">
 
-          <button class="btn-save-session" style="padding:8px;" onclick="withLoading(saveGitHubSettings, 'Guardando ajustes de GitHub...')">Guardar Ajustes GitHub</button>
+          <button class="btn-save-session" style="padding:8px;" onclick="withLoading(saveGitHubSettings, 'Guardando ajustes de GitHub...')">💾 Guardar Ajustes GitHub</button>
         </div>
 
         <div class="config-section">
@@ -1575,6 +1700,9 @@
     </div>
   </div>
 </div>
+
+<!-- CONTENEDOR OCULTO PARA EXPORTACIÓN A PDF RESULTADOS DE PARTIDOS -->
+<div id="pdfResultsExportArea"></div>
 
 <!-- CONTENEDOR OCULTO PARA EXPORTACIÓN A PDF CONSULTAS -->
 <div id="pdfQueryExportArea">
@@ -1794,7 +1922,7 @@
 
   function toggleDireccionNVA() {
     isDireccionExpanded = !isDireccionExpanded;
-    document.getElementById("iconDireccionNVA").innerText = isDireccionExpanded ? '▼' : '►';
+    document.getElementById("iconDireccionNVA").innerText = isDireccionExpanded ? '🔻' : '➤';
     const container = document.getElementById("direccionTeamsContainer");
     container.style.display = isDireccionExpanded ? 'flex' : 'none';
     
@@ -2208,7 +2336,12 @@
     }
   }
 
+  // Modo del calendario de período: false = informe de entrenamiento de un
+  // equipo; true = PDF con los resultados de todos los partidos del período.
+  let pdfResultsMode = false;
+
   function openDateRangeModal(coach, teamKey, displayName) {
+    pdfResultsMode = false;
     pdfSelectedCoach = coach;
     pdfSelectedTeamKey = teamKey;
     pdfSelectedTeamName = displayName;
@@ -2305,7 +2438,138 @@
   function processPdfGeneration() {
     closeDateRangeModal();
     if (isPdfMode) togglePdfMode();
+    if (pdfResultsMode) {
+      withLoading(generateResultsPDF, 'Generando PDF de resultados...');
+      return;
+    }
     generatePDF();
+  }
+
+  // --- PDF Resultados: todos los partidos del período seleccionado ---
+  function openResultsRangeModal() {
+    if (isPdfMode) togglePdfMode();
+    pdfResultsMode = true;
+    rangeStart = null;
+    rangeEnd = null;
+    calYear = new Date().getFullYear();
+    calMonth = new Date().getMonth();
+
+    document.getElementById("pdfModalTitle").innerText = "🗓️ Período - Resultados de Partidos";
+    updateDateSelectionSummary();
+    renderCalendar();
+    document.getElementById("modalDateRange").classList.add("active");
+  }
+
+  async function generateResultsPDF() {
+    // Igual que en los demás informes: se sincroniza antes de recopilar para
+    // incluir partidos guardados en GitHub desde otros dispositivos.
+    if (ghSettings.user && ghSettings.repo && navigator.onLine) {
+      if (offlineQueue.length > 0) await processOfflineQueue();
+      await fetchMatchLogsFromGitHub();
+    }
+
+    const logs = allMatchLogs
+      .filter(l => l && l.fecha >= rangeStart && l.fecha <= rangeEnd)
+      .sort((a, b) => a.fecha === b.fecha ? String(a.equipo).localeCompare(String(b.equipo)) : a.fecha.localeCompare(b.fecha));
+
+    if (logs.length === 0) {
+      alert(`No existen partidos guardados entre ${rangeStart} y ${rangeEnd}.`);
+      return;
+    }
+
+    const esc = (v) => escapeHtmlMatch(v);
+    const fmtDate = (d) => { const [y, m, dd] = d.split("-"); return `${dd}/${m}/${y}`; };
+
+    const rowsHtml = logs.map(log => {
+      const m = log.marcador;
+      const hasScore = !!(m && (m.local || m.visitante || (m.sets || []).some(s => s && (s.local != null || s.visitante != null))));
+      const parciales = hasScore
+        ? (m.sets || []).filter(s => s && s.local != null && s.visitante != null).map(s => `${s.local}-${s.visitante}`).join(", ")
+        : "";
+      const clubEsLocal = hasScore && m.local === log.equipo;
+      const clubEsVisit = hasScore && m.visitante === log.equipo;
+      const sl = hasScore ? (m.setsLocal ?? 0) : 0;
+      const sv = hasScore ? (m.setsVisitante ?? 0) : 0;
+      let color = "#0f172a";
+      if (hasScore && (clubEsLocal || clubEsVisit) && sl !== sv) {
+        const clubGana = clubEsLocal ? sl > sv : sv > sl;
+        color = clubGana ? "#15803d" : "#b91c1c";
+      }
+      const cell = "padding:8px 10px; border-bottom:1px solid rgba(203,213,225,0.7); vertical-align:middle;";
+      return `
+        <tr>
+          <td style="${cell} white-space:nowrap;">${fmtDate(log.fecha)}</td>
+          <td style="${cell} font-weight:600;">${esc(log.equipo)}</td>
+          <td style="${cell}">${hasScore ? esc(m.local || "Home") : "—"}</td>
+          <td style="${cell} text-align:center; font-weight:800; font-size:15px; color:${color}; white-space:nowrap;">${hasScore ? `${sl} - ${sv}` : "Sin resultado"}</td>
+          <td style="${cell}">${hasScore ? esc(m.visitante || "VISIT") : "—"}</td>
+          <td style="${cell} font-size:11px; color:#475569;">${esc(parciales)}</td>
+        </tr>`;
+    });
+
+    const FIRST_PAGE_ROWS = 12;
+    const NEXT_PAGE_ROWS = 17;
+    const chunks = [rowsHtml.slice(0, FIRST_PAGE_ROWS)];
+    for (let i = FIRST_PAGE_ROWS; i < rowsHtml.length; i += NEXT_PAGE_ROWS) {
+      chunks.push(rowsHtml.slice(i, i + NEXT_PAGE_ROWS));
+    }
+
+    const tableHead = `
+      <thead>
+        <tr>
+          <th>Fecha</th><th>Equipo</th><th>Home</th>
+          <th style="text-align:center;">Sets</th><th>Visit</th><th>Parciales</th>
+        </tr>
+      </thead>`;
+
+    const exportArea = document.getElementById("pdfResultsExportArea");
+    exportArea.innerHTML = chunks.map((rows, idx) => `
+      <div class="pdf-results-page">
+        ${idx === 0 ? `
+          <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:3px solid #0052d4; padding-bottom:12px; margin-bottom:18px;">
+            <img src="LOGO NVA.png" alt="Logo" style="height:65px; width:auto;">
+            <h1 style="font-size:24px; color:#0052d4; flex:1; text-align:center; font-weight:800; margin:0 10px; letter-spacing:0.5px;">Club Nou Vòlei Alzira</h1>
+          </div>
+          <div style="text-align:center; margin-bottom:6px;">
+            <h2 style="font-size:24px; color:#0f172a; margin:0 0 8px 0; font-weight:800;">Resultados de Partidos</h2>
+            <p style="font-size:16px; color:#334155; margin:0; font-weight:700;">Período: ${rangeStart} al ${rangeEnd}</p>
+            <p style="font-size:13px; color:#64748b; margin:4px 0 0 0;">${logs.length} partido${logs.length === 1 ? "" : "s"}</p>
+          </div>` : `
+          <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:2px solid #0052d4; padding-bottom:8px; margin-bottom:8px;">
+            <span style="font-size:15px; font-weight:800; color:#0052d4;">Resultados de Partidos</span>
+            <span style="font-size:12px; color:#334155; font-weight:700;">${rangeStart} al ${rangeEnd}</span>
+          </div>`}
+        <table class="pdf-table" style="margin-top:12px; margin-bottom:0;">
+          ${tableHead}
+          <tbody>${rows.join("")}</tbody>
+        </table>
+        <div style="position:absolute; bottom:18px; left:0; right:0; text-align:center; font-size:11px; color:#94a3b8;">Página ${idx + 1} de ${chunks.length}</div>
+      </div>
+    `).join("");
+
+    // Espera a que carguen los logos antes de capturar
+    const imgs = Array.from(exportArea.querySelectorAll("img"));
+    await Promise.all(imgs.map(img => img.complete ? Promise.resolve() : new Promise(r => { img.onload = img.onerror = r; })));
+
+    try {
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const pages = exportArea.querySelectorAll(".pdf-results-page");
+
+      for (let i = 0; i < pages.length; i++) {
+        const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+        if (i > 0) pdf.addPage();
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pdfWidth, pdfHeight);
+      }
+      pdf.save(`Resultados_Partidos_${rangeStart}_al_${rangeEnd}.pdf`);
+    } catch (e) {
+      console.error("Error al generar el PDF de resultados:", e);
+      alert("Ocurrió un error al generar el PDF de resultados.");
+    } finally {
+      exportArea.innerHTML = "";
+    }
   }
 
   async function generatePDF() {
@@ -2517,7 +2781,7 @@
       const isSelected = coach.id === activeCoachId;
       const coachBtn = document.createElement("button");
       coachBtn.className = `coach-btn ${isSelected ? 'selected' : ''}`;
-      coachBtn.innerHTML = `<span>👨‍🏫 ${coach.name}</span> <span>${isSelected ? '▼' : '►'}</span>`;
+      coachBtn.innerHTML = `<span>${isSelected ? '🕵️' : '👤'} ${coach.name}</span> <span>${isSelected ? '🔻' : '➤'}</span>`;
       coachBtn.onclick = () => toggleCoachSelection(coach.id);
       container.appendChild(coachBtn);
 
@@ -2535,7 +2799,7 @@
 
             const teamBtn = document.createElement("button");
             teamBtn.className = "team-btn";
-            teamBtn.innerHTML = `<span>🏐 ${displayName}</span> <span>${isPdfMode ? 'Generar PDF →' : 'Ingresar →'}</span>`;
+            teamBtn.innerHTML = `<span>🏐 ${displayName}</span> <span>${isPdfMode ? 'Generar PDF →' : 'Ingresar ➤'}</span>`;
             teamBtn.onclick = () => selectCoachAndTeam(coach, teamKey, displayName);
             teamsDiv.appendChild(teamBtn);
           });
@@ -2604,7 +2868,7 @@
   //  para próximas selecciones. 'kind' es 'train' (Asistencia) o 'match'.
   // ---------------------------------------------------------------------
   const ABSENCE_REASONS_KEY = "NVA_ABSENCE_REASONS";
-  const DEFAULT_ABSENCE_REASONS = ["Enfermedad/Médico", "Examen/Estudios", "Motivos familiares"];
+  const DEFAULT_ABSENCE_REASONS = ["Enfermedad/Lesión", "Examen/Estudios", "Motivos familiares"];
   let customAbsenceReasons = (() => {
     try {
       const saved = JSON.parse(localStorage.getItem(ABSENCE_REASONS_KEY));
@@ -2846,7 +3110,7 @@
           <div class="strikes-xxx">
             ${[1, 2, 3].map(n => `
               <span class="xmark ${n <= player.strikes ? 'active' : ''}" 
-                    onclick="setStrikes(${index}, ${player.strikes === n ? n - 1 : n})">✕</span>
+                    onclick="setStrikes(${index}, ${player.strikes === n ? n - 1 : n})">${n <= player.strikes ? '❌' : '✖️'}</span>
             `).join('')}
           </div>
 
@@ -3259,6 +3523,8 @@
     ownerPassword = "NVA123";
     appData = defaultData;
     tablonData = { tablonText: "" };
+    otrosData = [];
+    otrosOpenId = null;
     offlineQueue = [];
     allTrainingLogs = [];
     warningsData = {};
@@ -3378,7 +3644,8 @@
       fetchTrainingLogsFromGitHub(),
       fetchWarningsFromGitHub(),
       fetchQueriesFromGitHub(),
-      fetchTablonFromGitHub()
+      fetchTablonFromGitHub(),
+      fetchOtrosFromGitHub()
     ]);
 
     refreshActiveScreenUI();
@@ -3403,6 +3670,11 @@
 
     if (screenWarningsEl && screenWarningsEl.classList.contains("active")) {
       renderWarningPlayers();
+    }
+
+    const screenOtrosEl = document.getElementById("screenOtros");
+    if (screenOtrosEl && screenOtrosEl.classList.contains("active")) {
+      renderOtros();
     }
 
     const tablonEl = document.getElementById("tablonTextarea");
@@ -4262,7 +4534,7 @@
           <div class="strikes-xxx">
             ${[1, 2, 3].map(n => `
               <span class="xmark ${n <= player.strikes ? 'active' : ''}"
-                    onclick="setMatchStrikes(${index}, ${player.strikes === n ? n - 1 : n})">✕</span>
+                    onclick="setMatchStrikes(${index}, ${player.strikes === n ? n - 1 : n})">${n <= player.strikes ? '❌' : '✖️'}</span>
             `).join('')}
           </div>
 
@@ -4484,6 +4756,272 @@
       matchInitialized = false;
     }
   };
+</script>
+
+<script>
+  // =====================================================================
+  //  MÓDULO OTROS
+  //  Pantalla con botones de información/instrucciones. El primero
+  //  ("Protocolo Accidentes") viene fijo en la app; el resto los crea el
+  //  usuario con "+ NUEVO" (nombre + texto enriquecido) y se guardan en
+  //  Otros.json (GitHub) con copia local, igual que el Tablón.
+  // =====================================================================
+  const OTROS_FILE = "Otros.json";
+  let otrosData = JSON.parse(localStorage.getItem("NVA_OTROS_DATA")) || [];
+  let otrosOpenId = null;
+  let otrosEditingId = null;
+
+  const OTROS_PROTOCOLO_HTML = `
+    <p style="margin:0 0 6px 0; font-size:0.78rem; color:#475569;">
+      Resumen del protocolo de actuación en caso de accidente deportivo · Federación de Voleibol de la Comunidad Valenciana · <b>Póliza 50683972 – Allianz</b> (Añó &amp; Lozano Correduría-Seguros).
+    </p>
+    <div style="background:#fee2e2; border:1px solid #ef4444; border-radius:8px; padding:8px 10px; margin:8px 0; font-weight:800; color:#b91c1c; text-align:center;">
+      ⚠️ Antes de nada: asegurarse de que la licencia NO pertenece a Jocs Esportius
+    </div>
+    <p style="margin:6px 0;"><b>📞 Allianz:</b> <a href="tel:913343291">913 343 291</a> &nbsp;·&nbsp; <i>DA = Declaración de Accidente</i></p>
+
+    <div class="otros-block" style="border-left-color:#22c55e;">
+      <h4>🟢 Caso leve, sin urgencia</h4>
+      <ol>
+        <li>Llamar a Allianz (<a href="tel:913343291">913 343 291</a>), aportar los datos y guardar el nº de siniestro.</li>
+        <li>Pedir a <a href="mailto:siniestros@alcorreduria.es">siniestros@alcorreduria.es</a> la declaración de accidente, indicando el nº de siniestro.</li>
+        <li>Recibimos la DA.</li>
+        <li>Llamamos a un centro concertado para coger cita con especialista.</li>
+        <li>Enviamos la DA y la petición de la cita a <a href="mailto:allianzaccidentes.autorizaciones@hna.es">allianzaccidentes.autorizaciones@hna.es</a></li>
+        <li>Continuar todos los trámites con Allianz.</li>
+      </ol>
+    </div>
+
+    <div class="otros-block" style="border-left-color:#f97316;">
+      <h4>🟠 Caso grave (urgencia)</h4>
+      <ol>
+        <li>Llamar a Allianz (<a href="tel:913343291">913 343 291</a>), aportar los datos y guardar el nº de siniestro.</li>
+        <li>Acudir a urgencias de un centro concertado.</li>
+        <li>Pedir a <a href="mailto:siniestros@alcorreduria.es">siniestros@alcorreduria.es</a> la declaración de accidente, indicando el nº de siniestro.</li>
+        <li>Enviar la DA y el informe de urgencias (con la petición de cita con especialista si fuera necesario) a <a href="mailto:allianzaccidentes.autorizaciones@hna.es">allianzaccidentes.autorizaciones@hna.es</a></li>
+        <li>Continuar todos los trámites con Allianz.</li>
+      </ol>
+    </div>
+
+    <div class="otros-block" style="border-left-color:#ef4444;">
+      <h4>🔴 Urgencia vital (la vida del deportista está en peligro)</h4>
+      <ol>
+        <li>Acudir al centro médico más cercano.</li>
+        <li>Llamar a la compañía lo antes posible (<a href="tel:913343291">913 343 291</a>, Allianz) y guardar el nº de siniestro.</li>
+        <li>Pedir a <a href="mailto:siniestros@alcorreduria.es">siniestros@alcorreduria.es</a> la declaración de accidente, indicando el nº de siniestro.</li>
+        <li>Enviar la DA con toda la información médica y peticiones a <a href="mailto:allianzaccidentes.autorizaciones@hna.es">allianzaccidentes.autorizaciones@hna.es</a></li>
+        <li>Continuar todos los trámites con Allianz.</li>
+      </ol>
+    </div>
+  `;
+
+  const OTROS_BUILTIN = [
+    { id: "builtin-protocolo-accidentes", title: "Protocolo Accidentes", html: OTROS_PROTOCOLO_HTML, builtin: true }
+  ];
+
+  function escapeHtmlOtros(str) {
+    return String(str == null ? "" : str)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  // El texto enriquecido se guarda como HTML y se comparte vía GitHub, así que
+  // se filtra: solo etiquetas de formato básicas y enlaces http/mailto/tel.
+  function sanitizeOtrosHtml(html) {
+    const doc = new DOMParser().parseFromString(`<div>${html || ""}</div>`, "text/html");
+    const root = doc.body.firstChild;
+    const ALLOWED = new Set(["B", "STRONG", "I", "EM", "U", "S", "BR", "P", "DIV", "SPAN", "UL", "OL", "LI", "H3", "H4", "A"]);
+    const DROP = new Set(["SCRIPT", "STYLE", "IFRAME", "OBJECT", "EMBED", "LINK", "META", "SVG", "MATH", "TEMPLATE", "NOSCRIPT", "FORM", "INPUT", "BUTTON", "TEXTAREA", "SELECT"]);
+
+    const walk = (node) => {
+      Array.from(node.childNodes).forEach(child => {
+        if (child.nodeType === 3) return;
+        if (child.nodeType !== 1) { child.remove(); return; }
+        const tag = child.tagName.toUpperCase();
+        if (DROP.has(tag)) { child.remove(); return; }
+        if (!ALLOWED.has(tag)) {
+          walk(child);
+          while (child.firstChild) node.insertBefore(child.firstChild, child);
+          child.remove();
+          return;
+        }
+        Array.from(child.attributes).forEach(a => {
+          if (!(tag === "A" && a.name === "href")) child.removeAttribute(a.name);
+        });
+        if (tag === "A") {
+          const href = (child.getAttribute("href") || "").trim();
+          if (/^(https?:|mailto:|tel:)/i.test(href)) {
+            child.setAttribute("target", "_blank");
+            child.setAttribute("rel", "noopener noreferrer");
+          } else {
+            child.removeAttribute("href");
+          }
+        }
+        walk(child);
+      });
+    };
+    walk(root);
+    return root.innerHTML;
+  }
+
+  function persistOtrosLocal() {
+    localStorage.setItem("NVA_OTROS_DATA", JSON.stringify(otrosData));
+  }
+
+  async function fetchOtrosFromGitHub() {
+    if (!ghSettings.user || !ghSettings.repo || !navigator.onLine) return;
+    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${OTROS_FILE}`;
+    const headers = {};
+    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
+    try {
+      const res = await fetch(url, { headers, cache: "no-store" });
+      if (res.ok) {
+        const json = await res.json();
+        const parsed = JSON.parse(b64_to_utf8(json.content));
+        const items = Array.isArray(parsed) ? parsed : (parsed && parsed.items);
+        otrosData = Array.isArray(items) ? items.filter(it => it && it.id && it.title) : [];
+        persistOtrosLocal();
+      }
+    } catch (e) { console.error("Error al cargar Otros.json:", e); }
+  }
+
+  // Aplica un cambio sobre la lista más reciente de GitHub (si hay conexión)
+  // para no pisar botones creados desde otro dispositivo, y la guarda.
+  async function mutateOtros(applyChange, commitMessage) {
+    if (ghSettings.user && ghSettings.repo && navigator.onLine) {
+      if (offlineQueue.length > 0) await processOfflineQueue();
+      await fetchOtrosFromGitHub();
+    }
+    applyChange();
+    persistOtrosLocal();
+    renderOtros();
+    const ok = await writeGitHubFile(OTROS_FILE, { items: otrosData }, commitMessage);
+    if (!ok) alert("Guardado localmente. Se sincronizará con GitHub cuando recupere la conexión.");
+  }
+
+  // --- Pantalla ---
+  function openOtros() {
+    otrosOpenId = null;
+    renderOtros();
+    showScreen("screenOtros");
+    document.getElementById("btnBack").style.display = "flex";
+    if (ghSettings.user && ghSettings.repo && navigator.onLine) {
+      (async () => {
+        await fetchOtrosFromGitHub();
+        const el = document.getElementById("screenOtros");
+        if (el && el.classList.contains("active")) renderOtros();
+      })();
+    }
+  }
+
+  function toggleOtros(id) {
+    otrosOpenId = otrosOpenId === id ? null : id;
+    renderOtros();
+  }
+
+  function renderOtros() {
+    const box = document.getElementById("otrosList");
+    if (!box) return;
+    box.innerHTML = "";
+
+    const entries = [...OTROS_BUILTIN, ...otrosData.map(e => ({ ...e, builtin: false }))];
+    entries.forEach(entry => {
+      const isOpen = otrosOpenId === entry.id;
+      const btn = document.createElement("button");
+      btn.className = "coach-btn" + (isOpen ? " selected" : "");
+      btn.innerHTML = `<span>${entry.builtin ? "🚑" : "📌"} ${escapeHtmlOtros(entry.title)}</span> <span>${isOpen ? "🔻" : "➤"}</span>`;
+      btn.onclick = () => toggleOtros(entry.id);
+      box.appendChild(btn);
+
+      if (isOpen) {
+        const panel = document.createElement("div");
+        panel.className = "otros-panel";
+        panel.innerHTML = entry.builtin ? entry.html : sanitizeOtrosHtml(entry.html);
+        if (!entry.builtin) {
+          const actions = document.createElement("div");
+          actions.className = "otros-actions";
+          actions.innerHTML = `
+            <button style="background:linear-gradient(135deg,#0284c7,#0369a1);" onclick="openOtrosEditor('${entry.id}')">✏️ Editar</button>
+            <button style="background:linear-gradient(135deg,#ef4444,#b91c1c);" onclick="deleteOtros('${entry.id}')">🗑️ Eliminar</button>`;
+          panel.appendChild(actions);
+        }
+        box.appendChild(panel);
+      }
+    });
+
+    const nuevo = document.createElement("button");
+    nuevo.className = "coach-btn otros-nuevo";
+    nuevo.textContent = "+ NUEVO";
+    nuevo.onclick = () => openOtrosEditor(null);
+    box.appendChild(nuevo);
+  }
+
+  // --- Editor (nombre + cuadro de texto enriquecido) ---
+  function openOtrosEditor(id) {
+    otrosEditingId = id || null;
+    const item = id ? otrosData.find(o => o.id === id) : null;
+    document.getElementById("otrosEditorTitle").textContent = item ? "✏️ Editar botón" : "➕ Nuevo botón";
+    document.getElementById("otrosEditorName").value = item ? item.title : "";
+    document.getElementById("otrosEditorBody").innerHTML = item ? sanitizeOtrosHtml(item.html) : "";
+    document.getElementById("modalOtrosEditor").classList.add("active");
+  }
+
+  function closeOtrosEditor() {
+    document.getElementById("modalOtrosEditor").classList.remove("active");
+    otrosEditingId = null;
+  }
+
+  function otrosFormat(cmd) {
+    const editor = document.getElementById("otrosEditorBody");
+    editor.focus();
+    if (cmd === "title") {
+      const cur = String(document.queryCommandValue("formatBlock") || "").toLowerCase();
+      document.execCommand("formatBlock", false, cur === "h3" ? "div" : "h3");
+    } else {
+      document.execCommand(cmd, false, null);
+    }
+  }
+
+  async function saveOtrosEditor() {
+    const name = document.getElementById("otrosEditorName").value.trim();
+    const editor = document.getElementById("otrosEditorBody");
+    const html = sanitizeOtrosHtml(editor.innerHTML);
+    const hasText = editor.textContent.trim().length > 0;
+
+    if (!name) { alert("Escribe el nombre del botón."); return; }
+    if (!hasText) { alert("Escribe la información que mostrará el botón."); return; }
+
+    const editingId = otrosEditingId;
+    const newId = "o" + Date.now();
+    closeOtrosEditor();
+
+    await withLoading(() => mutateOtros(() => {
+      const idx = editingId ? otrosData.findIndex(o => o.id === editingId) : -1;
+      if (idx >= 0) {
+        otrosData[idx] = { ...otrosData[idx], title: name, html };
+        otrosOpenId = editingId;
+      } else {
+        otrosData.push({ id: newId, title: name, html });
+        otrosOpenId = newId;
+      }
+    }, `Actualizar botón "${name}" en Otros`), "Guardando...");
+  }
+
+  async function deleteOtros(id) {
+    const item = otrosData.find(o => o.id === id);
+    if (!item) return;
+    if (!confirm(`¿Eliminar el botón "${item.title}"?`)) return;
+    await withLoading(() => mutateOtros(() => {
+      otrosData = otrosData.filter(o => o.id !== id);
+      if (otrosOpenId === id) otrosOpenId = null;
+    }, `Eliminar botón "${item.title}" de Otros`), "Eliminando...");
+  }
+
+  // Al pegar en el editor se inserta solo texto plano (evita estilos ajenos).
+  document.getElementById("otrosEditorBody").addEventListener("paste", (e) => {
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData("text/plain");
+    document.execCommand("insertText", false, text);
+  });
 </script>
 
 </body>
