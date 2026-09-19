@@ -82,6 +82,28 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      overflow: hidden; /* Garantiza que el logo no se salga del alto del header */
+    }
+
+    header::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: url('LOGO NVA.png') no-repeat center center;
+      background-size: 40%;
+      opacity: 0.35;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .header-title-container,
+    header button,
+    header span {
+      position: relative;
+      z-index: 1; /* Asegura que el texto y los botones queden por encima de la capa del logo */
     }
 
     .header-title-container {
@@ -90,12 +112,6 @@
       justify-content: center;
       gap: 10px;
       flex: 1;
-    }
-
-    .header-logo {
-      height: 60px;
-      width: auto;
-      object-fit: contain;
     }
 
     header h1 {
@@ -124,7 +140,20 @@
       box-shadow: 2px 2px 4px #000000;
     }
 
-    .btn-back { display: none; }
+    /*.btn-back { display: none; }*/
+
+    .btn-back {  visibility: hidden;}
+
+    .btn-back[hidden] {
+      pointer-events: none;
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: center; 
+      line-height: 1.1; 
+      gap: 4px; 
+      padding: 12px 10px; 
+      min-height: 50px;
+    }
 
     .btn-pdf-mode {
       width: 100%;
@@ -268,7 +297,7 @@
       background: rgba(255, 255, 255, 0.12);
       border: 1px solid rgba(255, 255, 255, 0.2);
       border-radius: 10px;
-      padding: 6px 10px;
+      padding: 6px 6px;
       display: flex;
       align-items: center;
       justify-content: left;
@@ -278,7 +307,7 @@
     }
 
     .date-input {
-      width: 105px;
+      width: 110px;
       background: white;
       border: none;
       border-radius: 6px;
@@ -293,7 +322,7 @@
       background: linear-gradient(135deg, #0284c7, #0369a1);
       color: white;
       border: none;
-      padding: 8px 12px;
+      padding: 6px 9px;
       border-radius: 10px;
       font-size: 0.8rem;
       font-weight: 700;
@@ -1144,12 +1173,11 @@
   </div>
   <!-- ENCABEZADO -->
   <header>
-    <button class="btn-header-icon btn-back" id="btnBack" onclick="withLoading(goBack, 'Sincronizando datos...')" style="display: none; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; gap: 4px; padding: 12px 10px; min-height: 50px;">
+    <button class="btn-header-icon btn-back" id="btnBack" onclick="withLoading(goBack, 'Sincronizando datos...')" style="visibility: visible; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; gap: 4px; padding: 12px 10px; min-height: 50px;">
       <span>Volver</span>
       <span>&lt;&lt;</span>
     </button>  
     <div class="header-title-container">
-      <img src="LOGO NVA.png" alt="Logo Nou Volei Alzira" class="header-logo">
       <h1>NOU VOLEI ALZIRA</h1>
     </div>
     <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
