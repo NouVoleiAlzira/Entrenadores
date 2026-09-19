@@ -264,7 +264,8 @@
     }
 
     .date-container {
-      flex: 1;
+      width: 42%;
+      /*flex: 1;*/
       background: rgba(255, 255, 255, 0.12);
       border: 1px solid rgba(255, 255, 255, 0.2);
       border-radius: 10px;
@@ -277,6 +278,7 @@
     }
 
     .date-input {
+      width: 115px;
       background: white;
       border: none;
       border-radius: 6px;
@@ -298,6 +300,12 @@
       cursor: pointer;
       box-shadow: 2px 2px 4px #000000;
       white-space: nowrap;
+      margin-left: 0;
+    }
+
+    /* Solo el primer botón de la clase empuja al resto hacia la derecha */
+    .btn-history:first-of-type {
+    margin-left: auto;
     }
 
     .player-card {
@@ -502,6 +510,83 @@
     }
 
     .mic-btn.recording { background: #ef4444; color: white; }
+
+    /* Motivo de Falta Justificada: botón junto al micrófono + lista desplegable */
+    .reason-btn { font-size: 0.8rem; white-space: nowrap; }
+    .reason-btn.open { background: #fde68a; color: #92400e; }
+
+    .reason-menu {
+      background: #fff;
+      border: 1px solid var(--gray-border);
+      border-radius: 8px;
+      padding: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .reason-option {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      color: #334155;
+      cursor: pointer;
+    }
+
+    .reason-option:hover { background: #f1f5f9; }
+    .reason-option.selected { background: #fef3c7; font-weight: 700; color: #92400e; }
+
+    .reason-option-del {
+      border: none;
+      background: transparent;
+      color: #94a3b8;
+      font-size: 0.95rem;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0 4px;
+      flex-shrink: 0;
+    }
+
+    .reason-option-del:hover { color: #ef4444; }
+
+    .reason-add-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 2px;
+      padding: 6px 2px 2px;
+      border-top: 1px solid var(--gray-border);
+    }
+
+    .reason-add-input {
+      flex: 1;
+      min-width: 0;
+      padding: 4px 6px;
+      border: 1px solid var(--gray-border);
+      border-radius: 6px;
+      font-size: 0.75rem;
+      outline: none;
+      background: #fff;
+    }
+
+    .reason-add-input:focus { border-color: var(--morado-accent); }
+
+    .reason-add-btn {
+      border: none;
+      background: var(--morado-accent);
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 700;
+      line-height: 1;
+      cursor: pointer;
+      padding: 5px 9px;
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
 
     .strikes-selector { display: flex; gap: 4px; }
     .strike-pill {
@@ -950,6 +1035,104 @@
     .network-offline { background: #ef4444; color: white; }
 
 
+
+    /* ===== PARTIDO: ajuste de la barra de controles (3 elementos) en pantallas estrechas ===== */
+    @media (max-width: 430px) {
+      #screenAttendance .controls-bar,
+      #screenMatch .controls-bar { gap: 6px; }
+      #screenAttendance .date-container,
+      #screenMatch .date-container {
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: center;
+        gap: 2px;
+        padding: 4px 6px;
+        min-width: 0;
+        font-size: 0.7rem;
+      }
+      #screenAttendance .date-input,
+      #screenMatch .date-input {
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        font-size: 0.78rem;
+        padding: 3px 4px;
+      }
+      #screenAttendance .btn-history,
+      #screenMatch .btn-history { padding: 8px 8px; font-size: 0.72rem; }
+    }
+
+    /* ===== PARTIDO: marcador ===== */
+    .match-scoreboard {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 116px minmax(0, 1fr);
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .ms-side { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .ms-box {
+      /*background: white;*/
+      border: 2px solid #0f172a;
+      border-radius: 8px;
+      color: white;
+      /*box-shadow: 2px 2px 4px #000000;
+      color: var(--azul-dark);*/
+      
+    }
+    .ms-team {
+      width: 100%;
+      min-height: 46px;
+      padding: 4px 6px;
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 800;
+      /*line-height: 1.15;*/
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      cursor: pointer;
+      word-break: break-word;
+      background: transparent;
+    }
+    .ms-team.placeholder { color: white; font-weight: 700; }
+    .ms-score {
+      flex: 1;
+      min-height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 7rem;
+      font-weight: 500;
+    }
+    .ms-mid { display: flex; flex-direction: column; gap: 4px; }
+    .ms-sets-title {
+      text-align: center;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      padding: 4px 0;
+      margin-bottom: 2px;
+    }
+    .ms-set-row { display: flex; align-items: center; gap: 3px; }
+    .ms-set-row .ms-dash { color: white; font-weight: 800; width: 8px; text-align: center; flex: none; }
+    .ms-set-input {
+      flex: 1;
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+      height: 30px;
+      padding: 0;
+      text-align: center;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--azul-dark);
+      background: white;
+      border: 2px solid #0f172a;
+      border-radius: 6px;
+      outline: none;
+    }
+    .ms-set-input:focus { border-color: #0284c7; }
   </style>
 </head>
 <body>
@@ -982,7 +1165,7 @@
       <button onclick="togglePdfMode()" style="background:none; border:none; color:white; font-weight:700; cursor:pointer;">✕ Cancelar</button>
     </div>
 
-    <div class="section-title">Entrenadores y Equipos</div>
+    <div class="section-title">Entrenamientos y Partidos</div>
     <div id="coachTeamList"></div>
     
     <button class="btn-pdf-mode" id="btnPdfMode" onclick="togglePdfMode()" style="margin-top:10px;">📄 CREAR PDF</button>
@@ -1013,11 +1196,31 @@
         <label for="sessionDatePicker">📅 Fecha:</label>
         <input type="date" id="sessionDatePicker" class="date-input">
       </div>
+      <button class="btn-history" onclick="goToMatchScreen()">🏐 Partido</button>
       <button class="btn-history" onclick="withLoading(openHistoryModal, 'Cargando historial...')">📜 Historial</button>
     </div>
 
     <div id="playersContainer"></div>
     <button class="btn-save-session" style="padding:12px; font-size:0.9rem;" onclick="withLoading(saveSession, 'Guardando entrenamiento en GitHub...')">Guardar Entrenamiento en GitHub</button>
+  </div>
+
+  <!-- PANTALLA: REGISTRO DE PARTIDO -->
+  <div class="screen" id="screenMatch">
+    <div class="section-title" id="matchTitle" style="margin-bottom: 4px;">Registro de Partido</div>
+
+    <div class="controls-bar">
+      <div class="date-container">
+        <label for="matchDatePicker">📅 Fecha:</label>
+        <input type="date" id="matchDatePicker" class="date-input">
+      </div>
+      <button class="btn-history" onclick="goToTrainingScreen()">🏋️ Entrenamiento</button>
+      <button class="btn-history" onclick="withLoading(openMatchHistoryModal, 'Cargando historial de partidos...')">📜 Historial</button>
+    </div>
+
+    <div id="matchScoreboard" class="match-scoreboard"></div>
+
+    <div id="matchPlayersContainer"></div>
+    <button class="btn-save-session" style="padding:12px; font-size:0.9rem;" onclick="withLoading(saveMatch, 'Guardando partido en GitHub...')">Guardar Partido en GitHub</button>
   </div>
 
   <!-- PANTALLA 3: GESTIÓN DE WARNINGS POR EQUIPO -->
@@ -1140,6 +1343,27 @@
     </div>
   </div>
 
+  <div class="modal-backdrop" id="modalMatchHistory">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title">📜 Partidos Anteriores</div>
+        <button class="btn-close-modal" onclick="closeMatchHistoryModal()">✕</button>
+      </div>
+      <p style="font-size:0.75rem; color:#64748b; margin-bottom:10px;">Partidos guardados para este equipo:</p>
+      <div id="matchHistoryListContainer" style="overflow-y:auto; flex:1;"></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modalLeagueTeams">
+    <div class="modal-box" style="max-width: 380px;">
+      <div class="modal-header">
+        <div class="modal-title" id="leagueModalTitle">Equipos de la liga</div>
+        <button class="btn-close-modal" onclick="closeLeagueTeamsModal()">✕</button>
+      </div>
+      <div id="leagueTeamsContainer" style="display:flex; flex-direction:column; gap:6px; overflow-y:auto; max-height:60vh;"></div>
+    </div>
+  </div>
+
   <div class="modal-backdrop" id="modalAbsence">
     <div class="modal-box" style="max-width: 380px;">
       <div class="modal-header">
@@ -1180,7 +1404,8 @@
       <div class="tabs-nav">
         <button class="tab-btn active" onclick="switchTab(1)">Entrenadores/Equipos</button>
         <button class="tab-btn" onclick="switchTab(2)">Jugadores/as</button>
-        <button class="tab-btn" onclick="switchTab(3)">Conexión GitHub</button>
+        <button class="tab-btn" onclick="switchTab(3)">Ligas</button>
+        <button class="tab-btn" onclick="switchTab(4)">Conexión GitHub</button>
       </div>
 
       <div class="tab-content active" id="tabContent1">
@@ -1236,6 +1461,22 @@
       </div>
 
       <div class="tab-content" id="tabContent3">
+        <div class="config-section">
+          <div class="config-subtitle">Selecciona Equipo</div>
+          <select id="selectTeamLeagues" class="app-select" onchange="withLoading(loadLeagueEditList, 'Cargando equipos de la liga...')"></select>
+        </div>
+
+        <div class="config-section">
+          <div class="config-subtitle">Equipos de la liga <span class="badge" id="leagueCountBadge">0</span></div>
+          <div class="input-group">
+            <input type="text" id="newLeagueTeamName" class="app-input" placeholder="Nombre Equipo de la liga">
+            <button class="btn-add" onclick="addLeagueTeam()">+</button>
+          </div>
+          <div id="draggableLeagueList"></div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tabContent4">
         <div class="config-section">
           <div class="config-subtitle">Repositorio de GitHub</div>
           <label style="font-size:0.72rem; color:#64748b;">Usuario / Organización:</label>
@@ -2289,7 +2530,7 @@
 
     currentCoach = coach;
     currentTeam = teamKey;
-    document.getElementById("sessionTitle").innerText = `${displayName || teamKey} (${coach.name})`;
+    document.getElementById("sessionTitle").innerText = `${displayName || teamKey} - ${coach.name}`;
     resetToTodayDate();
     initSessionData();
     renderPlayersMain();
@@ -2329,6 +2570,128 @@
   // está desplegado en la tarjeta de asistencia.
   let commentBoxOpen = {};
 
+  // ---------------------------------------------------------------------
+  //  MOTIVOS DE FALTA JUSTIFICADA (compartido por Asistencia y Partido)
+  //  Lista por defecto + motivos propios que se guardan en el dispositivo
+  //  para próximas selecciones. 'kind' es 'train' (Asistencia) o 'match'.
+  // ---------------------------------------------------------------------
+  const ABSENCE_REASONS_KEY = "NVA_ABSENCE_REASONS";
+  const DEFAULT_ABSENCE_REASONS = ["Enfermedad/Médico", "Examen/Estudios", "Motivos familiares"];
+  let customAbsenceReasons = (() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(ABSENCE_REASONS_KEY));
+      return Array.isArray(saved) ? saved.filter(r => typeof r === "string" && r.trim()) : [];
+    } catch (e) { return []; }
+  })();
+  let absenceReasonMenuOpen = {};   // claves "train-<i>" / "match-<i>"
+
+  function getAllAbsenceReasons() { return DEFAULT_ABSENCE_REASONS.concat(customAbsenceReasons); }
+  function saveCustomAbsenceReasons() { localStorage.setItem(ABSENCE_REASONS_KEY, JSON.stringify(customAbsenceReasons)); }
+  function getPlayersByKind(kind) { return kind === 'match' ? matchData : sessionData; }
+  function rerenderPlayersByKind(kind) { if (kind === 'match') renderMatchPlayers(); else renderPlayersMain(); }
+
+  function isPlayerPresent(player) { return player.attendance === 'presente' || !player.attendance; }
+  function isJustifiedAbsence(player) {
+    return player.attendance === 'falta' && (player.absenceType || 'injustificada') === 'justificada';
+  }
+
+  // Valoración (strikes/estrellas) solo tiene sentido si la jugadora estuvo:
+  // al guardar, las que no están Presentes no acumulan strikes, y el motivo
+  // solo se conserva en Falta Justificada.
+  function playersForSave(list) {
+    return list.map(p => {
+      const copy = Object.assign({}, p);
+      if (!isPlayerPresent(p)) copy.strikes = 0;
+      if (!isJustifiedAbsence(p)) copy.absenceReason = "";
+      return copy;
+    });
+  }
+
+  function toggleAbsenceReasonMenu(kind, index) {
+    const key = kind + "-" + index;
+    absenceReasonMenuOpen[key] = !absenceReasonMenuOpen[key];
+    rerenderPlayersByKind(kind);
+  }
+
+  // Inserta el motivo elegido en el comentario (sustituyendo el motivo anterior
+  // si ya se había puesto uno) y lo guarda también en absenceReason.
+  function applyAbsenceReason(kind, index, reason) {
+    const player = getPlayersByKind(kind)[index];
+    const prev = player.absenceReason || "";
+    let text = player.comments || "";
+    if (prev && text.includes(prev)) {
+      text = text.replace(prev, () => reason);
+    } else {
+      text = text ? text + " · " + reason : reason;
+    }
+    player.comments = text;
+    player.absenceReason = reason;
+    absenceReasonMenuOpen[kind + "-" + index] = false;
+    rerenderPlayersByKind(kind);
+  }
+
+  function pickAbsenceReason(kind, index, optIdx) {
+    const reason = getAllAbsenceReasons()[optIdx];
+    if (reason) applyAbsenceReason(kind, index, reason);
+  }
+
+  function addCustomAbsenceReason(kind, index) {
+    const input = document.getElementById(`reasonInput-${kind}-${index}`);
+    const value = input ? input.value.trim() : "";
+    if (!value) return;
+    const existing = getAllAbsenceReasons().find(r => r.toLowerCase() === value.toLowerCase());
+    if (existing) {
+      applyAbsenceReason(kind, index, existing);
+      return;
+    }
+    customAbsenceReasons.push(value);
+    saveCustomAbsenceReasons();
+    applyAbsenceReason(kind, index, value);
+  }
+
+  function deleteCustomAbsenceReason(kind, index, customIdx) {
+    customAbsenceReasons.splice(customIdx, 1);
+    saveCustomAbsenceReasons();
+    rerenderPlayersByKind(kind);
+  }
+
+  // Devuelve { btn, menu }: el botón (junto al micrófono) y la lista desplegable.
+  // Solo se generan cuando la jugadora está en Falta Justificada.
+  function buildAbsenceReasonControls(kind, index, player) {
+    if (!isJustifiedAbsence(player)) return { btn: "", menu: "" };
+
+    const isOpen = !!absenceReasonMenuOpen[kind + "-" + index];
+    const btn = `<button type="button" class="mic-btn reason-btn ${isOpen ? 'open' : ''}"
+                         onclick="toggleAbsenceReasonMenu('${kind}', ${index})"
+                         title="Motivo de la falta">📋▾</button>`;
+    if (!isOpen) return { btn, menu: "" };
+
+    const all = getAllAbsenceReasons();
+    const optionsHtml = all.map((reason, i) => {
+      const isCustom = i >= DEFAULT_ABSENCE_REASONS.length;
+      const delBtn = isCustom
+        ? `<button type="button" class="reason-option-del" title="Quitar de la lista"
+                   onclick="event.stopPropagation(); deleteCustomAbsenceReason('${kind}', ${index}, ${i - DEFAULT_ABSENCE_REASONS.length})">✕</button>`
+        : "";
+      return `<div class="reason-option ${player.absenceReason === reason ? 'selected' : ''}"
+                   onclick="pickAbsenceReason('${kind}', ${index}, ${i})">
+                <span>${escapeHtmlMatch(reason)}</span>${delBtn}
+              </div>`;
+    }).join("");
+
+    const menu = `
+        <div class="reason-menu">
+          ${optionsHtml}
+          <div class="reason-add-row">
+            <input type="text" class="reason-add-input" id="reasonInput-${kind}-${index}"
+                   placeholder="Otro motivo..."
+                   onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomAbsenceReason('${kind}', ${index});}">
+            <button type="button" class="reason-add-btn" onclick="addCustomAbsenceReason('${kind}', ${index})" title="Añadir a la lista">＋</button>
+          </div>
+        </div>`;
+    return { btn, menu };
+  }
+
   function getAttendanceStateColor(player) {
     if (player.attendance === 'falta') {
       const type = player.absenceType || 'injustificada';
@@ -2359,6 +2722,7 @@
       player.attendance = 'presente';
       player.absenceType = '';
     }
+    absenceReasonMenuOpen['train-' + index] = false;
     renderPlayersMain();
   }
 
@@ -2443,8 +2807,28 @@
         ? ((player.absenceType || 'injustificada') === 'justificada' ? 'Falta Justificada' : 'Falta Injustificada')
         : 'Presente';
 
-      const isCommentOpen = !!commentBoxOpen[index];
+      const isPresent = isPlayerPresent(player);
+      // Solo Presente permite plegar/desplegar el comentario; en el resto
+      // de estados (falta / no convocada) se muestra siempre desplegado.
+      const isCommentOpen = !isPresent || !!commentBoxOpen[index];
+      const reasonUI = buildAbsenceReasonControls('train', index, player);
       const safeComment = (player.comments || "").replace(/"/g, "&quot;");
+
+      const ratingHtml = isPresent ? `
+          <div class="strikes-xxx">
+            ${[1, 2, 3].map(n => `
+              <span class="xmark ${n <= player.strikes ? 'active' : ''}" 
+                    onclick="setStrikes(${index}, ${player.strikes === n ? n - 1 : n})">✕</span>
+            `).join('')}
+          </div>
+
+          <div class="stars">
+            ${[1, 2, 3, 4, 5].map(star => `
+              <span class="star ${star <= player.quality ? 'active' : ''}" 
+                    onclick="setQuality(${index}, ${star})">★</span>
+            `).join('')}
+          </div>
+      ` : '';
 
       card.innerHTML = `
         <div class="state-strip" onclick="cycleAttendanceState(${index})" title="Estado: ${stateLabel} (pulsa para cambiar)">
@@ -2461,30 +2845,21 @@
         <div class="card-row-2">
           <div class="comment-toggle-wrap">
             <button type="button" class="comment-bubble-btn ${player.comments ? 'has-comment' : ''}" 
-                    onclick="toggleCommentBox(${index})" title="Comentarios">💬</button>
+                    ${isPresent ? `onclick="toggleCommentBox(${index})"` : 'style="cursor:default;"'} title="Comentarios">💬</button>
             <div class="comment-compact-row" style="display:${isCommentOpen ? 'flex' : 'none'};">
               <input type="text" class="comment-compact-input" value="${safeComment}" 
                      placeholder="Comentario u observación..." 
                      onchange="updateComment(${index}, this.value)">
               <button type="button" id="micBtn-${index}" class="mic-btn" 
                       onclick="startDictation(${index})" title="Dictar por voz">🎤</button>
+              ${reasonUI.btn}
             </div>
           </div>
 
-          <div class="strikes-xxx">
-            ${[1, 2, 3].map(n => `
-              <span class="xmark ${n <= player.strikes ? 'active' : ''}" 
-                    onclick="setStrikes(${index}, ${player.strikes === n ? n - 1 : n})">✕</span>
-            `).join('')}
-          </div>
-
-          <div class="stars">
-            ${[1, 2, 3, 4, 5].map(star => `
-              <span class="star ${star <= player.quality ? 'active' : ''}" 
-                    onclick="setQuality(${index}, ${star})">★</span>
-            `).join('')}
-          </div>
+          ${ratingHtml}
         </div>
+
+        ${reasonUI.menu}
       `;
       container.appendChild(card);
     });
@@ -2614,6 +2989,7 @@
     renderConfigTab1();
     renderConfigTab2Select();
     document.getElementById("modalOptions").classList.add("active");
+    if (document.getElementById("tabContent3").classList.contains("active")) await renderLeaguesTab();
   }
 
   function closeOptionsModal() {
@@ -2625,6 +3001,7 @@
     document.querySelectorAll(".tab-btn").forEach((b, i) => b.classList.toggle("active", i + 1 === num));
     document.querySelectorAll(".tab-content").forEach((c, i) => c.classList.toggle("active", i + 1 === num));
     if (num === 2) renderPlayerManagement();
+    if (num === 3) withLoading(renderLeaguesTab, 'Cargando equipos de la liga...');
   }
 
   function renderConfigTab1() {
@@ -2858,6 +3235,7 @@
     allTrainingLogs = [];
     warningsData = {};
     queriesData = [];
+    customAbsenceReasons = [];
 
     localStorage.setItem("NVA_APP_DATA", JSON.stringify(appData));
 
@@ -2893,7 +3271,7 @@
         const getJson = await getRes.json();
         sha = getJson.sha;
       }
-      const contentBase64 = utf8_to_b64(JSON.stringify(dataObject, null, 2));
+      const contentBase64 = utf8_to_b64(typeof dataObject === "string" ? dataObject : JSON.stringify(dataObject, null, 2));
       const body = { message: commitMessage, content: contentBase64, ...(sha && { sha: sha }) };
       const putRes = await fetch(url, {
         method: "PUT",
@@ -2935,7 +3313,7 @@
           const getJson = await getRes.json();
           sha = getJson.sha;
         }
-        const contentBase64 = utf8_to_b64(JSON.stringify(op.dataObject, null, 2));
+        const contentBase64 = utf8_to_b64(typeof op.dataObject === "string" ? op.dataObject : JSON.stringify(op.dataObject, null, 2));
         const body = { message: op.commitMessage, content: contentBase64, ...(sha && { sha: sha }) };
         const putRes = await fetch(url, {
           method: "PUT",
@@ -3082,7 +3460,7 @@
       fecha: dateVal,
       equipo: currentTeam,
       entrenador: currentCoach ? currentCoach.name : "",
-      jugadores: sessionData
+      jugadores: playersForSave(sessionData)
     };
 
     const existingIndex = allTrainingLogs.findIndex(l => l.equipo === currentTeam && l.fecha === dateVal);
@@ -3306,6 +3684,778 @@
       }
   }
 
+</script>
+
+<script>
+  // =====================================================================
+  //  MÓDULO PARTIDO
+  //  Mismo funcionamiento que la pantalla de Asistencia (entrenamientos),
+  //  pero para reportar partidos. Se guarda un fichero por equipo y fecha
+  //  en la carpeta "Partidos/" (p.ej. Partidos_NVA_A_Infantil__2026-09-15.json)
+  //  con exactamente el mismo formato que los entrenamientos.
+  //  Estados: Presente (verde), Falta justificada (amarillo),
+  //           Falta injustificada (rojo), No Convocada (azul).
+  // =====================================================================
+  const MATCH_LOGS_FOLDER = "Partidos";
+
+  let matchData = [];
+  let allMatchLogs = JSON.parse(localStorage.getItem("NVA_MATCH_LOGS")) || [];
+  let matchCommentBoxOpen = {};
+  let matchInitialized = false;
+  let matchTeamKey = null;
+
+  function resetMatchToTodayDate() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById("matchDatePicker").value = today;
+  }
+
+  function initMatchData() {
+    matchCommentBoxOpen = {};
+    resetMatchScore();
+    const playerNames = getPlayersForTeamKey(currentTeam);
+    matchData = playerNames.map(name => ({
+      name: name,
+      attendance: "presente",
+      absenceType: "",
+      absenceReason: "",
+      quality: 3,
+      strikes: 0,
+      comments: ""
+    }));
+  }
+
+  // ---------------------------------------------------------------------
+  //  MARCADOR DEL PARTIDO
+  // ---------------------------------------------------------------------
+  const LEAGUES_FOLDER = "Ligas";
+  const MATCH_SETS_COUNT = 5;
+
+  let matchScore = { local: "", visitante: "", sets: [] };
+  let leagueTeamsList = [];
+  let leaguePickSide = "home";
+  const leagueFileNames = {}; // teamKey -> nombre real del .txt en Ligas/ (si ya existe)
+
+  function resetMatchScore() {
+    matchScore = { local: "", visitante: "", sets: [] };
+    for (let i = 0; i < MATCH_SETS_COUNT; i++) matchScore.sets.push({ local: "", visitante: "" });
+  }
+
+  function escapeHtmlMatch(str) {
+    return String(str == null ? "" : str)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  // Sets ganados: en cada fila con los dos puntos rellenados, +1 al que tenga más puntos.
+  function computeMatchSets() {
+    let local = 0, visitante = 0;
+    matchScore.sets.forEach(s => {
+      if (s.local === "" || s.visitante === "") return;
+      const a = parseInt(s.local, 10), b = parseInt(s.visitante, 10);
+      if (isNaN(a) || isNaN(b)) return;
+      if (a > b) local++;
+      else if (b > a) visitante++;
+    });
+    return { local, visitante };
+  }
+
+  function updateMatchScoreDigits() {
+    const t = computeMatchSets();
+    const l = document.getElementById("msScoreLocal");
+    const v = document.getElementById("msScoreVisit");
+    if (l) l.textContent = t.local;
+    if (v) v.textContent = t.visitante;
+  }
+
+  function onMatchSetInput(i, side, el) {
+    el.value = el.value.replace(/\D/g, "").slice(0, 2);
+    matchScore.sets[i][side] = el.value;
+    updateMatchScoreDigits();
+  }
+
+  function renderMatchScoreboard() {
+    const box = document.getElementById("matchScoreboard");
+    if (!box) return;
+    const t = computeMatchSets();
+
+    const teamBtn = (side, name, placeholder) => `
+      <button type="button" class="ms-box ms-team ${name ? '' : 'placeholder'}"
+              onclick="withLoading(() => openLeagueTeamsModal('${side}'), 'Cargando equipos de la liga...')">
+        ${name ? escapeHtmlMatch(name) : placeholder + ' ▾'}
+      </button>`;
+
+    const rows = matchScore.sets.map((s, i) => `
+      <div class="ms-set-row">
+        <input type="text" inputmode="numeric" maxlength="2" class="ms-set-input" value="${escapeHtmlMatch(s.local)}"
+               oninput="onMatchSetInput(${i}, 'local', this)" aria-label="Set ${i + 1} local">
+        <span class="ms-dash">-</span>
+        <input type="text" inputmode="numeric" maxlength="2" class="ms-set-input" value="${escapeHtmlMatch(s.visitante)}"
+               oninput="onMatchSetInput(${i}, 'visitante', this)" aria-label="Set ${i + 1} visitante">
+      </div>`).join("");
+
+    box.innerHTML = `
+      <div class="ms-side">
+        ${teamBtn('home', matchScore.local, 'HOME')}
+        <div class="ms-box ms-score" id="msScoreLocal">${t.local}</div>
+      </div>
+      <div class="ms-mid">
+        <div class="ms-box ms-sets-title">SETS</div>
+        ${rows}
+      </div>
+      <div class="ms-side">
+        ${teamBtn('visit', matchScore.visitante, 'VISIT')}
+        <div class="ms-box ms-score" id="msScoreVisit">${t.visitante}</div>
+      </div>
+    `;
+  }
+
+  // Datos del marcador que se guardan dentro del registro del partido.
+  function buildMatchMarcador() {
+    const t = computeMatchSets();
+    return {
+      local: matchScore.local,
+      visitante: matchScore.visitante,
+      sets: matchScore.sets.map(s => ({
+        local: s.local === "" ? null : parseInt(s.local, 10),
+        visitante: s.visitante === "" ? null : parseInt(s.visitante, 10)
+      })),
+      setsLocal: t.local,
+      setsVisitante: t.visitante
+    };
+  }
+
+  function loadMatchScoreFromLog(log) {
+    resetMatchScore();
+    const m = log && log.marcador;
+    if (!m) return;
+    matchScore.local = m.local || "";
+    matchScore.visitante = m.visitante || "";
+    (m.sets || []).slice(0, MATCH_SETS_COUNT).forEach((s, i) => {
+      matchScore.sets[i] = {
+        local: (s && s.local != null) ? String(s.local) : "",
+        visitante: (s && s.visitante != null) ? String(s.visitante) : ""
+      };
+    });
+  }
+
+  // --- Lista de equipos de la liga: carpeta "Ligas/", un .txt por equipo del club ---
+  // El fichero se localiza por el nombre del equipo del club (sin distinguir
+  // mayúsculas, acentos, espacios ni signos), p.ej. "NVA A (Infantil).txt".
+  // Cada línea del .txt es un equipo de la liga. Se cachea para uso sin conexión.
+  // Localiza en la carpeta "Ligas/" el .txt del equipo del club indicado.
+  // Devuelve el elemento del listado de GitHub, o null si no existe / no hay conexión.
+  async function findLeagueFile(teamKey) {
+    if (!(ghSettings.user && ghSettings.repo && navigator.onLine)) return null;
+    const norm = s => sanitizeFileName(s).replace(/_/g, "").toLowerCase();
+    const stripTxt = n => n.replace(/\.txt$/i, "");
+
+    const files = await listGitHubFolder(LEAGUES_FOLDER);
+    if (!files) return null;
+    const txts = files.filter(f => f.name && /\.txt$/i.test(f.name));
+    const simpleName = teamKey.split(" (")[0];
+    return txts.find(f => norm(stripTxt(f.name)) === norm(teamKey))
+        || txts.find(f => norm(stripTxt(f.name)) === norm(simpleName))
+        || null;
+  }
+
+  async function fetchLeagueTeamsForTeam(teamKey) {
+    const cacheKey = `NVA_LEAGUE_${sanitizeFileName(teamKey)}`;
+
+    const file = await findLeagueFile(teamKey);
+    if (file) {
+      leagueFileNames[teamKey] = file.name;
+      try {
+        const headers = {};
+        if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
+        const res = await fetch(file.url, { headers, cache: "no-store" });
+        if (res.ok) {
+          const json = await res.json();
+          const text = b64_to_utf8(json.content).replace(/^\uFEFF/, "");
+          const list = [];
+          text.split(/\r?\n/).forEach(line => {
+            const name = line.trim();
+            if (name && !list.includes(name)) list.push(name);
+          });
+          localStorage.setItem(cacheKey, JSON.stringify(list));
+          return list;
+        }
+      } catch (e) {
+        console.error("Error al leer el fichero de la liga:", e);
+      }
+    }
+
+    try {
+      const cached = JSON.parse(localStorage.getItem(cacheKey) || "null");
+      if (Array.isArray(cached)) return cached;
+    } catch (e) {}
+    return [];
+  }
+
+  async function fetchLeagueTeamsForCurrentTeam() {
+    return fetchLeagueTeamsForTeam(currentTeam);
+  }
+
+  async function openLeagueTeamsModal(side) {
+    leaguePickSide = side;
+    leagueTeamsList = await fetchLeagueTeamsForCurrentTeam();
+
+    document.getElementById("leagueModalTitle").innerText =
+      side === "home" ? "Equipo HOME (local)" : "Equipo VISIT (visitante)";
+
+    const container = document.getElementById("leagueTeamsContainer");
+    container.innerHTML = "";
+
+    if (leagueTeamsList.length === 0) {
+      container.innerHTML = `<p style="text-align:center; font-size:0.85rem; color:#64748b; padding:20px;">No se encontró la lista de equipos de la liga para ${escapeHtmlMatch(currentTeam)} (carpeta "${LEAGUES_FOLDER}"). Comprueba la conexión y que exista el archivo .txt con el nombre del equipo.</p>`;
+    } else {
+      leagueTeamsList.forEach((name, i) => {
+        const btn = document.createElement("button");
+        btn.className = "app-input";
+        btn.style.textAlign = "left";
+        btn.style.cursor = "pointer";
+        btn.textContent = name;
+        btn.onclick = () => selectLeagueTeam(i);
+        container.appendChild(btn);
+      });
+    }
+    document.getElementById("modalLeagueTeams").classList.add("active");
+  }
+
+  function closeLeagueTeamsModal() {
+    document.getElementById("modalLeagueTeams").classList.remove("active");
+  }
+
+  // Elegido un rival en un lado, el otro lado se rellena con el equipo del club.
+  function selectLeagueTeam(index) {
+    const name = leagueTeamsList[index];
+    if (name === undefined) return;
+    if (leaguePickSide === "home") {
+      matchScore.local = name;
+      matchScore.visitante = currentTeam;
+    } else {
+      matchScore.visitante = name;
+      matchScore.local = currentTeam;
+    }
+    closeLeagueTeamsModal();
+    renderMatchScoreboard();
+  }
+
+  // ---------------------------------------------------------------------
+  //  CONFIGURACIÓN DEL CLUB > PESTAÑA "LIGAS"
+  //  Igual que la pestaña de jugadores/as, pero para los equipos de la liga
+  //  de cada equipo del club. Se guarda un .txt por equipo en la carpeta
+  //  "Ligas/", con un equipo por fila (mismo formato que lee la pantalla Partido).
+  // ---------------------------------------------------------------------
+  let leagueEdit = { key: "", list: [] };
+  let leagueWriteChain = Promise.resolve();
+
+  async function renderLeaguesTab() {
+    const select = document.getElementById("selectTeamLeagues");
+    const prev = select.value;
+    select.innerHTML = "";
+    appData.teams.forEach(t => {
+      const opt = document.createElement("option");
+      opt.value = getTeamKey(t);
+      opt.innerText = `${t.name} (${t.category})`;
+      select.appendChild(opt);
+    });
+    if (prev && Array.from(select.options).some(o => o.value === prev)) select.value = prev;
+    await loadLeagueEditList();
+  }
+
+  async function loadLeagueEditList() {
+    const key = document.getElementById("selectTeamLeagues").value;
+    // Antes de leer, se termina de enviar lo pendiente para no traer datos desactualizados.
+    await leagueWriteChain;
+    if (navigator.onLine && offlineQueue.length > 0) await processOfflineQueue();
+    leagueEdit = { key: key, list: key ? await fetchLeagueTeamsForTeam(key) : [] };
+    renderLeagueManagement();
+  }
+
+  function renderLeagueManagement() {
+    const container = document.getElementById("draggableLeagueList");
+    container.innerHTML = "";
+    document.getElementById("leagueCountBadge").innerText = leagueEdit.list.length;
+
+    leagueEdit.list.forEach((name, index) => {
+      const item = document.createElement("div");
+      item.className = "item-row";
+      item.style.marginBottom = "4px";
+      item.innerHTML = `
+        <span style="font-weight:600;">${escapeHtmlMatch(name)}</span>
+        <div style="display:flex; gap:4px; align-items:center;">
+          <button style="border:none; background:#e2e8f0; border-radius:4px; padding:2px 5px; font-size:0.7rem;" onclick="moveLeagueTeam(${index}, -1)">▲</button>
+          <button style="border:none; background:#e2e8f0; border-radius:4px; padding:2px 5px; font-size:0.7rem;" onclick="moveLeagueTeam(${index}, 1)">▼</button>
+          <button class="btn-del" onclick="deleteLeagueTeam(${index})">✕</button>
+        </div>
+      `;
+      container.appendChild(item);
+    });
+  }
+
+  function addLeagueTeam() {
+    if (!leagueEdit.key) return;
+    const input = document.getElementById("newLeagueTeamName");
+    const name = input.value.trim();
+    if (!name) return;
+    if (leagueEdit.list.some(n => n.toLowerCase() === name.toLowerCase())) {
+      alert("Ese equipo ya está en la lista de la liga.");
+      return;
+    }
+    leagueEdit.list.push(name);
+    input.value = "";
+    saveLeagueEditList();
+    renderLeagueManagement();
+  }
+
+  function deleteLeagueTeam(index) {
+    if (leagueEdit.list[index] === undefined) return;
+    leagueEdit.list.splice(index, 1);
+    saveLeagueEditList();
+    renderLeagueManagement();
+  }
+
+  function moveLeagueTeam(index, direction) {
+    const list = leagueEdit.list;
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= list.length) return;
+    const temp = list[index];
+    list[index] = list[newIndex];
+    list[newIndex] = temp;
+    saveLeagueEditList();
+    renderLeagueManagement();
+  }
+
+  // Guarda en local (caché que también usa la pantalla Partido) y envía a GitHub.
+  // Los envíos se encadenan para que lleguen en orden y no se pisen entre sí.
+  function saveLeagueEditList() {
+    const key = leagueEdit.key;
+    if (!key) return;
+    const snapshot = leagueEdit.list.slice();
+    localStorage.setItem(`NVA_LEAGUE_${sanitizeFileName(key)}`, JSON.stringify(snapshot));
+
+    if (ghSettings.user && ghSettings.repo && ghSettings.token) {
+      leagueWriteChain = leagueWriteChain
+        .then(() => saveLeagueTeamsToGitHub(key, snapshot))
+        .catch(e => console.error("Error al guardar la liga:", e));
+    }
+  }
+
+  async function saveLeagueTeamsToGitHub(teamKey, list) {
+    // Si ya existe un .txt de ese equipo en Ligas/ (aunque se llame distinto), se reutiliza
+    // para no duplicarlo; si no, se crea con el nombre del equipo.
+    let fileName = leagueFileNames[teamKey];
+    if (!fileName) {
+      const file = await findLeagueFile(teamKey);
+      if (file) { fileName = file.name; leagueFileNames[teamKey] = fileName; }
+    }
+    const path = `${LEAGUES_FOLDER}/${fileName ? encodeURIComponent(fileName) : sanitizeFileName(teamKey) + ".txt"}`;
+    const text = list.join("\n") + "\n"; // un equipo por fila
+    await writeGitHubFile(path, text, `Actualizar liga de ${teamKey}`);
+  }
+
+  // --- Navegación entre Asistencia (Entrenamiento) y Partido ---
+  function goToMatchScreen() {
+    if (!currentTeam) return;
+
+    if (!matchInitialized || matchTeamKey !== currentTeam) {
+      matchTeamKey = currentTeam;
+      resetMatchToTodayDate();
+      initMatchData();
+      matchInitialized = true;
+    }
+
+    const trainingTitle = document.getElementById("sessionTitle").innerText;
+    document.getElementById("matchTitle").innerText = `Partido: ${trainingTitle}`;
+
+    renderMatchScoreboard();
+    renderMatchPlayers();
+    showScreen("screenMatch");
+    document.getElementById("btnBack").style.display = "flex";
+
+    // Igual que al entrar en Asistencia: refresca avisos y consultas en segundo plano.
+    if (ghSettings.user && ghSettings.repo && navigator.onLine) {
+      (async () => {
+        if (offlineQueue.length > 0) await processOfflineQueue();
+        await Promise.all([fetchWarningsFromGitHub(), fetchQueriesFromGitHub()]);
+        if (document.getElementById("screenMatch").classList.contains("active")) {
+          renderMatchPlayers();
+        }
+      })();
+    }
+  }
+
+  function goToTrainingScreen() {
+    renderPlayersMain();
+    showScreen("screenAttendance");
+    document.getElementById("btnBack").style.display = "flex";
+  }
+
+  // --- Colores y etiquetas de estado ---
+  function getMatchStateColor(player) {
+    if (player.attendance === 'no_convocada') return '#0284c7';                 // azul
+    if (player.attendance === 'falta') {
+      return (player.absenceType || 'injustificada') === 'justificada' ? '#f59e0b' : '#ef4444'; // amarillo / rojo
+    }
+    return '#22c55e';                                                           // verde: presente
+  }
+
+  function getMatchStateSoftColor(player) {
+    if (player.attendance === 'no_convocada') return '#e0f2fe';                 // azul suave
+    if (player.attendance === 'falta') {
+      return (player.absenceType || 'injustificada') === 'justificada' ? '#fef3c7' : '#fee2e2';
+    }
+    return '#dcfce7';                                                           // verde suave
+  }
+
+  function getMatchStateLabel(player) {
+    if (player.attendance === 'no_convocada') return 'No Convocada';
+    if (player.attendance === 'falta') {
+      return (player.absenceType || 'injustificada') === 'justificada' ? 'Falta Justificada' : 'Falta Injustificada';
+    }
+    return 'Presente';
+  }
+
+  // Ciclo del borde lateral: Presente (verde) -> Falta Justificada (amarillo)
+  // -> Falta Injustificada (rojo) -> No Convocada (azul) -> Presente...
+  function cycleMatchState(index) {
+    const player = matchData[index];
+    if (player.attendance === 'presente' || !player.attendance) {
+      player.attendance = 'falta';
+      player.absenceType = 'justificada';
+    } else if (player.attendance === 'falta') {
+      if ((player.absenceType || 'injustificada') === 'justificada') {
+        player.absenceType = 'injustificada';
+      } else {
+        player.attendance = 'no_convocada';
+        player.absenceType = '';
+      }
+    } else {
+      player.attendance = 'presente';
+      player.absenceType = '';
+    }
+    absenceReasonMenuOpen['match-' + index] = false;
+    renderMatchPlayers();
+  }
+
+  function toggleMatchCommentBox(index) {
+    matchCommentBoxOpen[index] = !matchCommentBoxOpen[index];
+    renderMatchPlayers();
+  }
+
+  function startMatchDictation(index) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("El dictado por voz no está disponible en este navegador.");
+      return;
+    }
+    matchCommentBoxOpen[index] = true;
+    const micBtn = document.getElementById(`matchMicBtn-${index}`);
+    if (micBtn) micBtn.classList.add("recording");
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'es-ES';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      const current = matchData[index].comments || "";
+      matchData[index].comments = (current ? current + " " : "") + transcript;
+      renderMatchPlayers();
+    };
+    recognition.onerror = () => { if (micBtn) micBtn.classList.remove("recording"); };
+    recognition.onend = () => { if (micBtn) micBtn.classList.remove("recording"); };
+
+    try {
+      recognition.start();
+    } catch (e) {
+      if (micBtn) micBtn.classList.remove("recording");
+    }
+  }
+
+  function setMatchQuality(i, r) { matchData[i].quality = r; renderMatchPlayers(); }
+  function setMatchStrikes(i, c) { matchData[i].strikes = c; renderMatchPlayers(); }
+  function updateMatchComment(i, text) { matchData[i].comments = text; }
+
+  // Responder una consulta desde la pantalla de Partido (reutiliza answerQuery
+  // y después repinta esta pantalla).
+  function answerMatchQuery(queryId, playerName, option) {
+    answerQuery(queryId, playerName, option);
+    renderMatchPlayers();
+  }
+
+  function renderMatchPlayers() {
+    const container = document.getElementById("matchPlayersContainer");
+    container.innerHTML = "";
+
+    matchData.forEach((player, index) => {
+      const card = document.createElement("div");
+      card.className = "player-card";
+
+      const wObj = warningsData[player.name];
+      const hasWarning = !!wObj;
+      const warningText = hasWarning ? (typeof wObj === 'string' ? wObj : wObj.reason) : "";
+      const warningColor = hasWarning ? (wObj.color || "#ef4444") : "#ef4444";
+
+      const nameHtml = hasWarning
+        ? `<div class="warning-capsule" style="background:${warningColor};" title="${player.name} (${warningText})">${player.name} (${warningText})</div>`
+        : `<div class="player-name" title="${player.name}">${player.name}</div>`;
+
+      let queryHtml = "";
+      const pendingQuery = queriesData.find(q => q.teams && q.teams.includes(currentTeam) && (!q.responses || !q.responses[player.name]));
+      if (pendingQuery) {
+        const opts = (pendingQuery.options && pendingQuery.options.length > 0) ? pendingQuery.options : ['V', 'X'];
+        const btnsHtml = opts.map(opt => {
+          const safeOpt = opt.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+          const safePlayer = player.name.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+          return `<button class="query-btn" onclick="answerMatchQuery(${pendingQuery.id}, '${safePlayer}', '${safeOpt}')">${opt}</button>`;
+        }).join('');
+
+        queryHtml = `
+          <div class="query-capsule" style="background:${pendingQuery.color};">
+            <span>❓</span>
+            ${btnsHtml}
+          </div>
+        `;
+      }
+
+      const stateColor = getMatchStateColor(player);
+      card.style.backgroundColor = getMatchStateSoftColor(player);
+      const stateLabel = getMatchStateLabel(player);
+
+      const isPresent = isPlayerPresent(player);
+      // Solo Presente permite plegar/desplegar el comentario; en el resto
+      // de estados (falta / no convocada) se muestra siempre desplegado.
+      const isCommentOpen = !isPresent || !!matchCommentBoxOpen[index];
+      const reasonUI = buildAbsenceReasonControls('match', index, player);
+      const safeComment = (player.comments || "").replace(/"/g, "&quot;");
+
+      const ratingHtml = isPresent ? `
+          <div class="strikes-xxx">
+            ${[1, 2, 3].map(n => `
+              <span class="xmark ${n <= player.strikes ? 'active' : ''}"
+                    onclick="setMatchStrikes(${index}, ${player.strikes === n ? n - 1 : n})">✕</span>
+            `).join('')}
+          </div>
+
+          <div class="stars">
+            ${[1, 2, 3, 4, 5].map(star => `
+              <span class="star ${star <= player.quality ? 'active' : ''}"
+                    onclick="setMatchQuality(${index}, ${star})">★</span>
+            `).join('')}
+          </div>
+      ` : '';
+
+      card.innerHTML = `
+        <div class="state-strip" onclick="cycleMatchState(${index})" title="Estado: ${stateLabel} (pulsa para cambiar)">
+          <div class="state-strip-bar" style="background:${stateColor};"></div>
+        </div>
+
+        <div class="card-row-1">
+          <div style="display:flex; align-items:center; gap:4px; flex:1; min-width:0; overflow:hidden;">
+            ${nameHtml}
+            ${queryHtml}
+          </div>
+        </div>
+
+        <div class="card-row-2">
+          <div class="comment-toggle-wrap">
+            <button type="button" class="comment-bubble-btn ${player.comments ? 'has-comment' : ''}"
+                    ${isPresent ? `onclick="toggleMatchCommentBox(${index})"` : 'style="cursor:default;"'} title="Comentarios">💬</button>
+            <div class="comment-compact-row" style="display:${isCommentOpen ? 'flex' : 'none'};">
+              <input type="text" class="comment-compact-input" value="${safeComment}"
+                     placeholder="Comentario u observación..."
+                     onchange="updateMatchComment(${index}, this.value)">
+              <button type="button" id="matchMicBtn-${index}" class="mic-btn"
+                      onclick="startMatchDictation(${index})" title="Dictar por voz">🎤</button>
+              ${reasonUI.btn}
+            </div>
+          </div>
+
+          ${ratingHtml}
+        </div>
+
+        ${reasonUI.menu}
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  // --- Guardado: un fichero por equipo y fecha en la carpeta "Partidos/" ---
+  async function saveMatch() {
+    const dateVal = document.getElementById("matchDatePicker").value;
+    if (!dateVal) {
+      alert("Por favor selecciona una fecha.");
+      return;
+    }
+
+    const logEntry = {
+      fecha: dateVal,
+      equipo: currentTeam,
+      entrenador: currentCoach ? currentCoach.name : "",
+      jugadores: playersForSave(matchData),
+      marcador: buildMatchMarcador()
+    };
+
+    const existingIndex = allMatchLogs.findIndex(l => l.equipo === currentTeam && l.fecha === dateVal);
+    if (existingIndex >= 0) {
+      allMatchLogs[existingIndex] = logEntry;
+    } else {
+      allMatchLogs.push(logEntry);
+    }
+
+    localStorage.setItem("NVA_MATCH_LOGS", JSON.stringify(allMatchLogs));
+
+    const matchFileName = `${MATCH_LOGS_FOLDER}/Partidos_${sanitizeFileName(currentTeam)}_${dateVal}.json`;
+    const success = await writeGitHubFile(matchFileName, logEntry, `Registro partido ${currentTeam} - ${dateVal}`);
+
+    if (success) {
+      alert("¡Partido guardado y sincronizado en GitHub!");
+    } else {
+      alert("Guardado localmente. Se sincronizará con GitHub cuando recupere la conexión.");
+    }
+  }
+
+  // --- Lectura de los partidos guardados (lista la carpeta "Partidos/") ---
+  async function fetchMatchLogsFromGitHub() {
+    if (!ghSettings.user || !ghSettings.repo || !navigator.onLine) return;
+
+    const files = await listGitHubFolder(MATCH_LOGS_FOLDER);
+    if (!files) return; // fallo de red al listar la carpeta: no tocar la caché local
+    const headers = {};
+    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
+
+    for (const file of files) {
+      if (!file.name || !file.name.startsWith("Partidos_") || !file.name.endsWith(".json")) continue;
+
+      try {
+        const res = await fetch(file.url, { headers, cache: "no-store" });
+        if (!res.ok) continue;
+        const json = await res.json();
+        const parsed = JSON.parse(b64_to_utf8(json.content));
+        const entries = Array.isArray(parsed) ? parsed : [parsed];
+
+        entries.forEach(remoteLog => {
+          if (!remoteLog || !remoteLog.equipo || !remoteLog.fecha) return;
+          const idx = allMatchLogs.findIndex(l => l.equipo === remoteLog.equipo && l.fecha === remoteLog.fecha);
+          if (idx >= 0) {
+            allMatchLogs[idx] = remoteLog;
+          } else {
+            allMatchLogs.push(remoteLog);
+          }
+        });
+      } catch (e) {
+        console.error(`Error al leer ${file.name}:`, e);
+      }
+    }
+
+    localStorage.setItem("NVA_MATCH_LOGS", JSON.stringify(allMatchLogs));
+  }
+
+  // --- Historial de partidos ---
+  async function openMatchHistoryModal() {
+    document.getElementById("modalMatchHistory").classList.add("active");
+
+    if (ghSettings.user && ghSettings.repo && navigator.onLine) {
+      const container = document.getElementById("matchHistoryListContainer");
+      container.innerHTML = `<p style="text-align:center; font-size:0.85rem; color:#64748b; padding:20px;">Actualizando historial...</p>`;
+      if (offlineQueue.length > 0) await processOfflineQueue();
+      await fetchMatchLogsFromGitHub();
+    }
+
+    renderMatchHistoryList();
+  }
+
+  function closeMatchHistoryModal() {
+    document.getElementById("modalMatchHistory").classList.remove("active");
+  }
+
+  function renderMatchHistoryList() {
+    const container = document.getElementById("matchHistoryListContainer");
+    container.innerHTML = "";
+    const teamLogs = allMatchLogs.filter(log => log.equipo === currentTeam);
+
+    if (teamLogs.length === 0) {
+      container.innerHTML = `<p style="text-align:center; font-size:0.85rem; color:#64748b; padding:20px;">No hay partidos guardados previamente para este equipo.</p>`;
+      return;
+    }
+
+    teamLogs.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+    teamLogs.forEach((log) => {
+      const presentes = log.jugadores.filter(j => j.attendance === 'presente').length;
+      const faltas = log.jugadores.filter(j => j.attendance === 'falta').length;
+      const noConv = log.jugadores.filter(j => j.attendance === 'no_convocada').length;
+      const m = log.marcador;
+      const resultHtml = m
+        ? `<div style="font-size:0.72rem; color:#0f172a; font-weight:700; margin-top:2px;">${escapeHtmlMatch(m.local || 'Home')} ${m.setsLocal ?? 0} - ${m.setsVisitante ?? 0} ${escapeHtmlMatch(m.visitante || 'VISIT')}</div>`
+        : "";
+
+      const card = document.createElement("div");
+      card.className = "history-card";
+      card.innerHTML = `
+        <div>
+          <div style="font-weight:700; font-size:0.85rem; color:var(--azul-dark);">📅 ${log.fecha}</div>
+          <div style="font-size:0.75rem; color:#64748b;">Entrenador: ${log.entrenador}</div>
+          <div style="font-size:0.72rem; color:#0284c7; margin-top:2px;">
+            Jugadoras: ${presentes} Presentes / ${faltas} Faltas / ${noConv} No convocadas
+          </div>
+          ${resultHtml}
+        </div>
+        <button class="btn-edit-history" onclick="loadMatchRecordForEditing('${log.fecha}')">✏️ Cargar/Editar</button>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  function loadMatchRecordForEditing(fecha) {
+    const log = allMatchLogs.find(l => l.equipo === currentTeam && l.fecha === fecha);
+    if (!log) return;
+    document.getElementById("matchDatePicker").value = log.fecha;
+    matchData = JSON.parse(JSON.stringify(log.jugadores));
+    matchCommentBoxOpen = {};
+    loadMatchScoreFromLog(log);
+    renderMatchScoreboard();
+    renderMatchPlayers();
+    closeMatchHistoryModal();
+    alert(`Se ha cargado el partido del ${log.fecha} para modificar. Al terminar pulsa "Guardar Partido en GitHub".`);
+  }
+
+  // =====================================================================
+  //  ENGANCHES (sin modificar el código existente)
+  //  Se envuelven tres funciones existentes para que la pantalla de Partido
+  //  se comporte igual que la de Asistencia.
+  // =====================================================================
+
+  // 1) Al elegir un equipo de nuevo, el partido en curso se reinicia
+  //    (igual que se reinicia el entrenamiento).
+  const _origSelectCoachAndTeam = selectCoachAndTeam;
+  selectCoachAndTeam = function () {
+    if (!isPdfMode) matchInitialized = false;
+    return _origSelectCoachAndTeam.apply(this, arguments);
+  };
+
+  // 2) Cuando se sincroniza con GitHub, si la pantalla de Partido está
+  //    abierta también se repinta con los avisos/consultas actualizados.
+  const _origRefreshActiveScreenUI = refreshActiveScreenUI;
+  refreshActiveScreenUI = function () {
+    _origRefreshActiveScreenUI.apply(this, arguments);
+    const screenMatchEl = document.getElementById("screenMatch");
+    if (screenMatchEl && screenMatchEl.classList.contains("active")) {
+      renderMatchPlayers();
+    }
+  };
+
+  // 3) "Borrar datos locales" también vacía la caché de partidos en memoria.
+  const _origClearAllLocalStorageData = clearAllLocalStorageData;
+  clearAllLocalStorageData = function () {
+    const prevQueueRef = offlineQueue;
+    _origClearAllLocalStorageData.apply(this, arguments);
+    if (offlineQueue !== prevQueueRef) { // solo si el usuario confirmó el borrado
+      allMatchLogs = [];
+      matchData = [];
+      matchInitialized = false;
+    }
+  };
 </script>
 
 </body>
