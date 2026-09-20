@@ -1157,8 +1157,6 @@
     .network-online { background: #22c55e; color: white; }
     .network-offline { background: #ef4444; color: white; }
 
-
-
     /* ===== PARTIDO: ajuste de la barra de controles (3 elementos) en pantallas estrechas ===== */
     @media (max-width: 430px) {
       #screenAttendance .controls-bar,
@@ -1184,7 +1182,6 @@
       #screenAttendance .btn-history,
       #screenMatch .btn-history { padding: 8px 8px; font-size: 0.72rem; }
     }
-
 
     /* --- Pantalla Warnings: jugadora + motivo con desplazamiento tipo teleprompter --- */
     .warn-line { display: flex; align-items: center; gap: 6px; flex: 1 1 0; min-width: 0; }
@@ -4927,67 +4924,32 @@
 <script>
   // =====================================================================
   //  MÓDULO OTROS
-  //  Pantalla con botones de información/instrucciones. El primero
-  //  ("Protocolo Accidentes") viene fijo en la app; el resto los crea el
-  //  usuario con "+ NUEVO" (nombre + texto enriquecido) y se guardan en
-  //  Otros.json (GitHub) con copia local, igual que el Tablón.
+  //  Pantalla con botones de información/instrucciones. Todos los botones
+  //  (incluido "Protocolo Accidentes") viven en OTROS.json (GitHub, con copia
+  //  local, igual que el Tablón). Se crean con "+ NUEVO" (nombre + texto
+  //  enriquecido) y se pueden editar o eliminar desde su panel.
   // =====================================================================
-  const OTROS_FILE = "Otros.json";
+  const OTROS_FILE = "OTROS.json";
   let otrosData = JSON.parse(localStorage.getItem("NVA_OTROS_DATA")) || [];
   let otrosOpenId = null;
   let otrosEditingId = null;
 
-  const OTROS_PROTOCOLO_HTML = `
-    <p style="margin:0 0 6px 0; font-size:0.78rem; color:#475569;">
-      Resumen del protocolo de actuación en caso de accidente deportivo · Federación de Voleibol de la Comunidad Valenciana · <b>Póliza 50683972 – Allianz</b> (Añó &amp; Lozano Correduría-Seguros).
-    </p>
-    <div style="background:#fee2e2; border:1px solid #ef4444; border-radius:8px; padding:8px 10px; margin:8px 0; font-weight:800; color:#b91c1c; text-align:center;">
-      ⚠️ Antes de nada: asegurarse de que la licencia NO pertenece a Jocs Esportius
-    </div>
-    <p style="margin:6px 0;"><b>📞 Allianz:</b> <a href="tel:913343291">913 343 291</a> &nbsp;·&nbsp; <i>DA = Declaración de Accidente</i></p>
-
-    <div class="otros-block" style="border-left-color:#22c55e;">
-      <h4>🟢 Caso leve, sin urgencia</h4>
-      <ol>
-        <li>Llamar a Allianz (<a href="tel:913343291">913 343 291</a>), aportar los datos y guardar el nº de siniestro.</li>
-        <li>Pedir a <a href="mailto:siniestros@alcorreduria.es">siniestros@alcorreduria.es</a> la declaración de accidente, indicando el nº de siniestro.</li>
-        <li>Recibimos la DA.</li>
-        <li>Llamamos a un centro concertado para coger cita con especialista.</li>
-        <li>Enviamos la DA y la petición de la cita a <a href="mailto:allianzaccidentes.autorizaciones@hna.es">allianzaccidentes.autorizaciones@hna.es</a></li>
-        <li>Continuar todos los trámites con Allianz.</li>
-      </ol>
-    </div>
-
-    <div class="otros-block" style="border-left-color:#f97316;">
-      <h4>🟠 Caso grave (urgencia)</h4>
-      <ol>
-        <li>Llamar a Allianz (<a href="tel:913343291">913 343 291</a>), aportar los datos y guardar el nº de siniestro.</li>
-        <li>Acudir a urgencias de un centro concertado.</li>
-        <li>Pedir a <a href="mailto:siniestros@alcorreduria.es">siniestros@alcorreduria.es</a> la declaración de accidente, indicando el nº de siniestro.</li>
-        <li>Enviar la DA y el informe de urgencias (con la petición de cita con especialista si fuera necesario) a <a href="mailto:allianzaccidentes.autorizaciones@hna.es">allianzaccidentes.autorizaciones@hna.es</a></li>
-        <li>Continuar todos los trámites con Allianz.</li>
-      </ol>
-    </div>
-
-    <div class="otros-block" style="border-left-color:#ef4444;">
-      <h4>🔴 Urgencia vital (la vida del deportista está en peligro)</h4>
-      <ol>
-        <li>Acudir al centro médico más cercano.</li>
-        <li>Llamar a la compañía lo antes posible (<a href="tel:913343291">913 343 291</a>, Allianz) y guardar el nº de siniestro.</li>
-        <li>Pedir a <a href="mailto:siniestros@alcorreduria.es">siniestros@alcorreduria.es</a> la declaración de accidente, indicando el nº de siniestro.</li>
-        <li>Enviar la DA con toda la información médica y peticiones a <a href="mailto:allianzaccidentes.autorizaciones@hna.es">allianzaccidentes.autorizaciones@hna.es</a></li>
-        <li>Continuar todos los trámites con Allianz.</li>
-      </ol>
-    </div>
-  `;
-
-  const OTROS_BUILTIN = [
-    { id: "builtin-protocolo-accidentes", title: "Protocolo Accidentes", html: OTROS_PROTOCOLO_HTML, builtin: true }
-  ];
-
   function escapeHtmlOtros(str) {
     return String(str == null ? "" : str)
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  // Estilos visuales permitidos en el texto enriquecido (colores, bordes y espaciado).
+  const OTROS_STYLE_OK = new Set(["color", "background", "background-color", "border", "border-left",
+    "border-left-color", "border-radius", "padding", "margin", "font-weight", "font-size", "text-align"]);
+  function cleanOtrosStyle(css) {
+    return String(css || "").split(";").map(d => d.trim()).filter(d => {
+      const i = d.indexOf(":");
+      if (i < 0) return false;
+      const prop = d.slice(0, i).trim().toLowerCase();
+      const val = d.slice(i + 1).trim();
+      return OTROS_STYLE_OK.has(prop) && !/url\s*\(|expression|javascript|@import|[<>\\]/i.test(val);
+    }).join("; ");
   }
 
   // El texto enriquecido se guarda como HTML y se comparte vía GitHub, así que
@@ -5010,9 +4972,13 @@
           child.remove();
           return;
         }
+        const keepStyle = cleanOtrosStyle(child.getAttribute("style"));
+        const keepClass = (tag === "DIV" && child.getAttribute("class") === "otros-block") ? "otros-block" : "";
         Array.from(child.attributes).forEach(a => {
           if (!(tag === "A" && a.name === "href")) child.removeAttribute(a.name);
         });
+        if (keepStyle) child.setAttribute("style", keepStyle);
+        if (keepClass) child.setAttribute("class", keepClass);
         if (tag === "A") {
           const href = (child.getAttribute("href") || "").trim();
           if (/^(https?:|mailto:|tel:)/i.test(href)) {
@@ -5047,7 +5013,7 @@
         otrosData = Array.isArray(items) ? items.filter(it => it && it.id && it.title) : [];
         persistOtrosLocal();
       }
-    } catch (e) { console.error("Error al cargar Otros.json:", e); }
+    } catch (e) { console.error(`Error al cargar ${OTROS_FILE}:`, e); }
   }
 
   // Aplica un cambio sobre la lista más reciente de GitHub (si hay conexión)
@@ -5089,27 +5055,24 @@
     if (!box) return;
     box.innerHTML = "";
 
-    const entries = [...OTROS_BUILTIN, ...otrosData.map(e => ({ ...e, builtin: false }))];
-    entries.forEach(entry => {
+    otrosData.forEach(entry => {
       const isOpen = otrosOpenId === entry.id;
       const btn = document.createElement("button");
       btn.className = "coach-btn" + (isOpen ? " selected" : "");
-      btn.innerHTML = `<span>${entry.builtin ? "🚑" : "📌"} ${escapeHtmlOtros(entry.title)}</span> <span>${isOpen ? "🔻" : "➤"}</span>`;
+      btn.innerHTML = `<span>${escapeHtmlOtros(entry.icon || "📌")} ${escapeHtmlOtros(entry.title)}</span> <span>${isOpen ? "🔻" : "➤"}</span>`;
       btn.onclick = () => toggleOtros(entry.id);
       box.appendChild(btn);
 
       if (isOpen) {
         const panel = document.createElement("div");
         panel.className = "otros-panel";
-        panel.innerHTML = entry.builtin ? entry.html : sanitizeOtrosHtml(entry.html);
-        if (!entry.builtin) {
-          const actions = document.createElement("div");
-          actions.className = "otros-actions";
-          actions.innerHTML = `
-            <button style="background:linear-gradient(135deg,#0284c7,#0369a1);" onclick="openOtrosEditor('${entry.id}')">✏️ Editar</button>
-            <button style="background:linear-gradient(135deg,#ef4444,#b91c1c);" onclick="deleteOtros('${entry.id}')">🗑️ Eliminar</button>`;
-          panel.appendChild(actions);
-        }
+        panel.innerHTML = sanitizeOtrosHtml(entry.html);
+        const actions = document.createElement("div");
+        actions.className = "otros-actions";
+        actions.innerHTML = `
+          <button style="background:linear-gradient(135deg,#0284c7,#0369a1);" onclick="openOtrosEditor('${entry.id}')">✏️ Editar</button>
+          <button style="background:linear-gradient(135deg,#ef4444,#b91c1c);" onclick="deleteOtros('${entry.id}')">🗑️ Eliminar</button>`;
+        panel.appendChild(actions);
         box.appendChild(panel);
       }
     });
