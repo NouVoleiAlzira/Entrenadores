@@ -147,7 +147,7 @@
       height: 34px;
       padding: 2px 6px;
       /*border-radius: 8px;*/
-      font-size: 2rem;
+      font-size: 3rem;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -326,7 +326,7 @@
     }
 
     .date-input {
-      width: 110px;
+      width: 115px;
       background: white;
       border: none;
       border-radius: 6px;
@@ -1282,13 +1282,13 @@
   <!-- ENCABEZADO -->
   <header>
     <button class="btn-header-icon btn-back" id="btnBack" onclick="withLoading(goBack, 'Sincronizando datos...')" style="display: none; visibility: visible; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; gap: 4px; padding: 12px 10px; min-height: 50px;">
-      <span>❰❰</span>
+      <span>↺</span>
     </button>  
     <div class="header-title-container">
       <h1>NOU VOLEI ALZIRA</h1>
     </div>
     <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; margin-left: auto;">
-      <button class="btn-header-icon" title="Opciones (Propietario)" onclick="promptOwnerPassword()">⚙️</button>
+      <button class="btn-header-icon" title="Opciones (Propietario)" style="font-size: 1.2rem;" onclick="promptOwnerPassword()">⚙️</button>
       <span id="netStatusBadge" class="network-badge network-online">Online</span>
     </div>
   </header>
