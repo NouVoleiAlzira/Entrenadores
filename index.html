@@ -1185,6 +1185,23 @@
       #screenMatch .btn-history { padding: 8px 8px; font-size: 0.72rem; }
     }
 
+
+    /* --- Pantalla Warnings: jugadora + motivo con desplazamiento tipo teleprompter --- */
+    .warn-line { display: flex; align-items: center; gap: 6px; flex: 1 1 0; min-width: 0; }
+    .warn-name { flex: 0 1 auto; max-width: 55%; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .warn-reason-view { flex: 1 1 0; min-width: 0; overflow: hidden; white-space: nowrap; }
+    .warn-reason-track { display: inline-block; white-space: nowrap; font-size: 0.8rem; font-weight: 700; will-change: transform; }
+    .warn-reason-track.scrolling { animation: warnMarquee var(--warn-dur, 8s) ease-in-out infinite alternate; }
+    @keyframes warnMarquee {
+      0%, 15% { transform: translateX(0); }
+      85%, 100% { transform: translateX(var(--warn-shift, 0px)); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .warn-reason-view { overflow: visible; white-space: normal; }
+      .warn-reason-track { white-space: normal; }
+      .warn-reason-track.scrolling { animation: none; }
+    }
+
     /* ===== PARTIDO: marcador ===== */
     .match-scoreboard {
       display: grid;
@@ -1298,7 +1315,7 @@
     <textarea id="tablonTextarea" class="comment-input-long" placeholder="Escribe aquí las noticias del club..." oninput="autoResizeTablon(this)" onchange="updateTablon(this.value)"></textarea>
     <div style="display:flex; gap:8px;">
       <button class="btn-save-session" style="flex:1;" onclick="withLoading(saveTablon, 'Guardando Tablón en GitHub...')">💾 Guardar Tablón</button>
-      <button class="btn-save-session" style="flex:1; background: var(--btn-fondoVerde);" onclick="withLoading(refreshTablon, 'Refrescando Tablón...')">🔄 Refrescar</button>
+      <button class="btn-save-session" style="flex:0 0 auto; width:auto; white-space:nowrap; background: var(--btn-fondoVerde);" onclick="withLoading(refreshTablon, 'Refrescando Tablón...')">🔄 Refrescar</button>
       <button class="btn-save-session" style="flex:1; background: var(--btn-fondoAmarillo);" onclick="openOtros()">🗃️ OTROS</button>
     </div>
 
@@ -1370,7 +1387,7 @@
         <div class="modal-title">Motivo del Aviso</div>
         <button class="btn-close-modal" onclick="closeWarningModal()">✕</button>
       </div>
-      <input type="text" id="warningReasonInput" class="app-input" value="NO PAGADO" style="margin-bottom: 8px; font-weight:bold; color:red;">
+      <input type="text" id="warningReasonInput" class="app-input" value="NO PAGADO" style="margin-bottom: 8px; font-weight:bold; color:#ef4444;">
       
       <div style="font-size:0.75rem; color:#64748b; text-align:center; font-weight:600;">Selecciona un color de aviso:</div>
       <div class="color-picker-container" id="warningColorPicker">
@@ -1510,12 +1527,29 @@
     </div>
   </div>
 
+  <div class="modal-backdrop" id="modalResultsMatches">
+    <div class="modal-box" style="max-width: 420px;">
+      <div class="modal-header">
+        <div class="modal-title">🏆 Partidos del período</div>
+        <button class="btn-close-modal" onclick="closeResultsMatchesModal()">✕</button>
+      </div>
+      <p id="resultsMatchesPeriod" style="font-size:0.75rem; color:#64748b; margin-bottom:8px;"></p>
+      <div style="display:flex; gap:10px; align-items:center; margin-bottom:8px;">
+        <button type="button" id="btnResultsToggleAll" class="btn-history" style="margin-left:0;" onclick="toggleAllResultsMatches()">☐ Marcar ninguno</button>
+        <span id="resultsMatchesCount" style="font-size:0.78rem; color:var(--azul-dark); font-weight:600;"></span>
+      </div>
+      <div id="resultsMatchesList" style="display:flex; flex-direction:column; gap:6px; overflow-y:auto; min-height:0; max-height:50vh;"></div>
+      <button class="btn-save-session" id="btnResultsGenerate" onclick="confirmResultsSelection()">Generar PDF de Resultados</button>
+    </div>
+  </div>
+
   <div class="modal-backdrop" id="modalLeagueTeams">
     <div class="modal-box" style="max-width: 380px;">
       <div class="modal-header">
         <div class="modal-title" id="leagueModalTitle">Equipos de la liga</div>
         <button class="btn-close-modal" onclick="closeLeagueTeamsModal()">✕</button>
       </div>
+      <button type="button" class="app-input" style="text-align:left; cursor:pointer; margin-bottom:8px; font-weight:700; color:#b91c1c; border-color:#fca5a5; background:#fef2f2;" onclick="resetLeagueTeams()">↩ Cancelar selección (volver a HOME / VISIT)</button>
       <div id="leagueTeamsContainer" style="display:flex; flex-direction:column; gap:6px; overflow-y:auto; max-height:60vh;"></div>
     </div>
   </div>
@@ -1910,6 +1944,8 @@
         wPicker.querySelectorAll(".color-circle").forEach(x => x.classList.remove("selected"));
         c.classList.add("selected");
         selectedWarningColor = c.dataset.color;
+        // El texto del motivo se ve con el color de warning seleccionado
+        document.getElementById("warningReasonInput").style.color = selectedWarningColor;
       };
     });
 
@@ -2042,31 +2078,63 @@
     const container = document.getElementById("warningPlayersContainer");
     container.innerHTML = "";
     const players = getPlayersForTeamKey(currentTeam);
+    const esc = (v) => String(v == null ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
     players.forEach(playerName => {
       const wObj = warningsData[playerName];
       const hasWarning = !!wObj;
       const reason = hasWarning ? (typeof wObj === 'string' ? wObj : wObj.reason) : "";
       const color = hasWarning ? (wObj.color || "#ef4444") : "#ef4444";
-      
+
       const card = document.createElement("div");
       card.className = "player-card";
       if (hasWarning) card.style.borderLeft = `4px solid ${color}`;
-      
+
+      // Jugadora y motivo se ven con el color del warning. El motivo ocupa todo el
+      // espacio hasta el botón y, si no cabe, se desplaza como un teleprompter.
+      const textHtml = hasWarning
+        ? `<div class="warn-line" style="color:${color};" title="${esc(playerName)} (${esc(reason)})">
+             <span class="warn-name">${esc(playerName)}</span>
+             <span class="warn-reason-view"><span class="warn-reason-track">(${esc(reason)})</span></span>
+           </div>`
+        : `<div class="warn-line"><span class="warn-name" style="max-width:100%;" title="${esc(playerName)}">${esc(playerName)}</span></div>`;
+
       card.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <div style="${hasWarning ? `color:${color}; font-weight:bold; max-width:60%;` : 'max-width:60%;'} overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${playerName} ${hasWarning ? `(${reason})` : ''}">
-            ${playerName} <span style="font-size:0.75rem; color:#64748b;">${hasWarning ? `(${reason})` : ''}</span>
-          </div>
-          <button style="background:${hasWarning ? 'transparent' : '#e2e8f0'}; color:${hasWarning ? color : '#64748b'}; border:${hasWarning ? `1px solid ${color}` : 'none'}; padding:4px 8px; border-radius:4px; font-weight:bold; font-size:0.75rem; cursor:pointer;" 
-                  onclick="toggleWarningPlayer('${playerName}')">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+          ${textHtml}
+          <button class="warn-toggle-btn" style="flex-shrink:0; background:${hasWarning ? 'transparent' : '#e2e8f0'}; color:${hasWarning ? color : '#64748b'}; border:${hasWarning ? `1px solid ${color}` : 'none'}; padding:4px 8px; border-radius:4px; font-weight:bold; font-size:0.75rem; cursor:pointer;">
             ${hasWarning ? 'Quitar' : 'Marcar Warning'}
           </button>
         </div>
       `;
+      card.querySelector(".warn-toggle-btn").addEventListener("click", () => toggleWarningPlayer(playerName));
       container.appendChild(card);
     });
+
+    requestAnimationFrame(setupWarningMarquees);
   }
+
+  // Si el motivo es más largo que el espacio disponible, se desplaza de un
+  // extremo a otro (con pausas) para poder leerlo completo.
+  function setupWarningMarquees() {
+    document.querySelectorAll("#warningPlayersContainer .warn-reason-view").forEach(view => {
+      const track = view.firstElementChild;
+      if (!track) return;
+      track.classList.remove("scrolling");
+      track.style.removeProperty("--warn-shift");
+      track.style.removeProperty("--warn-dur");
+      const overflow = track.scrollWidth - view.clientWidth;
+      if (overflow > 1) {
+        track.style.setProperty("--warn-shift", `-${Math.ceil(overflow) + 4}px`);
+        track.style.setProperty("--warn-dur", `${Math.max(5, Math.round(overflow / 25) + 4)}s`);
+        track.classList.add("scrolling");
+      }
+    });
+  }
+  window.addEventListener("resize", () => {
+    const el = document.getElementById("screenWarnings");
+    if (el && el.classList.contains("active")) setupWarningMarquees();
+  });
 
   function toggleWarningPlayer(playerName) {
     if (warningsData[playerName]) {
@@ -2074,8 +2142,10 @@
       renderWarningPlayers();
     } else {
       currentWarningPlayer = playerName;
-      document.getElementById("warningReasonInput").value = "NO PAGADO";
+      const reasonInput = document.getElementById("warningReasonInput");
+      reasonInput.value = "NO PAGADO";
       selectedWarningColor = "#ef4444";
+      reasonInput.style.color = selectedWarningColor;
       const wPicker = document.getElementById("warningColorPicker");
       wPicker.querySelectorAll(".color-circle").forEach(x => x.classList.remove("selected"));
       wPicker.querySelector('[data-color="#ef4444"]').classList.add("selected");
@@ -2355,6 +2425,7 @@
     calMonth = new Date().getMonth();
 
     document.getElementById("pdfModalTitle").innerText = `🗓️ Período - ${displayName}`;
+    document.getElementById("btnConfirmPdf").innerText = "Generar Informe PDF";
     updateDateSelectionSummary();
     renderCalendar();
 
@@ -2442,7 +2513,7 @@
     closeDateRangeModal();
     if (isPdfMode) togglePdfMode();
     if (pdfResultsMode) {
-      withLoading(generateResultsPDF, 'Generando PDF de resultados...');
+      withLoading(openResultsMatchSelection, 'Buscando partidos del período...');
       return;
     }
     generatePDF();
@@ -2458,12 +2529,32 @@
     calMonth = new Date().getMonth();
 
     document.getElementById("pdfModalTitle").innerText = "🗓️ Período - Resultados de Partidos";
+    document.getElementById("btnConfirmPdf").innerText = "Siguiente: elegir partidos ➜";
     updateDateSelectionSummary();
     renderCalendar();
     document.getElementById("modalDateRange").classList.add("active");
   }
 
-  async function generateResultsPDF() {
+  // Partidos del período encontrados y partidos elegidos para el PDF.
+  let resultsCandidateLogs = [];
+  let resultsSelectedLogs = [];
+
+  // Resumen de un partido guardado (equipos, sets y si tiene resultado).
+  function matchLogSummary(log) {
+    const m = log.marcador;
+    const hasScore = !!(m && (m.local || m.visitante || (m.sets || []).some(s => s && (s.local != null || s.visitante != null))));
+    return {
+      hasScore,
+      home: hasScore ? (m.local || "Home") : "",
+      visit: hasScore ? (m.visitante || "VISIT") : "",
+      sl: hasScore ? (m.setsLocal ?? 0) : 0,
+      sv: hasScore ? (m.setsVisitante ?? 0) : 0
+    };
+  }
+
+  // Paso 2 del PDF Resultados: tras elegir las fechas se listan los partidos
+  // del período para escoger cuáles se incluyen en el PDF.
+  async function openResultsMatchSelection() {
     // Igual que en los demás informes: se sincroniza antes de recopilar para
     // incluir partidos guardados en GitHub desde otros dispositivos.
     if (ghSettings.user && ghSettings.repo && navigator.onLine) {
@@ -2471,14 +2562,78 @@
       await fetchMatchLogsFromGitHub();
     }
 
-    const logs = allMatchLogs
+    resultsCandidateLogs = allMatchLogs
       .filter(l => l && l.fecha >= rangeStart && l.fecha <= rangeEnd)
       .sort((a, b) => a.fecha === b.fecha ? String(a.equipo).localeCompare(String(b.equipo)) : a.fecha.localeCompare(b.fecha));
 
-    if (logs.length === 0) {
+    if (resultsCandidateLogs.length === 0) {
       alert(`No existen partidos guardados entre ${rangeStart} y ${rangeEnd}.`);
       return;
     }
+
+    const fmtDate = (d) => { const [y, m, dd] = d.split("-"); return `${dd}/${m}/${y}`; };
+    document.getElementById("resultsMatchesPeriod").innerText =
+      `Período: ${fmtDate(rangeStart)} al ${fmtDate(rangeEnd)}. Marca los partidos que quieres incluir en el PDF:`;
+
+    const list = document.getElementById("resultsMatchesList");
+    list.innerHTML = "";
+    resultsCandidateLogs.forEach((log, i) => {
+      const sm = matchLogSummary(log);
+      const label = document.createElement("label");
+      label.style.cssText = "display:flex; align-items:center; gap:10px; padding:8px 10px; background:#f8fafc; border:1px solid var(--gray-border); border-radius:10px; cursor:pointer; font-size:0.82rem;";
+      const scoreTxt = sm.hasScore
+        ? `${escapeHtmlMatch(sm.home)} <b>${sm.sl} - ${sm.sv}</b> ${escapeHtmlMatch(sm.visit)}`
+        : `<span style="color:#94a3b8;">Sin resultado</span>`;
+      label.innerHTML = `
+        <input type="checkbox" class="results-match-check" data-idx="${i}" checked onchange="updateResultsSelectionUI()" style="width:18px; height:18px; flex-shrink:0;">
+        <span style="min-width:0;">
+          <span style="font-weight:700; color:var(--azul-dark);">${fmtDate(log.fecha)} · ${escapeHtmlMatch(log.equipo)}</span><br>
+          <span style="color:#334155;">${scoreTxt}</span>
+        </span>`;
+      list.appendChild(label);
+    });
+
+    updateResultsSelectionUI();
+    document.getElementById("modalResultsMatches").classList.add("active");
+  }
+
+  function closeResultsMatchesModal() {
+    document.getElementById("modalResultsMatches").classList.remove("active");
+  }
+
+  function updateResultsSelectionUI() {
+    const checks = Array.from(document.querySelectorAll(".results-match-check"));
+    const n = checks.filter(c => c.checked).length;
+    document.getElementById("resultsMatchesCount").innerText = `${n} de ${checks.length} seleccionados`;
+    document.getElementById("btnResultsToggleAll").innerText = (n === checks.length) ? "☐ Marcar ninguno" : "☑ Marcar todos";
+    const gen = document.getElementById("btnResultsGenerate");
+    gen.disabled = n === 0;
+    gen.style.opacity = n === 0 ? "0.5" : "1";
+  }
+
+  // Botón superior de la lista: si están todos marcados los desmarca; si no, los marca todos.
+  function toggleAllResultsMatches() {
+    const checks = Array.from(document.querySelectorAll(".results-match-check"));
+    const allChecked = checks.every(c => c.checked);
+    checks.forEach(c => { c.checked = !allChecked; });
+    updateResultsSelectionUI();
+  }
+
+  function confirmResultsSelection() {
+    const idxs = Array.from(document.querySelectorAll(".results-match-check"))
+      .filter(c => c.checked).map(c => parseInt(c.dataset.idx, 10));
+    if (idxs.length === 0) {
+      alert("Selecciona al menos un partido.");
+      return;
+    }
+    resultsSelectedLogs = idxs.map(i => resultsCandidateLogs[i]).filter(Boolean);
+    closeResultsMatchesModal();
+    withLoading(generateResultsPDF, 'Generando PDF de resultados...');
+  }
+
+  async function generateResultsPDF() {
+    const logs = resultsSelectedLogs;
+    if (!logs || logs.length === 0) return;
 
     const esc = (v) => escapeHtmlMatch(v);
     const fmtDate = (d) => { const [y, m, dd] = d.split("-"); return `${dd}/${m}/${y}`; };
@@ -4225,6 +4380,14 @@
 
   function closeLeagueTeamsModal() {
     document.getElementById("modalLeagueTeams").classList.remove("active");
+  }
+
+  // Cancela la selección: los dos lados vuelven al predeterminado (HOME / VISIT).
+  function resetLeagueTeams() {
+    matchScore.local = "";
+    matchScore.visitante = "";
+    closeLeagueTeamsModal();
+    renderMatchScoreboard();
   }
 
   // Elegido un rival en un lado, el otro lado se rellena con el equipo del club.
