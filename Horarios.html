@@ -26,6 +26,7 @@
     --text:#E9EEFB;
     --text-dim:#93A4C3;
     --danger:#E2557A;
+    --success:#43A047;
     --radius-sm:6px;
     --radius-md:10px;
     padding-top: env(safe-area-inset-top, 0px);
@@ -37,8 +38,7 @@
   html,body{height:100%;}
   body{
     margin:0;
-    background:
-      radial-gradient(ellipse at top, #17264a 0%, var(--ink) 60%);
+    background: radial-gradient(ellipse at top, #17264a 0%, var(--ink) 60%);
     color:var(--text);
     font-family:'Inter',ui-sans-serif,system-ui,-apple-system,sans-serif;
     -webkit-font-smoothing:antialiased;
@@ -68,17 +68,44 @@
     color:var(--net); text-transform:uppercase;
   }
   .brand small{color:var(--text-dim); font-family:'Inter'; font-size:12px; letter-spacing:.02em; display:block; margin-top:2px;}
-  nav.tabs{display:flex; gap:6px;}
+  nav.tabs{display:flex; gap:8px; align-items:center;}
   .nav-link{
     appearance:none; border:1px solid var(--line); background:var(--panel);
     color:var(--text-dim); padding:9px 16px; border-radius:999px;
     font-size:13px; letter-spacing:.04em; text-transform:uppercase; cursor:pointer;
     text-decoration:none; transition:background .15s, color .15s, border-color .15s;
+    display:inline-flex; align-items:center; gap:6px;
   }
   .nav-link:hover{color:var(--net); border-color:var(--amber);}
   .nav-link:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible{
     outline:2px solid var(--amber); outline-offset:2px;
   }
+
+  /* GitHub Bar Status */
+  .github-status-bar {
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .gh-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+  }
+  .gh-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--text-dim);
+  }
+  .gh-dot.online { background: var(--success); box-shadow: 0 0 6px var(--success); }
+  .gh-dot.offline { background: var(--danger); }
 
   main{max-width:1180px; margin:0 auto; padding:28px 20px 80px;}
   section.block{margin-bottom:34px;}
@@ -97,7 +124,6 @@
   }
 
   /* ---------- Settings ---------- */
-  details.settings{ }
   details.settings > summary{
     list-style:none; cursor:pointer; display:flex; align-items:center; gap:10px;
   }
@@ -105,6 +131,15 @@
   .chevron{transition:transform .15s; color:var(--amber); font-size:14px;}
   details[open] .chevron{transform:rotate(90deg);}
 
+  .settings-season{
+    display:flex; align-items:center; gap:10px; margin-bottom:18px; padding-bottom:16px;
+    border-bottom:1px solid var(--line);
+  }
+  .settings-season label{
+    font-size:15px; letter-spacing:.03em; color:var(--amber); text-transform:uppercase;
+    font-family:'Oswald'; font-weight:600;
+  }
+  .settings-season input{width:110px;}
   .settings-grid{display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:16px;}
   @media (max-width:820px){.settings-grid{grid-template-columns:1fr;}}
   .settings-col h3{
@@ -196,16 +231,23 @@
     padding:9px 16px; font-family:'Inter'; font-weight:600; font-size:13px; cursor:pointer;
   }
   .btn-primary:hover{filter:brightness(1.06);}
-  .btn-primary:disabled, .btn-secondary:disabled{opacity:.5; cursor:default;}
+  .btn-primary:disabled, .btn-secondary:disabled, .btn-github:disabled{opacity:.5; cursor:default;}
   .btn-secondary{
     background:transparent; color:var(--amber); border:1px solid var(--amber); border-radius:var(--radius-sm);
     padding:9px 16px; font-family:'Inter'; font-weight:600; font-size:13px; cursor:pointer;
   }
   .btn-secondary:hover{background:rgba(242,169,60,.12);}
+  .btn-github{
+    background:#238636; color:#fff; border:none; border-radius:var(--radius-sm);
+    padding:9px 16px; font-family:'Inter'; font-weight:600; font-size:13px; cursor:pointer;
+  }
+  .btn-github:hover{background:#2ea043;}
   .toolbar-actions{display:flex; gap:8px; flex-wrap:wrap;}
   .export-msg{color:var(--danger); font-size:12.5px; margin:0 0 10px; min-height:0;}
   .export-msg:empty{display:none;}
-  /* ---- Horario en formato DIN A4 apaisado (297 x 210 mm = 1683 x 1190 px) ---- */
+  .export-msg.success{color:var(--success);}
+
+  /* ---- Horario DIN A4 ---- */
   .schedule-viewport{overflow-x:auto; border-radius:var(--radius-md);}
   .schedule-sizer{position:relative;}
   .schedule-capture{
@@ -221,8 +263,8 @@
     letter-spacing:.05em; text-transform:uppercase; margin:0;
   }
   .sched-season{
-    color:#FFC85C; font-family:'Oswald'; font-weight:500; font-size:19px; letter-spacing:.14em;
-    text-transform:uppercase; margin:6px 0 0;
+    color:#FFC85C; font-family:'Oswald'; font-weight:600; font-size:30px; letter-spacing:.14em;
+    text-transform:uppercase; margin:8px 0 0;
   }
   .sched-grid{display:grid; flex:1; min-width:0; background:transparent;}
   .gcell{border-right:1px solid var(--sc-line); border-bottom:1px solid var(--sc-line); position:relative;}
@@ -251,7 +293,6 @@
   }
   .gb-col{background:var(--sc-white);}
   .hline{position:absolute; left:0; right:0; height:1px; background:var(--sc-line);}
-  /* Franjas en las que la pista no está disponible: oscurecidas y rayadas */
   .na-shade{
     position:absolute; left:0; right:0; pointer-events:none;
     background-color:rgba(14,31,74,.24);
@@ -293,14 +334,24 @@
       </div>
     </div>
     <nav class="tabs">
-      <a class="nav-link" href="#seccion-ajustes">Ajustes</a>
-      <a class="nav-link" href="#seccion-entrenos">Entrenamientos</a>
-      <a class="nav-link" href="#seccion-horario">Horario</a>
+      <a href="index.html" class="nav-link">← Volver al Registro</a>
     </nav>
   </div>
 </div>
 
 <main>
+
+  <!-- Panel de estado de conexión GitHub heredado de index.html -->
+  <div class="github-status-bar" id="ghStatusBar">
+    <div class="gh-badge">
+      <span class="gh-dot" id="ghDot"></span>
+      <span id="ghStatusText">Comprobando conexión GitHub...</span>
+    </div>
+    <div class="toolbar-actions">
+      <button class="btn-secondary" id="ghLoadBtn" type="button" style="padding: 5px 10px; font-size: 12px;">⬇ Cargar de GitHub</button>
+      <button class="btn-github" id="ghSaveBtn" type="button" style="padding: 5px 10px; font-size: 12px;">☁️ Guardar en GitHub</button>
+    </div>
+  </div>
 
   <section class="block" id="seccion-ajustes">
     <details class="settings" id="settingsDetails">
@@ -311,8 +362,12 @@
           <h2>Ajustes</h2>
         </div>
       </summary>
-      <p class="block-desc">Define los equipos del club (con su color) y las pistas de entrenamiento disponibles, indicando en qué días de la semana y entre qué horas está disponible cada una.</p>
+      <p class="block-desc">Define la temporada, los equipos del club (con su color) y las pistas de entrenamiento disponibles, indicando en qué días de la semana y entre qué horas está disponible cada una.</p>
       <div class="card">
+        <div class="settings-season">
+          <label for="seasonInput">Temporada</label>
+          <input type="text" id="seasonInput" placeholder="2026/27" aria-label="Número de temporada">
+        </div>
         <div class="settings-grid">
           <div class="settings-col">
             <h3>Equipos</h3>
@@ -323,7 +378,7 @@
             <h3>Pistas de entrenamiento</h3>
             <div id="courtsList"></div>
             <button class="add-btn" id="addCourtBtn" type="button">+ Añadir pista</button>
-            <p class="schedule-note" style="margin-top:10px;">El campo "Grupo" agrupa pistas de una misma ubicación (p. ej. "Fontana"). Déjalo vacío para una sala única (p. ej. "Venecia"). Marca con L·M·X·J·V los días en que la pista está disponible y elige su horario de disponibilidad (inicio y fin). En la imagen del horario, las franjas fuera de ese horario aparecen oscurecidas y rayadas.</p>
+            <p class="schedule-note" style="margin-top:10px;">El campo "Grupo" agrupa pistas de una misma ubicación (p. ej. "Fontana"). Déjalo vacío para una sala única (p. ej. "Venecia"). Marca con L·M·X·J·V los días en que la pista está disponible y elige su horario de disponibilidad (inicio y fin).</p>
           </div>
         </div>
         <div class="settings-foot">
@@ -334,53 +389,63 @@
   </section>
 
   <section class="block" id="seccion-entrenos">
-    <div class="block-head">
-      <span class="block-num">2</span>
-      <h2>Entrenamientos</h2>
-    </div>
-    <p class="block-desc">Selecciona un equipo y añade sus sesiones: día, pista y horario. Al completar una fila se abrirá automáticamente una nueva para seguir añadiendo entrenamientos.</p>
-    <div class="card">
-      <div class="team-picker" id="teamPicker"></div>
-      <div id="rowsHead" class="rows-head" style="display:none;">
-        <span>Día</span><span>Pista</span><span>Hora inicio</span><span>Hora fin</span><span></span>
+    <details class="settings" id="entrenosDetails" open>
+      <summary>
+        <span class="chevron">▶</span>
+        <div class="block-head" style="margin:0;">
+          <span class="block-num">2</span>
+          <h2>Entrenamientos</h2>
+        </div>
+      </summary>
+      <p class="block-desc">Selecciona un equipo y añade sus sesiones: día, pista y horario. Al completar una fila se abrirá automáticamente una nueva para seguir añadiendo entrenamientos.</p>
+      <div class="card">
+        <div class="team-picker" id="teamPicker"></div>
+        <div id="rowsHead" class="rows-head" style="display:none;">
+          <span>Día</span><span>Pista</span><span>Hora inicio</span><span>Hora fin</span><span></span>
+        </div>
+        <div id="trainingRows"></div>
       </div>
-      <div id="trainingRows"></div>
-    </div>
+    </details>
   </section>
 
   <section class="block" id="seccion-horario">
-    <div class="block-head">
-      <span class="block-num">3</span>
-      <h2>Horario semanal</h2>
-    </div>
-    <p class="block-desc">Vista general de todos los entrenamientos por pista y día. Cuando dos equipos comparten franja horaria en la misma pista, la celda se divide en diagonal entre ambos colores. Solo se muestran las horas con entrenamientos; las franjas en las que la pista no está disponible aparecen oscurecidas.</p>
-    <div class="schedule-toolbar">
-      <span class="schedule-note" style="margin:0;">Se actualiza automáticamente al editar equipos, pistas o entrenamientos.</span>
-      <div class="toolbar-actions">
-        <button class="btn-primary" id="exportBtn" type="button">Descargar imagen</button>
-        <button class="btn-secondary" id="exportPdfBtn" type="button">Descargar PDF</button>
-      </div>
-    </div>
-    <p class="export-msg" id="exportMsg" role="status"></p>
-    <div class="schedule-viewport" id="scheduleViewport">
-      <div class="schedule-sizer" id="scheduleSizer">
-        <div class="schedule-capture" id="scheduleCapture">
-          <div class="sched-header">
-            <h3 class="sched-title">Horarios Nou Volei Alzira</h3>
-            <p class="sched-season">Temporada 2026/27</p>
-          </div>
-          <div class="schedule-scroll">
-            <div class="sched-grid" id="scheduleGrid"></div>
-          </div>
-          <div class="legend" id="scheduleLegend"></div>
+    <details class="settings" id="horarioDetails" open>
+      <summary>
+        <span class="chevron">▶</span>
+        <div class="block-head" style="margin:0;">
+          <span class="block-num">3</span>
+          <h2>Horario semanal</h2>
+        </div>
+      </summary>
+      <p class="block-desc">Vista general de todos los entrenamientos por pista y día.</p>
+      <div class="schedule-toolbar">
+        <span class="schedule-note" style="margin:0;">Se actualiza automáticamente al editar equipos, pistas o entrenamientos.</span>
+        <div class="toolbar-actions">
+          <button class="btn-primary" id="exportBtn" type="button">Descargar imagen</button>
+          <button class="btn-secondary" id="exportPdfBtn" type="button">Descargar PDF</button>
         </div>
       </div>
-    </div>
+      <p class="export-msg" id="exportMsg" role="status"></p>
+      <div class="schedule-viewport" id="scheduleViewport">
+        <div class="schedule-sizer" id="scheduleSizer">
+          <div class="schedule-capture" id="scheduleCapture">
+            <div class="sched-header">
+              <h3 class="sched-title">Horarios Nou Volei Alzira</h3>
+              <p class="sched-season" id="schedSeason">Temporada 2026/27</p>
+            </div>
+            <div class="schedule-scroll">
+              <div class="sched-grid" id="scheduleGrid"></div>
+            </div>
+            <div class="legend" id="scheduleLegend"></div>
+          </div>
+        </div>
+      </div>
+    </details>
   </section>
 
 </main>
 
-<footer>Los datos se guardan solo en este navegador.</footer>
+<footer>Datos de GitHub heredados de index.html</footer>
 
 <script>
 (function(){
@@ -388,14 +453,142 @@
 
   var DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes'];
   var STORAGE_KEY = 'voley_scheduler_state_v1';
+  var GH_STORAGE_KEY = 'voley_github_config'; // Clave para las credenciales compartidas con index.html
+  var GH_FILE_PATH = 'horarios_data.json'; // Nombre del archivo de horarios en el repositorio
 
   var GUTTER_W = 62, GAP_W = 12, ROW1 = 54, ROW2 = 34, ROW3 = 40;
-  var CAP_W = 1683, CAP_H = 1190; // DIN A4 apaisado (297 x 210 mm)
+  var CAP_W = 1683, CAP_H = 1190;
   var anyUnavailable = false;
 
   function uid(p){ return p + '_' + Math.random().toString(36).slice(2,9); }
   function toMin(t){ var parts=t.split(':'); return (+parts[0])*60 + (+parts[1]); }
   function toTime(m){ var h=Math.floor(m/60), mm=m%60; return (h<10?'0':'')+h+':'+(mm<10?'0':'')+mm; }
+
+  // ---------- HERENCIA Y CONFIGURACIÓN DE GITHUB ----------
+  function getGitHubConfig() {
+    try {
+      // Intenta recuperar de varias claves posibles que use index.html
+      var rawConfig = localStorage.getItem(GH_STORAGE_KEY) || localStorage.getItem('github_config');
+      if (rawConfig) return JSON.parse(rawConfig);
+
+      var token = localStorage.getItem('gh_token') || localStorage.getItem('github_token');
+      var repo = localStorage.getItem('gh_repo') || localStorage.getItem('github_repo');
+      var owner = localStorage.getItem('gh_owner') || localStorage.getItem('github_owner');
+
+      if (token && repo && owner) {
+        return { token: token, repo: repo, owner: owner };
+      }
+    } catch(e) {}
+    return null;
+  }
+
+  var ghConfig = getGitHubConfig();
+
+  function updateGitHubUI() {
+    var dot = document.getElementById('ghDot');
+    var text = document.getElementById('ghStatusText');
+    var saveBtn = document.getElementById('ghSaveBtn');
+    var loadBtn = document.getElementById('ghLoadBtn');
+
+    if (ghConfig && ghConfig.token && ghConfig.repo && ghConfig.owner) {
+      dot.className = 'gh-dot online';
+      text.textContent = 'Conectado a GitHub: ' + ghConfig.owner + '/' + ghConfig.repo;
+      saveBtn.disabled = false;
+      loadBtn.disabled = false;
+    } else {
+      dot.className = 'gh-dot offline';
+      text.textContent = 'Sin credenciales de GitHub (configúralas en index.html)';
+      saveBtn.disabled = true;
+      loadBtn.disabled = true;
+    }
+  }
+
+  // ---------- API DE GITHUB ----------
+  async function saveToGitHub() {
+    if (!ghConfig) return alert('No hay credenciales de GitHub configuradas.');
+    showExportMsg('');
+    var saveBtn = document.getElementById('ghSaveBtn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Guardando...';
+
+    try {
+      var url = `https://api.github.com/repos/${ghConfig.owner}/${ghConfig.repo}/contents/${GH_FILE_PATH}`;
+      var contentJson = JSON.stringify(state, null, 2);
+      var contentBase64 = btoa(unescape(encodeURIComponent(contentJson)));
+
+      // 1. Obtener SHA del archivo si ya existe
+      var sha = null;
+      var getRes = await fetch(url, {
+        headers: { 'Authorization': `token ${ghConfig.token}` }
+      });
+      if (getRes.ok) {
+        var fileData = await getRes.json();
+        sha = fileData.sha;
+      }
+
+      // 2. Crear/Actualizar el archivo en el repositorio
+      var bodyData = {
+        message: 'Actualización de horarios desde la app',
+        content: contentBase64
+      };
+      if (sha) bodyData.sha = sha;
+
+      var putRes = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `token ${ghConfig.token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(bodyData)
+      });
+
+      if (putRes.ok) {
+        showExportMsg('✔ Horarios guardados con éxito en GitHub.', true);
+      } else {
+        throw new Error('Error al responder GitHub API (' + putRes.status + ')');
+      }
+    } catch (err) {
+      console.error(err);
+      showExportMsg('Error al guardar en GitHub: ' + err.message);
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = '☁️ Guardar en GitHub';
+    }
+  }
+
+  async function loadFromGitHub() {
+    if (!ghConfig) return alert('No hay credenciales de GitHub configuradas.');
+    var loadBtn = document.getElementById('ghLoadBtn');
+    loadBtn.disabled = true;
+    loadBtn.textContent = 'Cargando...';
+
+    try {
+      var url = `https://api.github.com/repos/${ghConfig.owner}/${ghConfig.repo}/contents/${GH_FILE_PATH}`;
+      var res = await fetch(url, {
+        headers: { 'Authorization': `token ${ghConfig.token}` }
+      });
+
+      if (res.ok) {
+        var data = await res.json();
+        var jsonText = decodeURIComponent(escape(atob(data.content)));
+        var parsed = JSON.parse(jsonText);
+        if (parsed && parsed.teams && parsed.courts && parsed.trainings) {
+          state = normalizeState(parsed);
+          saveState();
+          renderAll();
+          showExportMsg('✔ Datos cargados correctamente desde GitHub.', true);
+        }
+      } else {
+        showExportMsg('No se encontró el archivo de horarios en GitHub.');
+      }
+    } catch (err) {
+      console.error(err);
+      showExportMsg('Error al cargar de GitHub: ' + err.message);
+    } finally {
+      loadBtn.disabled = false;
+      loadBtn.textContent = '⬇ Cargar de GitHub';
+    }
+  }
 
   function defaultState(){
     var teams = [
@@ -425,32 +618,27 @@
       tr('t1',0,'c1','18:00','19:30'), tr('t4',0,'c1','19:15','20:45'), tr('t8',0,'c1','20:30','22:00'), tr('t9',0,'c1','21:30','23:00'),
       tr('t2',0,'c2','18:00','19:30'), tr('t5',0,'c2','19:15','20:45'),
       tr('t7',0,'c5','17:00','18:30'),
-
       tr('t2',1,'c1','17:00','18:30'), tr('t5',1,'c1','18:00','19:30'),
       tr('t3',1,'c2','17:00','18:30'), tr('t6',1,'c2','18:00','19:30'),
       tr('t10',1,'c5','19:00','20:00'), 
-
       tr('t1',2,'c3','17:00','18:30'), tr('t4',2,'c3','18:00','19:30'), tr('t8',2,'c3','19:30','20:30'), tr('t9',2,'c3','20:30','22:00'),
       tr('t3',2,'c4','17:00','18:30'), tr('t6',2,'c4','18:00','19:30'),
       tr('t7',2,'c5','18:00','19:30'),
-
       tr('t10',3,'c5','19:00','20:00'), 
-
       tr('t1',4,'c3','17:00','18:30'), tr('t4',4,'c3','18:00','19:30'), tr('t8',4,'c3','19:30','20:30'), tr('t9',4,'c3','20:30','22:00'),
       tr('t2',4,'c4','17:00','18:30'), tr('t5',4,'c4','18:00','19:30'),
       tr('t7',4,'c5','17:30','19:00'),
       tr('t3',4,'c6','17:00','18:30'), tr('t6',4,'c6','18:30','20:00')
     ];
-    return {teams:teams, courts:courts, trainings:trainings};
+    return {teams:teams, courts:courts, trainings:trainings, season:'2026/27'};
   }
 
-  // Datos guardados con versiones anteriores no tienen horario de disponibilidad:
-  // se consideran disponibles todo el día hasta que se indique lo contrario.
   function normalizeState(st){
     st.courts.forEach(function(c){
       if(!c.availStart) c.availStart = '15:00';
       if(!c.availEnd) c.availEnd = '23:45';
     });
+    if(!st.season) st.season = '2026/27';
     return st;
   }
 
@@ -461,7 +649,7 @@
         var parsed = JSON.parse(raw);
         if(parsed && parsed.teams && parsed.courts && parsed.trainings) return normalizeState(parsed);
       }
-    }catch(e){ /* fall through to defaults */ }
+    }catch(e){ }
     return defaultState();
   }
 
@@ -470,13 +658,12 @@
 
   function saveState(){
     try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
-    catch(e){ /* storage unavailable — app still works in-memory */ }
+    catch(e){ }
   }
 
   function teamById(id){ for(var i=0;i<state.teams.length;i++) if(state.teams[i].id===id) return state.teams[i]; return null; }
   function courtById(id){ for(var i=0;i<state.courts.length;i++) if(state.courts[i].id===id) return state.courts[i]; return null; }
 
-  // ---------------- Time options ----------------
   var TIME_OPTIONS = [];
   (function(){
     for(var m=15*60; m<=23*60+45; m+=15) TIME_OPTIONS.push(toTime(m));
@@ -492,7 +679,18 @@
     return html;
   }
 
-  // ================= SETTINGS: TEAMS =================
+  function renderSeason(){
+    var input = document.getElementById('seasonInput');
+    if(document.activeElement !== input) input.value = state.season;
+    var lbl = document.getElementById('schedSeason');
+    lbl.textContent = 'Temporada ' + state.season;
+  }
+  document.getElementById('seasonInput').addEventListener('input', function(){
+    state.season = this.value;
+    saveState();
+    renderSeason();
+  });
+
   function renderTeams(){
     var wrap = document.getElementById('teamsList');
     wrap.innerHTML = '';
@@ -523,6 +721,18 @@
     });
   }
 
+  document.getElementById('entrenosDetails').addEventListener('toggle', function(){
+    if(!this.open){
+      selectedTeamId = null;
+      renderTeamPicker();
+      renderTrainingRows();
+    }
+  });
+
+  document.getElementById('horarioDetails').addEventListener('toggle', function(){
+    if(this.open) fitPreview();
+  });
+
   document.getElementById('addTeamBtn').addEventListener('click', function(){
     var palette = ['#F5A623','#29B6F6','#7E57C2','#43A047','#E6399B','#C62828','#F06292','#FFD54A'];
     var color = palette[state.teams.length % palette.length];
@@ -530,7 +740,6 @@
     saveState(); renderTeams(); renderTeamPicker(); renderSchedule();
   });
 
-  // ================= SETTINGS: COURTS =================
   function renderCourts(){
     var wrap = document.getElementById('courtsList');
     wrap.innerHTML = '';
@@ -608,7 +817,6 @@
     saveState(); renderAll();
   });
 
-  // ================= TRAINING ENTRY =================
   function renderTeamPicker(){
     var wrap = document.getElementById('teamPicker');
     wrap.innerHTML = '';
@@ -622,7 +830,7 @@
       btn.className = 'team-pill' + (team.id === selectedTeamId ? ' active' : '');
       btn.innerHTML = '<span class="swatch" style="background:'+team.color+'"></span>' + escapeHtml(team.name);
       btn.addEventListener('click', function(){
-        selectedTeamId = team.id;
+        selectedTeamId = (selectedTeamId === team.id) ? null : team.id;
         renderTeamPicker();
         renderTrainingRows();
       });
@@ -654,7 +862,7 @@
       .sort(function(a,b){ return a.day - b.day || toMin(a.start) - toMin(b.start); });
 
     var rowsData = teamTrainings.map(function(t){ return {id:t.id, day:t.day, courtId:t.courtId, start:t.start, end:t.end}; });
-    rowsData.push({id:null, day:'', courtId:'', start:'', end:''}); // trailing blank template
+    rowsData.push({id:null, day:'', courtId:'', start:'', end:''});
 
     rowsData.forEach(function(data){
       container.appendChild(buildTrainingRow(data));
@@ -700,7 +908,6 @@
 
     var trainingId = data.id;
 
-    // Aviso (no bloqueante) si el entrenamiento cae fuera del horario de la pista
     function updateAvailabilityWarning(){
       var old = row.querySelector('.row-warn');
       if(old) old.remove();
@@ -764,12 +971,10 @@
     return row;
   }
 
-  // ================= SCHEDULE =================
   function renderSchedule(){
     var grid = document.getElementById('scheduleGrid');
     grid.innerHTML = '';
 
-    // Solo se muestran las horas con entrenamientos (se recortan las franjas sin uso)
     var minStart, maxEnd;
     if(state.trainings.length){
       minStart = Infinity; maxEnd = -Infinity;
@@ -796,13 +1001,13 @@
 
     var columns = [];
     var dayGroups = [];
-    var tracks = [];   // pistas de columnas: 'minmax(0,1fr)' por pista y separador por día
+    var tracks = [];
     var colIndex = 2;
 
     DAYS.forEach(function(dayName, dayIdx){
       var activeCourts = state.courts.filter(function(c){ return c.days[dayIdx]; });
       if(activeCourts.length === 0) activeCourts = [{id:null, name:'Sin pistas asignadas', group:'', placeholder:true}];
-      if(dayIdx > 0){ tracks.push(GAP_W + 'px'); colIndex++; } // separación vertical entre días
+      if(dayIdx > 0){ tracks.push(GAP_W + 'px'); colIndex++; }
       var dayStartCol = colIndex;
       var i = 0;
       while(i < activeCourts.length){
@@ -870,7 +1075,6 @@
       }
       if(col.court.placeholder) return;
 
-      // Oscurecer las franjas fuera del horario de disponibilidad de la pista
       var availS = toMin(col.court.availStart || '00:00');
       var availE = toMin(col.court.availEnd || '24:00');
       function addShade(fromMin, toMinute, cls){
@@ -940,7 +1144,6 @@
     renderLegend();
   }
 
-  // Vista previa: el horario tiene tamaño fijo A4 y se escala para caber en pantalla
   function fitPreview(){
     var vp = document.getElementById('scheduleViewport');
     var sizer = document.getElementById('scheduleSizer');
@@ -966,16 +1169,6 @@
   function renderLegend(){
     var wrap = document.getElementById('scheduleLegend');
     wrap.innerHTML = '';
-    var usedTeamIds = {};
-    state.trainings.forEach(function(t){ usedTeamIds[t.teamId] = true; });
-    var teamsToShow = state.teams.filter(function(t){ return usedTeamIds[t.id]; });
-    if(teamsToShow.length === 0) teamsToShow = state.teams;
-    teamsToShow.forEach(function(team){
-      var item = document.createElement('div');
-      item.className = 'legend-item';
-      item.innerHTML = '<span class="swatch" style="background:'+team.color+'"></span>' + escapeHtml(team.name);
-      wrap.appendChild(item);
-    });
     if(anyUnavailable){
       var na = document.createElement('div');
       na.className = 'legend-item';
@@ -984,17 +1177,15 @@
     }
   }
 
-  // ================= EXPORT =================
-  var EXPORT_BG = '#0A2463'; // azul base del degradado (por si algún borde queda sin pintar)
-  var MAX_PIXELS = 16000000; // límite prudente de píxeles del canvas (móviles / Safari)
+  var EXPORT_BG = '#0A2463';
+  var MAX_PIXELS = 16000000;
 
-  function showExportMsg(text){
-    document.getElementById('exportMsg').textContent = text || '';
+  function showExportMsg(text, isSuccess){
+    var el = document.getElementById('exportMsg');
+    el.textContent = text || '';
+    el.className = 'export-msg' + (isSuccess ? ' success' : '');
   }
 
-  // Renderiza el horario COMPLETO (lunes a viernes) sin recortes por el scroll horizontal.
-  // Se captura con un ancho de ventana igual al del horario entero, de modo que el resultado
-  // es idéntico en móvil, tablet y escritorio.
   async function renderScheduleCanvas(){
     var target = document.getElementById('scheduleCapture');
     if(document.fonts && document.fonts.ready){ try{ await document.fonts.ready; }catch(e){} }
@@ -1061,14 +1252,8 @@
       throw new Error('No se pudo cargar la librería de PDF. Comprueba tu conexión e inténtalo de nuevo.');
     }
     var jsPDF = window.jspdf.jsPDF;
-    // DIN A4 apaisado (297 x 210 mm): el horario tiene exactamente esa proporción
-    // y el fondo degradado ocupa la página entera sin bordes.
     var pageW = 297, pageH = 210;
-    var doc = new jsPDF({
-      orientation: 'landscape',
-      unit: 'mm',
-      format: 'a4'
-    });
+    var doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
     doc.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, pageW, pageH);
     await saveBlob(doc.output('blob'), 'horarios-nou-volei-alzira-2026-27.pdf');
   }
@@ -1097,7 +1282,10 @@
   bindExport('exportBtn', exportPng);
   bindExport('exportPdfBtn', exportPdf);
 
-  // ================= UTIL =================
+  // Event Listeners GitHub
+  document.getElementById('ghSaveBtn').addEventListener('click', saveToGitHub);
+  document.getElementById('ghLoadBtn').addEventListener('click', loadFromGitHub);
+
   function escapeHtml(str){
     return String(str).replace(/[&<>"']/g, function(c){
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
@@ -1105,6 +1293,8 @@
   }
 
   function renderAll(){
+    updateGitHubUI();
+    renderSeason();
     renderTeams();
     renderCourts();
     renderTeamPicker();
