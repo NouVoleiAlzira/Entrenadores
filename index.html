@@ -1104,6 +1104,13 @@
       flex: 1; border: none; border-radius: 8px; padding: 7px 8px; font-weight: 700;
       font-size: 0.75rem; color: white; cursor: pointer; box-shadow: 1px 1px 3px rgba(0,0,0,0.5);
     }
+    /* ===== OTROS: Fichas de Federación ===== */
+    .ficha-edit {
+      flex: none; margin-left: 10px; padding: 4px 10px; border-radius: 8px;
+      background: rgba(255, 255, 255, 0.22); border: 1px solid rgba(255, 255, 255, 0.35);
+      font-size: 1rem; line-height: 1.2; cursor: pointer;
+    }
+    .ficha-edit:active { background: rgba(255, 255, 255, 0.4); }
     .rte-toolbar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
     .rte-toolbar button {
       min-width: 36px; height: 32px; padding: 0 8px; border: 1px solid var(--gray-border);
@@ -1338,6 +1345,7 @@
   <div class="screen" id="screenOtros">
     <div class="section-title">Otros · Información e Instrucciones</div>
     <div id="otrosList"></div>
+    <input type="file" id="fichaFileInput" accept="application/pdf,.pdf" style="display:none;">
   </div>
 
   <!-- PANTALLA 2: REGISTRO DE ENTRENAMIENTO -->
@@ -5088,6 +5096,121 @@
     nuevo.textContent = "+ NUEVO";
     nuevo.onclick = () => openOtrosEditor(null);
     box.appendChild(nuevo);
+
+    renderFichasFederacion(box);
+  }
+
+  // --- Fichas de Federación: un botón por equipo que abre Fichas/Licencias_<equipo>.pdf ---
+  const FICHAS_FOLDER = "Fichas";
+  let fichaUploadTeam = null;
+
+  function fichaFileName(team) {
+    return `Licencias_${sanitizeFileName(getTeamKey(team))}.pdf`;
+  }
+
+  function fichaVersions() {
+    try { return JSON.parse(localStorage.getItem("NVA_FICHAS_VER")) || {}; } catch (e) { return {}; }
+  }
+
+  function openFicha(team) {
+    const name = fichaFileName(team);
+    const ver = fichaVersions()[name];
+    // Ruta relativa: la carpeta "Fichas" está en el mismo repositorio que esta página.
+    window.open(`${FICHAS_FOLDER}/${name}${ver ? "?v=" + ver : ""}`, "_blank", "noopener");
+  }
+
+  function pickFichaPdf(team) {
+    fichaUploadTeam = team;
+    const input = document.getElementById("fichaFileInput");
+    input.value = "";
+    input.click();
+  }
+
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(",")[1]);
+      reader.onerror = () => reject(reader.error || new Error("No se pudo leer el archivo"));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function uploadFichaPdf(team, file) {
+    const name = fichaFileName(team);
+    const path = `${FICHAS_FOLDER}/${name}`;
+    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${path}`;
+    const auth = { "Authorization": `token ${ghSettings.token}` };
+
+    const content = await fileToBase64(file);
+    let sha = "";
+    const getRes = await fetch(url, { headers: auth, cache: "no-store" });
+    if (getRes.ok) {
+      sha = (await getRes.json()).sha || "";
+    } else if (getRes.status !== 404) {
+      throw new Error(`HTTP ${getRes.status} al consultar ${path}`);
+    }
+    const body = {
+      message: `Actualizar ficha de federación: ${getTeamKey(team)}`,
+      content,
+      ...(sha && { sha })
+    };
+    const putRes = await fetch(url, {
+      method: "PUT",
+      headers: { ...auth, "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    if (!putRes.ok) throw new Error(`HTTP ${putRes.status} al subir ${path}`);
+
+    const vers = fichaVersions();
+    vers[name] = Date.now();
+    localStorage.setItem("NVA_FICHAS_VER", JSON.stringify(vers));
+  }
+
+  document.getElementById("fichaFileInput").addEventListener("change", async (e) => {
+    const file = e.target.files && e.target.files[0];
+    const team = fichaUploadTeam;
+    fichaUploadTeam = null;
+    if (!file || !team) return;
+
+    const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+    if (!isPdf) { alert("El archivo debe ser un PDF."); return; }
+    if (file.size > 25 * 1024 * 1024) { alert("El PDF es demasiado grande (máximo 25 MB)."); return; }
+    if (!navigator.onLine || !ghSettings.user || !ghSettings.repo || !ghSettings.token) {
+      alert("Para subir el PDF hace falta conexión y tener configurado GitHub (usuario, repositorio y token).");
+      return;
+    }
+    if (!confirm(`¿Sustituir la ficha de ${team.name} (${team.category}) por "${file.name}"?`)) return;
+
+    await withLoading(async () => {
+      try {
+        await uploadFichaPdf(team, file);
+        alert("Ficha actualizada en GitHub. Puede tardar un minuto en verse publicada.");
+      } catch (err) {
+        console.error("Error al subir la ficha:", err);
+        alert("No se pudo subir el PDF. Revisa la conexión y el token de GitHub.");
+      }
+    }, "Subiendo ficha a GitHub...");
+  });
+
+  function renderFichasFederacion(box) {
+    const title = document.createElement("div");
+    title.className = "section-title";
+    title.style.marginTop = "20px";
+    title.textContent = "Fichas de Federación";
+    box.appendChild(title);
+
+    (appData.teams || []).forEach(team => {
+      const btn = document.createElement("div");
+      btn.className = "coach-btn";
+      btn.setAttribute("role", "button");
+      btn.tabIndex = 0;
+      btn.innerHTML = `<span>📄 ${escapeHtmlOtros(team.name)} (${escapeHtmlOtros(team.category)})</span>
+                       <span class="ficha-edit" role="button" title="Subir un PDF nuevo">✏️</span>`;
+      btn.onclick = () => openFicha(team);
+      btn.onkeydown = (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); openFicha(team); } };
+      btn.querySelector(".ficha-edit").onclick = (ev) => { ev.stopPropagation(); pickFichaPdf(team); };
+      box.appendChild(btn);
+    });
   }
 
   // --- Editor (nombre + cuadro de texto enriquecido) ---
