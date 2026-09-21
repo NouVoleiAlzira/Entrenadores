@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Horarios de Entrenamiento · Club de Vóley</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    color-scheme: dark;
+    --ink:#0F1830;
+    --panel:#172647;
+    --panel-2:#1E3358;
+    --panel-3:#25406C;
+    --line:#2E4670;
+    --sc-ink:#0E1F4A;
+    --sc-line:#D3DDEC;
+    --sc-white:#FFFFFF;
+    --amber:#F2A93C;
+    --amber-ink:#3A2707;
+    --net:#E9EEFB;
+    --text:#E9EEFB;
+    --text-dim:#93A4C3;
+    --danger:#E2557A;
+    --radius-sm:6px;
+    --radius-md:10px;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-sizing: border-box;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-padding-top: calc(64px + env(safe-area-inset-top, 0px)); scroll-behavior:smooth;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse at top, #17264a 0%, var(--ink) 60%);
+    color:var(--text);
+    font-family:'Inter',ui-sans-serif,system-ui,-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    *{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}
+  }
+  h1,h2,h3,.brand,.tag,button,.nav-link{font-family:'Oswald',ui-sans-serif,system-ui,sans-serif;}
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    position:sticky; top:0; z-index:50;
+    padding-top: env(safe-area-inset-top, 0px);
+    background:linear-gradient(180deg, #101c38 0%, #0d1730 100%);
+    border-bottom:3px solid var(--amber);
+    box-shadow:0 8px 24px rgba(0,0,0,.35);
+  }
+  .topbar-inner{
+    max-width:1180px; margin:0 auto; padding:14px 20px;
+    display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  }
+  .brand{display:flex; align-items:baseline; gap:10px;}
+  .brand .ball{font-size:22px;}
+  .brand h1{
+    margin:0; font-size:20px; letter-spacing:.03em; font-weight:600;
+    color:var(--net); text-transform:uppercase;
+  }
+  .brand small{color:var(--text-dim); font-family:'Inter'; font-size:12px; letter-spacing:.02em; display:block; margin-top:2px;}
+  nav.tabs{display:flex; gap:6px;}
+  .nav-link{
+    appearance:none; border:1px solid var(--line); background:var(--panel);
+    color:var(--text-dim); padding:9px 16px; border-radius:999px;
+    font-size:13px; letter-spacing:.04em; text-transform:uppercase; cursor:pointer;
+    text-decoration:none; transition:background .15s, color .15s, border-color .15s;
+  }
+  .nav-link:hover{color:var(--net); border-color:var(--amber);}
+  .nav-link:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible{
+    outline:2px solid var(--amber); outline-offset:2px;
+  }
+
+  main{max-width:1180px; margin:0 auto; padding:28px 20px 80px;}
+  section.block{margin-bottom:34px;}
+  .block-head{display:flex; align-items:baseline; gap:12px; margin-bottom:14px; flex-wrap:wrap;}
+  .block-head h2{margin:0; font-size:22px; text-transform:uppercase; letter-spacing:.03em; color:var(--net);}
+  .block-num{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:26px; height:26px; border-radius:50%; background:var(--amber); color:var(--amber-ink);
+    font-size:13px; font-weight:700; font-family:'Inter';
+  }
+  .block-desc{color:var(--text-dim); font-size:13.5px; margin:2px 0 16px; max-width:70ch;}
+
+  .card{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-md);
+    padding:18px;
+  }
+
+  /* ---------- Settings ---------- */
+  details.settings{ }
+  details.settings > summary{
+    list-style:none; cursor:pointer; display:flex; align-items:center; gap:10px;
+  }
+  details.settings > summary::-webkit-details-marker{display:none;}
+  .chevron{transition:transform .15s; color:var(--amber); font-size:14px;}
+  details[open] .chevron{transform:rotate(90deg);}
+
+  .settings-grid{display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:16px;}
+  @media (max-width:820px){.settings-grid{grid-template-columns:1fr;}}
+  .settings-col h3{
+    margin:0 0 12px; font-size:15px; letter-spacing:.03em; color:var(--amber); text-transform:uppercase;
+  }
+  .team-row, .court-row{
+    display:flex; align-items:center; gap:10px; padding:8px 10px; margin-bottom:8px;
+    background:var(--panel-2); border:1px solid var(--line); border-radius:var(--radius-sm);
+  }
+  .court-row{flex-wrap:wrap;}
+  .court-hours{
+    flex-basis:100%; display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    font-size:12px; color:var(--text-dim); padding-top:2px;
+  }
+  .court-hours select{padding:5px 8px; font-size:13px;}
+  select.invalid{border-color:var(--danger);}
+  .hours-msg{color:var(--danger); font-size:11.5px;}
+  input[type="text"], select, input[type="color"]{
+    font-family:'Inter'; font-size:13.5px; color:var(--text);
+    background:var(--panel-3); border:1px solid var(--line); border-radius:6px;
+    padding:7px 9px;
+  }
+  input[type="color"]{width:36px; height:32px; padding:2px; cursor:pointer; flex:none;}
+  .team-row input[type="text"]{flex:1; min-width:0;}
+  .court-row input.court-group{width:120px;}
+  .court-row input.court-name{flex:1; min-width:110px;}
+  .day-toggles{display:flex; gap:4px;}
+  .day-toggle{
+    width:26px; height:26px; border-radius:6px; border:1px solid var(--line); background:var(--panel-3);
+    color:var(--text-dim); font-size:11px; font-weight:700; cursor:pointer; font-family:'Inter';
+  }
+  .day-toggle.on{background:var(--amber); color:var(--amber-ink); border-color:var(--amber);}
+  .icon-btn{
+    appearance:none; border:1px solid var(--line); background:transparent; color:var(--text-dim);
+    width:28px; height:28px; border-radius:6px; cursor:pointer; font-size:14px; line-height:1; flex:none;
+  }
+  .icon-btn:hover{color:var(--danger); border-color:var(--danger);}
+  .add-btn{
+    display:inline-flex; align-items:center; gap:6px; margin-top:4px;
+    background:transparent; border:1px dashed var(--line); color:var(--text-dim);
+    padding:8px 12px; border-radius:var(--radius-sm); font-size:13px; cursor:pointer; font-family:'Inter';
+  }
+  .add-btn:hover{border-color:var(--amber); color:var(--amber);}
+  .settings-foot{display:flex; justify-content:flex-end; margin-top:14px;}
+  .link-btn{
+    background:none; border:none; color:var(--text-dim); font-size:12px; text-decoration:underline;
+    cursor:pointer; font-family:'Inter'; padding:4px;
+  }
+  .link-btn:hover{color:var(--danger);}
+
+  /* ---------- Training entry ---------- */
+  .team-picker{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px;}
+  .team-pill{
+    appearance:none; cursor:pointer; border-radius:999px; padding:8px 16px 8px 14px;
+    font-family:'Inter'; font-size:13.5px; font-weight:600; color:var(--net);
+    border:1px solid var(--line); background:var(--panel-2);
+    display:flex; align-items:center; gap:8px; transition:border-color .15s, transform .1s;
+  }
+  .team-pill .swatch{width:11px; height:11px; border-radius:3px; flex:none;}
+  .team-pill.active{border-color:var(--net); background:var(--panel-3); transform:translateY(-1px);}
+  .team-pill:hover{border-color:var(--amber);}
+  .empty-hint{color:var(--text-dim); font-size:13.5px; padding:20px 4px;}
+
+  .rows-head{
+    display:grid; grid-template-columns: 1fr 1fr 0.8fr 0.8fr 34px; gap:10px;
+    font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--text-dim);
+    padding:0 10px 6px;
+  }
+  .training-row{
+    display:grid; grid-template-columns: 1fr 1fr 0.8fr 0.8fr 34px; gap:10px; align-items:center;
+    background:var(--panel-2); border:1px solid var(--line); border-radius:var(--radius-sm);
+    padding:8px 10px; margin-bottom:8px;
+  }
+  .training-row.template{border-style:dashed; background:transparent;}
+  .training-row select{width:100%;}
+  .training-row.invalid select.time-end{border-color:var(--danger);}
+  .row-msg{grid-column:1 / -1; color:var(--danger); font-size:11.5px; margin-top:-2px;}
+  .row-msg.row-warn{color:var(--amber);}
+  @media (max-width:700px){
+    .rows-head{display:none;}
+    .training-row{grid-template-columns:1fr 1fr; grid-auto-rows:auto; row-gap:6px;}
+    .training-row .del-btn{grid-column:2; justify-self:end;}
+  }
+
+  /* ---------- Schedule ---------- */
+  .schedule-toolbar{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap;}
+  .btn-primary{
+    background:var(--amber); color:var(--amber-ink); border:none; border-radius:var(--radius-sm);
+    padding:9px 16px; font-family:'Inter'; font-weight:600; font-size:13px; cursor:pointer;
+  }
+  .btn-primary:hover{filter:brightness(1.06);}
+  .btn-primary:disabled, .btn-secondary:disabled{opacity:.5; cursor:default;}
+  .btn-secondary{
+    background:transparent; color:var(--amber); border:1px solid var(--amber); border-radius:var(--radius-sm);
+    padding:9px 16px; font-family:'Inter'; font-weight:600; font-size:13px; cursor:pointer;
+  }
+  .btn-secondary:hover{background:rgba(242,169,60,.12);}
+  .toolbar-actions{display:flex; gap:8px; flex-wrap:wrap;}
+  .export-msg{color:var(--danger); font-size:12.5px; margin:0 0 10px; min-height:0;}
+  .export-msg:empty{display:none;}
+  .schedule-capture{
+    background:linear-gradient(160deg, #0A2463 0%, #1A4A9C 55%, #2F7BC8 100%);
+    border-radius:var(--radius-md); padding:24px; overflow:hidden;
+  }
+  .schedule-scroll{overflow-x:auto; padding-bottom:6px;}
+  .sched-header{text-align:center; margin:2px 0 18px;}
+  .sched-title{
+    color:#fff; font-family:'Oswald'; font-weight:700; font-size:34px; line-height:1.1;
+    letter-spacing:.05em; text-transform:uppercase; margin:0;
+  }
+  .sched-season{
+    color:#FFC85C; font-family:'Oswald'; font-weight:500; font-size:19px; letter-spacing:.14em;
+    text-transform:uppercase; margin:6px 0 0;
+  }
+  @media (max-width:600px){
+    .sched-title{font-size:24px;}
+    .sched-season{font-size:15px;}
+  }
+  .sched-grid{display:grid; width:max-content; background:var(--sc-white);}
+  .gcell{border-right:1px solid var(--sc-line); border-bottom:1px solid var(--sc-line); position:relative;}
+  .gh-corner{background:#F3F7FD; border-top:1px solid var(--sc-line);}
+  .gh-day{
+    background:var(--sc-ink); color:#fff; display:flex; align-items:center; justify-content:center;
+    font-family:'Oswald'; font-weight:600; font-size:13px; letter-spacing:.06em; text-transform:uppercase;
+    border-color:var(--sc-ink);
+  }
+  .gh-group{
+    background:#C9DBF3; color:var(--sc-ink); display:flex; align-items:center; justify-content:center;
+    font-family:'Oswald'; font-weight:600; font-size:11.5px; letter-spacing:.04em; text-transform:uppercase;
+    text-align:center; padding:2px;
+  }
+  .gh-standalone{background:#DCE8F8;}
+  .gh-pista{
+    background:#EAF1FB; color:var(--sc-ink); display:flex; align-items:center; justify-content:center;
+    font-family:'Inter'; font-weight:600; font-size:10.5px; letter-spacing:.03em; text-transform:uppercase;
+  }
+  .gb-time{background:var(--sc-white); border-right:2px solid var(--sc-ink);}
+  .time-label{
+    position:absolute; right:6px; transform:translateY(-50%);
+    font-size:10px; color:var(--sc-ink); opacity:.75; font-family:'Inter'; font-weight:600;
+    white-space:nowrap;
+  }
+  .gb-col{background:var(--sc-white);}
+  .hline{position:absolute; left:0; right:0; height:1px; background:var(--sc-line);}
+  /* Franjas en las que la pista no está disponible: oscurecidas y rayadas */
+  .na-shade{
+    position:absolute; left:0; right:0; pointer-events:none;
+    background-color:rgba(14,31,74,.24);
+    background-image:linear-gradient(135deg, rgba(14,31,74,.30) 25%, rgba(14,31,74,0) 25%, rgba(14,31,74,0) 50%, rgba(14,31,74,.30) 50%, rgba(14,31,74,.30) 75%, rgba(14,31,74,0) 75%, rgba(14,31,74,0) 100%);
+    background-size:10px 10px;
+  }
+  .na-top{border-bottom:1px solid rgba(14,31,74,.6);}
+  .na-bottom{border-top:1px solid rgba(14,31,74,.6);}
+  .train-seg{position:absolute; left:1px; right:1px; border-radius:3px;}
+  .train-label{
+    position:absolute; left:2px; right:2px; display:flex; align-items:center; justify-content:center;
+    text-align:center; font-size:10.5px; line-height:1.15; font-weight:700; color:#fff;
+    text-shadow:0 1px 2px rgba(0,0,0,.55); padding:2px; pointer-events:none; overflow:hidden;
+  }
+  .legend{display:flex; flex-wrap:wrap; gap:10px 18px; margin-top:16px; padding:0 2px;}
+  .legend-item{display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; color:#fff;}
+  .legend .swatch{width:12px; height:12px; border-radius:3px; flex:none; border:1px solid rgba(255,255,255,.55);}
+  .legend .swatch-na{
+    background-color:#fff;
+    background-image:linear-gradient(135deg, rgba(14,31,74,.55) 25%, rgba(14,31,74,0) 25%, rgba(14,31,74,0) 50%, rgba(14,31,74,.55) 50%, rgba(14,31,74,.55) 75%, rgba(14,31,74,0) 75%, rgba(14,31,74,0) 100%);
+    background-size:6px 6px;
+  }
+  .schedule-note{color:var(--text-dim); font-size:12px; margin-top:10px;}
+
+  footer{text-align:center; color:var(--text-dim); font-size:11.5px; padding:24px 0 40px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="ball">🏐</span>
+      <div>
+        <h1>Horarios de Entrenamiento</h1>
+        <small>Planificador semanal del club</small>
+      </div>
+    </div>
+    <nav class="tabs">
+      <a class="nav-link" href="#seccion-ajustes">Ajustes</a>
+      <a class="nav-link" href="#seccion-entrenos">Entrenamientos</a>
+      <a class="nav-link" href="#seccion-horario">Horario</a>
+    </nav>
+  </div>
+</div>
+
+<main>
+
+  <section class="block" id="seccion-ajustes">
+    <details class="settings" id="settingsDetails">
+      <summary>
+        <span class="chevron">▶</span>
+        <div class="block-head" style="margin:0;">
+          <span class="block-num">1</span>
+          <h2>Ajustes</h2>
+        </div>
+      </summary>
+      <p class="block-desc">Define los equipos del club (con su color) y las pistas de entrenamiento disponibles, indicando en qué días de la semana y entre qué horas está disponible cada una.</p>
+      <div class="card">
+        <div class="settings-grid">
+          <div class="settings-col">
+            <h3>Equipos</h3>
+            <div id="teamsList"></div>
+            <button class="add-btn" id="addTeamBtn" type="button">+ Añadir equipo</button>
+          </div>
+          <div class="settings-col">
+            <h3>Pistas de entrenamiento</h3>
+            <div id="courtsList"></div>
+            <button class="add-btn" id="addCourtBtn" type="button">+ Añadir pista</button>
+            <p class="schedule-note" style="margin-top:10px;">El campo "Grupo" agrupa pistas de una misma ubicación (p. ej. "Fontana"). Déjalo vacío para una sala única (p. ej. "Venecia"). Marca con L·M·X·J·V los días en que la pista está disponible y elige su horario de disponibilidad (inicio y fin). En la imagen del horario, las franjas fuera de ese horario aparecen oscurecidas y rayadas.</p>
+          </div>
+        </div>
+        <div class="settings-foot">
+          <button class="link-btn" id="resetDataBtn" type="button">Restablecer todos los datos de ejemplo</button>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <section class="block" id="seccion-entrenos">
+    <div class="block-head">
+      <span class="block-num">2</span>
+      <h2>Entrenamientos</h2>
+    </div>
+    <p class="block-desc">Selecciona un equipo y añade sus sesiones: día, pista y horario. Al completar una fila se abrirá automáticamente una nueva para seguir añadiendo entrenamientos.</p>
+    <div class="card">
+      <div class="team-picker" id="teamPicker"></div>
+      <div id="rowsHead" class="rows-head" style="display:none;">
+        <span>Día</span><span>Pista</span><span>Hora inicio</span><span>Hora fin</span><span></span>
+      </div>
+      <div id="trainingRows"></div>
+    </div>
+  </section>
+
+  <section class="block" id="seccion-horario">
+    <div class="block-head">
+      <span class="block-num">3</span>
+      <h2>Horario semanal</h2>
+    </div>
+    <p class="block-desc">Vista general de todos los entrenamientos por pista y día. Cuando dos equipos comparten franja horaria en la misma pista, la celda se divide en diagonal entre ambos colores. Solo se muestran las horas con entrenamientos; las franjas en las que la pista no está disponible aparecen oscurecidas.</p>
+    <div class="schedule-toolbar">
+      <span class="schedule-note" style="margin:0;">Se actualiza automáticamente al editar equipos, pistas o entrenamientos.</span>
+      <div class="toolbar-actions">
+        <button class="btn-primary" id="exportBtn" type="button">Descargar imagen</button>
+        <button class="btn-secondary" id="exportPdfBtn" type="button">Descargar PDF</button>
+      </div>
+    </div>
+    <p class="export-msg" id="exportMsg" role="status"></p>
+    <div class="schedule-capture" id="scheduleCapture">
+      <div class="sched-header">
+        <h3 class="sched-title">Horarios Nou Volei Alzira</h3>
+        <p class="sched-season">Temporada 2026/27</p>
+      </div>
+      <div class="schedule-scroll">
+        <div class="sched-grid" id="scheduleGrid"></div>
+      </div>
+      <div class="legend" id="scheduleLegend"></div>
+    </div>
+  </section>
+
+</main>
+
+<footer>Los datos se guardan solo en este navegador.</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  var DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes'];
+  var STORAGE_KEY = 'voley_scheduler_state_v1';
+
+  var GUTTER_W = 58, COL_W = 102, ROW1 = 32, ROW2 = 28, ROW3 = 24, PPM = 1.55;
+  var anyUnavailable = false;
+
+  function uid(p){ return p + '_' + Math.random().toString(36).slice(2,9); }
+  function toMin(t){ var parts=t.split(':'); return (+parts[0])*60 + (+parts[1]); }
+  function toTime(m){ var h=Math.floor(m/60), mm=m%60; return (h<10?'0':'')+h+':'+(mm<10?'0':'')+mm; }
+
+  function defaultState(){
+    var teams = [
+      {id:'t1', name:'Enova NVA Infantil', color:'#F5A623'},
+      {id:'t2', name:'Up! School NVA Infantil', color:'#FFD54A'},
+      {id:'t3', name:'Jessi Esparza NVA Infantil', color:'#FFB74D'},
+      {id:'t4', name:'Enova NVA Cadete', color:'#E6399B'},
+      {id:'t5', name:'Up! School NVA Cadete', color:'#F06292'},
+      {id:'t6', name:'Jessi Esparza NVA Cadete', color:'#F8BBD0'},
+      {id:'t7', name:'Alevin NVA', color:'#29B6F6'},
+      {id:'t8', name:'Espai Laboral NVA Juvenil', color:'#7E57C2'},
+      {id:'t9', name:'Enova NVA Senior', color:'#C62828'},
+      {id:'t10', name:'Escola', color:'#43A047'}
+    ];
+    var courts = [
+      {id:'c1', name:'Pista 1', group:'Fontana', days:[true,true,false,false,false], availStart:'17:00', availEnd:'23:00'},
+      {id:'c2', name:'Pista 2', group:'Fontana', days:[true,true,false,false,false], availStart:'17:00', availEnd:'21:00'},
+      {id:'c3', name:'Pista 1', group:'Palau', days:[false,false,true,false,true], availStart:'17:00', availEnd:'22:00'},
+      {id:'c4', name:'Pista 2', group:'Palau', days:[false,false,true,false,true], availStart:'17:00', availEnd:'20:00'},
+      {id:'c5', name:'Lluís Vives', group:'', days:[true,true,true,true,true], availStart:'17:00', availEnd:'21:00'},
+      {id:'c6', name:'Venecia', group:'', days:[true,true,true,true,true], availStart:'17:00', availEnd:'20:30'}
+    ];
+    function tr(teamId, day, courtId, start, end){
+      return {id:uid('tr'), teamId:teamId, day:day, courtId:courtId, start:start, end:end};
+    }
+    var trainings = [
+      tr('t1',0,'c1','18:00','19:30'), tr('t4',0,'c1','19:15','20:45'), tr('t8',0,'c1','20:30','22:00'), tr('t9',0,'c1','21:30','23:00'),
+      tr('t2',0,'c2','18:00','19:30'), tr('t5',0,'c2','19:15','20:45'),
+      tr('t7',0,'c5','17:00','18:30'),
+
+      tr('t2',1,'c1','17:00','18:30'), tr('t5',1,'c1','18:00','19:30'),
+      tr('t3',1,'c2','17:00','18:30'), tr('t6',1,'c2','18:00','19:30'),
+      tr('t10',1,'c5','19:00','20:00'), 
+
+      tr('t1',2,'c3','17:00','18:30'), tr('t4',2,'c3','18:00','19:30'), tr('t8',2,'c3','19:30','20:30'), tr('t9',2,'c3','20:30','22:00'),
+      tr('t3',2,'c4','17:00','18:30'), tr('t6',2,'c4','18:00','19:30'),
+      tr('t7',2,'c5','18:00','19:30'),
+
+      tr('t10',3,'c5','19:00','20:00'), 
+
+      tr('t1',4,'c3','17:00','18:30'), tr('t4',4,'c3','18:00','19:30'), tr('t8',4,'c3','19:30','20:30'), tr('t9',4,'c3','20:30','22:00'),
+      tr('t2',4,'c4','17:00','18:30'), tr('t5',4,'c4','18:00','19:30'),
+      tr('t7',4,'c5','17:30','19:00'),
+      tr('t3',4,'c6','17:00','18:30'), tr('t6',4,'c6','18:30','20:00')
+    ];
+    return {teams:teams, courts:courts, trainings:trainings};
+  }
+
+  // Datos guardados con versiones anteriores no tienen horario de disponibilidad:
+  // se consideran disponibles todo el día hasta que se indique lo contrario.
+  function normalizeState(st){
+    st.courts.forEach(function(c){
+      if(!c.availStart) c.availStart = '15:00';
+      if(!c.availEnd) c.availEnd = '23:45';
+    });
+    return st;
+  }
+
+  function loadState(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        var parsed = JSON.parse(raw);
+        if(parsed && parsed.teams && parsed.courts && parsed.trainings) return normalizeState(parsed);
+      }
+    }catch(e){ /* fall through to defaults */ }
+    return defaultState();
+  }
+
+  var state = loadState();
+  var selectedTeamId = null;
+
+  function saveState(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    catch(e){ /* storage unavailable — app still works in-memory */ }
+  }
+
+  function teamById(id){ for(var i=0;i<state.teams.length;i++) if(state.teams[i].id===id) return state.teams[i]; return null; }
+  function courtById(id){ for(var i=0;i<state.courts.length;i++) if(state.courts[i].id===id) return state.courts[i]; return null; }
+
+  // ---------------- Time options ----------------
+  var TIME_OPTIONS = [];
+  (function(){
+    for(var m=15*60; m<=23*60+45; m+=15) TIME_OPTIONS.push(toTime(m));
+  })();
+
+  function optionsHtml(list, selected, placeholder){
+    var html = '<option value=""' + (selected? '' : ' selected') + ' disabled>' + placeholder + '</option>';
+    for(var i=0;i<list.length;i++){
+      var v = list[i].value !== undefined ? list[i].value : list[i];
+      var label = list[i].label !== undefined ? list[i].label : list[i];
+      html += '<option value="'+v+'"' + (v===selected ? ' selected' : '') + '>' + label + '</option>';
+    }
+    return html;
+  }
+
+  // ================= SETTINGS: TEAMS =================
+  function renderTeams(){
+    var wrap = document.getElementById('teamsList');
+    wrap.innerHTML = '';
+    state.teams.forEach(function(team){
+      var row = document.createElement('div');
+      row.className = 'team-row';
+      row.innerHTML =
+        '<input type="color" value="'+team.color+'" aria-label="Color del equipo">' +
+        '<input type="text" value="'+escapeHtml(team.name)+'" aria-label="Nombre del equipo">' +
+        '<button class="icon-btn" type="button" title="Eliminar equipo" aria-label="Eliminar equipo">✕</button>';
+      var colorInput = row.children[0];
+      var nameInput = row.children[1];
+      var delBtn = row.children[2];
+      colorInput.addEventListener('input', function(){
+        team.color = colorInput.value; saveState(); renderTeamPicker(); renderSchedule();
+      });
+      nameInput.addEventListener('input', function(){
+        team.name = nameInput.value; saveState(); renderTeamPicker(); renderTrainingRows(); renderSchedule();
+      });
+      delBtn.addEventListener('click', function(){
+        if(!confirm('¿Eliminar el equipo "'+team.name+'"? También se borrarán sus entrenamientos.')) return;
+        state.teams = state.teams.filter(function(t){ return t.id !== team.id; });
+        state.trainings = state.trainings.filter(function(t){ return t.teamId !== team.id; });
+        if(selectedTeamId === team.id) selectedTeamId = null;
+        saveState(); renderTeams(); renderTeamPicker(); renderTrainingRows(); renderSchedule();
+      });
+      wrap.appendChild(row);
+    });
+  }
+
+  document.getElementById('addTeamBtn').addEventListener('click', function(){
+    var palette = ['#F5A623','#29B6F6','#7E57C2','#43A047','#E6399B','#C62828','#F06292','#FFD54A'];
+    var color = palette[state.teams.length % palette.length];
+    state.teams.push({id:uid('t'), name:'Nuevo equipo', color:color});
+    saveState(); renderTeams(); renderTeamPicker(); renderSchedule();
+  });
+
+  // ================= SETTINGS: COURTS =================
+  function renderCourts(){
+    var wrap = document.getElementById('courtsList');
+    wrap.innerHTML = '';
+    var dayLetters = ['L','M','X','J','V'];
+    state.courts.forEach(function(court){
+      var row = document.createElement('div');
+      row.className = 'court-row';
+      var togglesHtml = '';
+      for(var i=0;i<5;i++){
+        togglesHtml += '<button type="button" class="day-toggle'+(court.days[i]?' on':'')+'" data-day="'+i+'" title="'+DAYS[i]+'">'+dayLetters[i]+'</button>';
+      }
+      row.innerHTML =
+        '<input type="text" class="court-group" placeholder="Grupo (opcional)" value="'+escapeHtml(court.group||'')+'">' +
+        '<input type="text" class="court-name" placeholder="Nombre pista" value="'+escapeHtml(court.name)+'">' +
+        '<div class="day-toggles">'+togglesHtml+'</div>' +
+        '<button class="icon-btn" type="button" title="Eliminar pista" aria-label="Eliminar pista">✕</button>' +
+        '<div class="court-hours">' +
+          '<span>Disponible de</span>' +
+          '<select class="avail-start" aria-label="Disponible desde">'+optionsHtml(TIME_OPTIONS, court.availStart, 'Inicio')+'</select>' +
+          '<span>a</span>' +
+          '<select class="avail-end" aria-label="Disponible hasta">'+optionsHtml(TIME_OPTIONS, court.availEnd, 'Fin')+'</select>' +
+          '<span class="hours-msg" role="alert"></span>' +
+        '</div>';
+
+      var groupInput = row.querySelector('.court-group');
+      var nameInput = row.querySelector('.court-name');
+      var toggles = row.querySelectorAll('.day-toggle');
+      var delBtn = row.querySelector('.icon-btn');
+      var availStartSel = row.querySelector('.avail-start');
+      var availEndSel = row.querySelector('.avail-end');
+      var hoursMsg = row.querySelector('.hours-msg');
+
+      function onAvailChange(){
+        var st = availStartSel.value, en = availEndSel.value;
+        var bad = st !== '' && en !== '' && toMin(st) >= toMin(en);
+        availEndSel.classList.toggle('invalid', bad);
+        hoursMsg.textContent = bad ? 'El fin debe ser posterior al inicio.' : '';
+        if(bad) return;
+        court.availStart = st; court.availEnd = en;
+        saveState(); renderTrainingRows(); renderSchedule();
+      }
+      availStartSel.addEventListener('change', onAvailChange);
+      availEndSel.addEventListener('change', onAvailChange);
+
+      groupInput.addEventListener('input', function(){ court.group = groupInput.value; saveState(); renderSchedule(); });
+      nameInput.addEventListener('input', function(){ court.name = nameInput.value; saveState(); renderTrainingRows(); renderSchedule(); });
+      toggles.forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var d = +btn.getAttribute('data-day');
+          court.days[d] = !court.days[d];
+          btn.classList.toggle('on', court.days[d]);
+          saveState(); renderTrainingRows(); renderSchedule();
+        });
+      });
+      delBtn.addEventListener('click', function(){
+        if(!confirm('¿Eliminar la pista "'+(court.group? court.group+' - ':'')+court.name+'"? También se borrarán sus entrenamientos.')) return;
+        state.courts = state.courts.filter(function(c){ return c.id !== court.id; });
+        state.trainings = state.trainings.filter(function(t){ return t.courtId !== court.id; });
+        saveState(); renderCourts(); renderTrainingRows(); renderSchedule();
+      });
+
+      wrap.appendChild(row);
+    });
+  }
+
+  document.getElementById('addCourtBtn').addEventListener('click', function(){
+    state.courts.push({id:uid('c'), name:'Nueva pista', group:'', days:[true,true,true,true,true], availStart:'17:00', availEnd:'23:00'});
+    saveState(); renderCourts(); renderSchedule();
+  });
+
+  document.getElementById('resetDataBtn').addEventListener('click', function(){
+    if(!confirm('Esto restablecerá equipos, pistas y entrenamientos a los datos de ejemplo. ¿Continuar?')) return;
+    state = defaultState();
+    selectedTeamId = null;
+    saveState(); renderAll();
+  });
+
+  // ================= TRAINING ENTRY =================
+  function renderTeamPicker(){
+    var wrap = document.getElementById('teamPicker');
+    wrap.innerHTML = '';
+    if(state.teams.length === 0){
+      wrap.innerHTML = '<p class="empty-hint">Añade equipos en Ajustes para empezar a introducir entrenamientos.</p>';
+      return;
+    }
+    state.teams.forEach(function(team){
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'team-pill' + (team.id === selectedTeamId ? ' active' : '');
+      btn.innerHTML = '<span class="swatch" style="background:'+team.color+'"></span>' + escapeHtml(team.name);
+      btn.addEventListener('click', function(){
+        selectedTeamId = team.id;
+        renderTeamPicker();
+        renderTrainingRows();
+      });
+      wrap.appendChild(btn);
+    });
+  }
+
+  function courtOptionsForDay(dayIndex){
+    if(dayIndex === '' || dayIndex === null || dayIndex === undefined) return [];
+    return state.courts.filter(function(c){ return c.days[+dayIndex]; }).map(function(c){
+      return {value:c.id, label:(c.group? c.group+' · ':'') + c.name};
+    });
+  }
+
+  function renderTrainingRows(){
+    var container = document.getElementById('trainingRows');
+    var head = document.getElementById('rowsHead');
+    container.innerHTML = '';
+
+    if(!selectedTeamId || !teamById(selectedTeamId)){
+      head.style.display = 'none';
+      container.innerHTML = '<p class="empty-hint">Selecciona un equipo arriba para introducir sus entrenamientos.</p>';
+      return;
+    }
+    head.style.display = 'grid';
+
+    var teamTrainings = state.trainings
+      .filter(function(t){ return t.teamId === selectedTeamId; })
+      .sort(function(a,b){ return a.day - b.day || toMin(a.start) - toMin(b.start); });
+
+    var rowsData = teamTrainings.map(function(t){ return {id:t.id, day:t.day, courtId:t.courtId, start:t.start, end:t.end}; });
+    rowsData.push({id:null, day:'', courtId:'', start:'', end:''}); // trailing blank template
+
+    rowsData.forEach(function(data){
+      container.appendChild(buildTrainingRow(data));
+    });
+  }
+
+  function buildTrainingRow(data){
+    var row = document.createElement('div');
+    row.className = 'training-row' + (data.id ? '' : ' template');
+
+    var dayOpts = DAYS.map(function(d,i){ return {value:i, label:d}; });
+    var daySel = document.createElement('select');
+    daySel.className = 'sel-day';
+    daySel.innerHTML = optionsHtml(dayOpts, data.day === '' ? '' : data.day, 'Día');
+
+    var courtSel = document.createElement('select');
+    courtSel.className = 'sel-court';
+    var courtOpts = courtOptionsForDay(data.day);
+    courtSel.innerHTML = optionsHtml(courtOpts, data.courtId, 'Pista');
+    if(data.day === '') courtSel.disabled = true;
+
+    var startSel = document.createElement('select');
+    startSel.className = 'sel-start';
+    startSel.innerHTML = optionsHtml(TIME_OPTIONS, data.start, 'Inicio');
+
+    var endSel = document.createElement('select');
+    endSel.className = 'sel-end time-end';
+    endSel.innerHTML = optionsHtml(TIME_OPTIONS, data.end, 'Fin');
+
+    var delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'icon-btn del-btn';
+    delBtn.title = 'Eliminar entrenamiento';
+    delBtn.setAttribute('aria-label','Eliminar entrenamiento');
+    delBtn.textContent = '✕';
+    if(!data.id){ delBtn.style.visibility = 'hidden'; }
+
+    row.appendChild(daySel);
+    row.appendChild(courtSel);
+    row.appendChild(startSel);
+    row.appendChild(endSel);
+    row.appendChild(delBtn);
+
+    var trainingId = data.id;
+
+    // Aviso (no bloqueante) si el entrenamiento cae fuera del horario de la pista
+    function updateAvailabilityWarning(){
+      var old = row.querySelector('.row-warn');
+      if(old) old.remove();
+      var cid = courtSel.value, st = startSel.value, en = endSel.value;
+      if(!cid || !st || !en || toMin(st) >= toMin(en)) return;
+      var c = courtById(cid);
+      if(!c) return;
+      if(toMin(st) < toMin(c.availStart) || toMin(en) > toMin(c.availEnd)){
+        var w = document.createElement('div');
+        w.className = 'row-msg row-warn';
+        w.textContent = 'Fuera del horario disponible de esta pista (' + c.availStart + '–' + c.availEnd + ').';
+        row.appendChild(w);
+      }
+    }
+    if(data.id) updateAvailabilityWarning();
+
+    daySel.addEventListener('change', function(){
+      var newOpts = courtOptionsForDay(daySel.value);
+      var keep = courtSel.value;
+      courtSel.disabled = false;
+      courtSel.innerHTML = optionsHtml(newOpts, keep, 'Pista');
+      handleRowChange();
+    });
+    [courtSel, startSel, endSel].forEach(function(sel){
+      sel.addEventListener('change', handleRowChange);
+    });
+    delBtn.addEventListener('click', function(){
+      if(!trainingId) return;
+      state.trainings = state.trainings.filter(function(t){ return t.id !== trainingId; });
+      saveState(); renderTrainingRows(); renderSchedule();
+    });
+
+    function handleRowChange(){
+      var day = daySel.value, court = courtSel.value, start = startSel.value, end = endSel.value;
+      var complete = day !== '' && court !== '' && start !== '' && end !== '';
+      var invalid = complete && toMin(start) >= toMin(end);
+      row.classList.toggle('invalid', !!invalid);
+      var existingMsg = row.querySelector('.row-msg');
+      if(existingMsg) existingMsg.remove();
+      if(invalid){
+        var msg = document.createElement('div');
+        msg.className = 'row-msg';
+        msg.textContent = 'La hora de fin debe ser posterior a la de inicio.';
+        row.appendChild(msg);
+        return;
+      }
+      if(!complete) return;
+
+      if(trainingId){
+        var t = state.trainings.filter(function(x){ return x.id === trainingId; })[0];
+        if(t){ t.day = +day; t.courtId = court; t.start = start; t.end = end; saveState(); renderSchedule(); updateAvailabilityWarning(); }
+      } else {
+        trainingId = uid('tr');
+        state.trainings.push({id:trainingId, teamId:selectedTeamId, day:+day, courtId:court, start:start, end:end});
+        saveState();
+        renderTrainingRows();
+        renderSchedule();
+      }
+    }
+
+    return row;
+  }
+
+  // ================= SCHEDULE =================
+  function renderSchedule(){
+    var grid = document.getElementById('scheduleGrid');
+    grid.innerHTML = '';
+
+    // Solo se muestran las horas con entrenamientos (se recortan las franjas sin uso)
+    var minStart, maxEnd;
+    if(state.trainings.length){
+      minStart = Infinity; maxEnd = -Infinity;
+      state.trainings.forEach(function(t){
+        minStart = Math.min(minStart, toMin(t.start));
+        maxEnd = Math.max(maxEnd, toMin(t.end));
+      });
+    } else if(state.courts.length){
+      minStart = Infinity; maxEnd = -Infinity;
+      state.courts.forEach(function(c){
+        minStart = Math.min(minStart, toMin(c.availStart));
+        maxEnd = Math.max(maxEnd, toMin(c.availEnd));
+      });
+    } else {
+      minStart = 17*60; maxEnd = 22*60;
+    }
+    minStart = Math.floor(minStart/30)*30;
+    maxEnd = Math.ceil(maxEnd/30)*30;
+    if(maxEnd - minStart < 60) maxEnd = minStart + 60;
+    anyUnavailable = false;
+    var totalMinutes = maxEnd - minStart;
+    var bodyH = totalMinutes * PPM;
+
+    var columns = [];
+    var dayGroups = [];
+    var colIndex = 2;
+
+    DAYS.forEach(function(dayName, dayIdx){
+      var activeCourts = state.courts.filter(function(c){ return c.days[dayIdx]; });
+      if(activeCourts.length === 0) activeCourts = [{id:null, name:'Sin pistas asignadas', group:'', placeholder:true}];
+      var dayStartCol = colIndex;
+      var i = 0;
+      while(i < activeCourts.length){
+        var court = activeCourts[i];
+        if(court.group){
+          var j = i;
+          while(j < activeCourts.length && activeCourts[j].group === court.group) j++;
+          var clusterCourts = activeCourts.slice(i,j);
+          var clusterStartCol = colIndex;
+          clusterCourts.forEach(function(c){
+            columns.push({day:dayIdx, court:c, colNum:colIndex, standalone:false, clusterStartCol:clusterStartCol, clusterColCount:clusterCourts.length, groupLabel:c.group});
+            colIndex++;
+          });
+          i = j;
+        } else {
+          columns.push({day:dayIdx, court:court, colNum:colIndex, standalone:true, clusterStartCol:colIndex, clusterColCount:1, groupLabel: court.placeholder ? court.name : court.name});
+          colIndex++;
+          i++;
+        }
+      }
+      dayGroups.push({name:dayName, startCol:dayStartCol, colCount: colIndex - dayStartCol});
+    });
+
+    var totalDataCols = colIndex - 2;
+    grid.style.gridTemplateColumns = GUTTER_W + 'px repeat(' + totalDataCols + ', ' + COL_W + 'px)';
+    grid.style.gridTemplateRows = ROW1 + 'px ' + ROW2 + 'px ' + ROW3 + 'px ' + bodyH + 'px';
+
+    addCell(grid, '1 / span 3', '1', 'gh-corner', '');
+
+    dayGroups.forEach(function(dg){
+      addCell(grid, '1', dg.startCol + ' / span ' + dg.colCount, 'gh-day', dg.name);
+    });
+
+    var seenClusters = {};
+    columns.forEach(function(col){
+      var key = col.day + '-' + col.clusterStartCol;
+      if(!seenClusters[key]){
+        seenClusters[key] = true;
+        if(col.standalone){
+          addCell(grid, '2 / span 2', col.clusterStartCol + ' / span ' + col.clusterColCount, 'gh-group gh-standalone', col.groupLabel);
+        } else {
+          addCell(grid, '2', col.clusterStartCol + ' / span ' + col.clusterColCount, 'gh-group', col.groupLabel);
+        }
+      }
+      if(!col.standalone){
+        addCell(grid, '3', String(col.colNum), 'gh-pista', col.court.name);
+      }
+    });
+
+    var gutterBody = addCell(grid, '4', '1', 'gb-time', '');
+    gutterBody.style.height = bodyH + 'px';
+    for(var m = minStart; m <= maxEnd; m += 30){
+      var lbl = document.createElement('div');
+      lbl.className = 'time-label';
+      lbl.style.top = ((m - minStart) * PPM) + 'px';
+      lbl.textContent = toTime(m);
+      gutterBody.appendChild(lbl);
+    }
+
+    columns.forEach(function(col){
+      var cell = addCell(grid, '4', String(col.colNum), 'gb-col', '');
+      cell.style.height = bodyH + 'px';
+      for(var hm = minStart; hm < maxEnd; hm += 30){
+        var hl = document.createElement('div');
+        hl.className = 'hline';
+        hl.style.top = ((hm - minStart) * PPM) + 'px';
+        cell.appendChild(hl);
+      }
+      if(col.court.placeholder) return;
+
+      // Oscurecer las franjas fuera del horario de disponibilidad de la pista
+      var availS = toMin(col.court.availStart || '00:00');
+      var availE = toMin(col.court.availEnd || '24:00');
+      function addShade(fromMin, toMinute, cls){
+        if(toMinute <= fromMin) return;
+        var sh = document.createElement('div');
+        sh.className = 'na-shade ' + cls;
+        sh.style.top = ((fromMin - minStart) * PPM) + 'px';
+        sh.style.height = ((toMinute - fromMin) * PPM) + 'px';
+        cell.appendChild(sh);
+        anyUnavailable = true;
+      }
+      if(availS > minStart) addShade(minStart, Math.min(availS, maxEnd), 'na-top');
+      if(availE < maxEnd) addShade(Math.max(availE, minStart), maxEnd, 'na-bottom');
+
+      var dayTrainings = state.trainings
+        .filter(function(t){ return t.day === col.day && t.courtId === col.court.id; })
+        .map(function(t){
+          var team = teamById(t.teamId);
+          return {s:toMin(t.start), e:toMin(t.end), color: team ? team.color : '#8892A6', name: team ? team.name : '—', start:t.start, end:t.end};
+        })
+        .sort(function(a,b){ return a.s - b.s; });
+
+      var breakpointsSet = {};
+      dayTrainings.forEach(function(t){ breakpointsSet[t.s]=true; breakpointsSet[t.e]=true; });
+      var breakpoints = Object.keys(breakpointsSet).map(Number).sort(function(a,b){ return a-b; });
+
+      for(var bi=0; bi<breakpoints.length-1; bi++){
+        var segS = breakpoints[bi], segE = breakpoints[bi+1];
+        if(segE <= segS) continue;
+        var covering = dayTrainings.filter(function(t){ return t.s <= segS && t.e >= segE; });
+        if(!covering.length) continue;
+        var seg = document.createElement('div');
+        seg.className = 'train-seg';
+        seg.style.top = ((segS - minStart) * PPM) + 'px';
+        seg.style.height = ((segE - segS) * PPM) + 'px';
+        if(covering.length === 1){
+          seg.style.background = covering[0].color;
+        } else {
+          var n = covering.length;
+          var stops = covering.map(function(c, idx){
+            var p1 = (idx/n*100).toFixed(2), p2 = ((idx+1)/n*100).toFixed(2);
+            return c.color + ' ' + p1 + '%, ' + c.color + ' ' + p2 + '%';
+          }).join(', ');
+          seg.style.background = 'linear-gradient(135deg, ' + stops + ')';
+        }
+        cell.appendChild(seg);
+      }
+
+      dayTrainings.forEach(function(t){
+        var lbl2 = document.createElement('div');
+        lbl2.className = 'train-label';
+        lbl2.style.top = ((t.s - minStart) * PPM) + 'px';
+        lbl2.style.height = ((t.e - t.s) * PPM) + 'px';
+        lbl2.title = t.name + ' · ' + t.start + '–' + t.end;
+        lbl2.textContent = t.name;
+        cell.appendChild(lbl2);
+      });
+    });
+
+    renderLegend();
+  }
+
+  function addCell(grid, row, col, cls, text){
+    var div = document.createElement('div');
+    div.className = 'gcell ' + cls;
+    div.style.gridRow = row;
+    div.style.gridColumn = col;
+    div.style.position = 'relative';
+    if(text) div.textContent = text;
+    grid.appendChild(div);
+    return div;
+  }
+
+  function renderLegend(){
+    var wrap = document.getElementById('scheduleLegend');
+    wrap.innerHTML = '';
+    var usedTeamIds = {};
+    state.trainings.forEach(function(t){ usedTeamIds[t.teamId] = true; });
+    var teamsToShow = state.teams.filter(function(t){ return usedTeamIds[t.id]; });
+    if(teamsToShow.length === 0) teamsToShow = state.teams;
+    teamsToShow.forEach(function(team){
+      var item = document.createElement('div');
+      item.className = 'legend-item';
+      item.innerHTML = '<span class="swatch" style="background:'+team.color+'"></span>' + escapeHtml(team.name);
+      wrap.appendChild(item);
+    });
+    if(anyUnavailable){
+      var na = document.createElement('div');
+      na.className = 'legend-item';
+      na.innerHTML = '<span class="swatch swatch-na"></span>Pista no disponible';
+      wrap.appendChild(na);
+    }
+  }
+
+  // ================= EXPORT =================
+  var EXPORT_BG = '#0A2463'; // azul base del degradado (por si algún borde queda sin pintar)
+  var MAX_PIXELS = 16000000; // límite prudente de píxeles del canvas (móviles / Safari)
+
+  function showExportMsg(text){
+    document.getElementById('exportMsg').textContent = text || '';
+  }
+
+  // Renderiza el horario COMPLETO (lunes a viernes) sin recortes por el scroll horizontal.
+  // Se captura con un ancho de ventana igual al del horario entero, de modo que el resultado
+  // es idéntico en móvil, tablet y escritorio.
+  async function renderScheduleCanvas(){
+    var target = document.getElementById('scheduleCapture');
+    var grid = document.getElementById('scheduleGrid');
+    if(document.fonts && document.fonts.ready){ try{ await document.fonts.ready; }catch(e){} }
+
+    var cs = getComputedStyle(target);
+    var padding = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+    var fullW = Math.ceil(grid.scrollWidth) + padding;
+    var fullH = Math.ceil(target.scrollHeight) + 8;
+    var scale = 2;
+    if(fullW * fullH * scale * scale > MAX_PIXELS){
+      scale = Math.max(1, Math.sqrt(MAX_PIXELS / (fullW * fullH)));
+    }
+
+    return html2canvas(target, {
+      backgroundColor: EXPORT_BG,
+      scale: scale,
+      windowWidth: fullW,
+      width: fullW,
+      useCORS: true,
+      onclone: function(doc){
+        var cap = doc.getElementById('scheduleCapture');
+        var scroller = cap.querySelector('.schedule-scroll');
+        var mainEl = doc.querySelector('main');
+        mainEl.style.maxWidth = 'none';
+        mainEl.style.padding = '0';
+        mainEl.style.margin = '0';
+        cap.style.width = fullW + 'px';
+        cap.style.maxWidth = 'none';
+        cap.style.overflow = 'visible';
+        cap.style.borderRadius = '0';
+        scroller.style.overflow = 'visible';
+        scroller.style.width = 'max-content';
+        scroller.style.paddingBottom = '0';
+      }
+    });
+  }
+
+  function canvasToBlob(canvas, type, quality){
+    return new Promise(function(resolve, reject){
+      canvas.toBlob(function(blob){
+        blob ? resolve(blob) : reject(new Error('No se pudo generar el archivo'));
+      }, type, quality);
+    });
+  }
+
+  async function saveBlob(blob, filename){
+    var downloads = (window.claude && typeof window.claude.use === 'function') ? await window.claude.use('downloads') : null;
+    if(downloads){
+      await downloads.save({filename: filename, data: blob});
+    } else {
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+    }
+  }
+
+  async function exportPng(canvas){
+    var blob = await canvasToBlob(canvas, 'image/png');
+    await saveBlob(blob, 'horarios-nou-volei-alzira-2026-27.png');
+  }
+
+  async function exportPdf(canvas){
+    if(!(window.jspdf && window.jspdf.jsPDF)){
+      throw new Error('No se pudo cargar la librería de PDF. Comprueba tu conexión e inténtalo de nuevo.');
+    }
+    var jsPDF = window.jspdf.jsPDF;
+    // Página con las mismas proporciones que el horario (297 mm de ancho, como un A4 apaisado),
+    // de modo que el fondo degradado ocupa la página entera sin bordes.
+    var pageW = 297;
+    var pageH = pageW * canvas.height / canvas.width;
+    var doc = new jsPDF({
+      orientation: pageW >= pageH ? 'landscape' : 'portrait',
+      unit: 'mm',
+      format: [pageW, pageH]
+    });
+    doc.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, pageW, pageH);
+    await saveBlob(doc.output('blob'), 'horarios-nou-volei-alzira-2026-27.pdf');
+  }
+
+  function bindExport(btnId, handler){
+    var btn = document.getElementById(btnId);
+    btn.addEventListener('click', async function(){
+      var buttons = [document.getElementById('exportBtn'), document.getElementById('exportPdfBtn')];
+      var originalText = btn.textContent;
+      buttons.forEach(function(b){ b.disabled = true; });
+      btn.textContent = 'Generando…';
+      showExportMsg('');
+      try{
+        var canvas = await renderScheduleCanvas();
+        await handler(canvas);
+      }catch(err){
+        console.error('Error al exportar el horario', err);
+        showExportMsg(err && err.message ? err.message : 'No se pudo generar el archivo.');
+      }finally{
+        buttons.forEach(function(b){ b.disabled = false; });
+        btn.textContent = originalText;
+      }
+    });
+  }
+
+  bindExport('exportBtn', exportPng);
+  bindExport('exportPdfBtn', exportPdf);
+
+  // ================= UTIL =================
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  function renderAll(){
+    renderTeams();
+    renderCourts();
+    renderTeamPicker();
+    renderTrainingRows();
+    renderSchedule();
+  }
+
+  renderAll();
+})();
+</script>
+</body>
+</html>
