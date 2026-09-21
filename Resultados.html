@@ -1,0 +1,1937 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nou Volei Alzira - Cartel de Resultados</title>
+    <!-- Enlace al archivo Manifest para PWA / APK -->
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+        /* ==========================================================================
+           VARIABLES GLOBALES Y ESTILOS BASE
+           ========================================================================== */
+        :root {
+            --nva-primary: #d10000;
+            --nva-primary-hover: #ff1a1a;
+            --nva-bg-dark: #1a1a1a;
+            --nva-bg-black: #000000;
+            --nva-text: #ffffff;
+            --nva-success: #00ff66;
+            --nva-warning: #ff8800;
+            --nva-warning-hover: #ff9900;
+            --nva-btn-blue: #0088cc;
+            --nva-btn-blue-hover: #1aa3ff;
+            --nva-btn-green: #00aa00;
+            --nva-btn-green-hover: #00cc00;
+            --nva-btn-purple: #8e44ad;
+            --nva-btn-purple-hover: #9b59b6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--nva-bg-black);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: 'Arial Black', Impact, sans-serif;
+            color: var(--nva-text);
+            overflow-x: hidden;
+            width: 100vw;
+        }
+
+        #capture-area {
+            width: 100%;
+            background-color: var(--nva-bg-black);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* ==========================================================================
+           BARRA FLOTANTE SUPERIOR DERECHA (CARGAR HISTORIAL)
+           ========================================================================== */
+        #top-loader-bar {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            z-index: 1000;
+            /*background: rgba(26, 26, 26, 0.85);
+            /*padding: 10px 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.8);
+            /*backdrop-filter: blur(5px);*/
+        }
+
+        #btn-load-history {
+            color: var(--nva-text);
+            cursor: pointer;
+            background: var(--nva-btn-green);
+            padding: 8px 16px;
+            border-radius: 5px;
+            font-weight: bold;
+            /*border: 1px solid var(--nva-btn-green-hover);*/
+            transition: background 0.2s, transform 0.1s;
+            display: inline-block;
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            flex-shrink: 0;
+            white-space: nowrap;
+            shadow: 0 4px 15px rgba(0,0,0,0.8);
+            border-color: var(--nva-btn-green);
+        }
+
+        #btn-load-history:hover {
+            background: var(--nva-btn-green-hover);
+            border-color: var(--nva-btn-green-hover);
+            transform: scale(1.05);
+            color: #000000;
+        }
+
+        /* ==========================================================================
+           BARRA FLOTANTE INFERIOR DERECHA (ACCIONES DE CARTEL)
+           ========================================================================== */
+        #excel-loader-bar {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            z-index: 1000;
+            /*background: rgba(26, 26, 26, 0.85);
+            padding: 10px 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);*/
+        }
+
+        .bar-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        #excel-loader-bar button, #jpg-button, #btn-add-first, #btn-reset {
+            color: var(--nva-text);
+            cursor: pointer;
+            /*background: var(--nva-primary);*/
+            padding: 8px 16px;
+            border-radius: 5px;
+            font-weight: bold;
+            /*border: 1px solid var(--nva-primary-hover);*/
+            transition: background 0.2s, transform 0.1s;
+            display: inline-block;
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        #btn-reset {
+            background: var(--nva-warning);
+            border-color: var(--nva-warning-hover);
+            display: none;
+        }
+
+        #btn-reset:hover {
+            background: var(--nva-primary-hover);
+            border-color: var(--nva-primary-hover);
+            transform: scale(1.05);
+            color: #000000;
+        }
+
+        #jpg-button {
+            background: var(--nva-btn-purple);
+            border-color: var(--nva-btn-purple-hover);
+        }
+
+        #btn-add-first {
+            background: var(--nva-btn-green);
+            border-color: var(--nva-btn-green-hover);
+            display: none;
+        }
+
+        #jpg-button:hover {
+            background: var(--nva-btn-blue-hover);
+            border-color: var(--nva-btn-blue-hover);
+            transform: scale(1.05);
+            color: #000000;
+        }
+
+        #btn-add-first:hover {
+            background: var(--nva-btn-green-hover);
+            transform: scale(1.05);
+            color: #000000;
+        }
+
+        /* ==========================================================================
+           BANNER CABECERA Y CONTENEDOR PRINCIPAL
+           ========================================================================== */
+        #header-banner {
+            position: relative;
+            width: 100%;
+            line-height: 0;
+        }
+
+        #header-banner img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        #clickable-calendar {
+            position: absolute;
+            bottom: 4%;
+            left: 22.5%;
+            width: 6%;
+            height: 18%;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        #text-container {
+            position: absolute;
+            bottom: 4%;
+            left: 29.5%;
+            width: 68%;
+            height: 18%;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        #date-text {
+            color: var(--nva-text);
+            font-style: italic;
+            font-weight: bold;
+            white-space: nowrap;
+            line-height: 1;
+            display: inline-block;
+            transform-origin: left center;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.9);
+            text-transform: lowercase;
+            padding-right: 0.08em;
+            padding-left: 0.04em;
+        }
+
+        #main-content {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1vw;
+        }
+
+        /* ==========================================================================
+           TARJETAS DE PARTIDO
+           ========================================================================== */
+        .match-card-container {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            background-color: var(--nva-bg-black);
+        }
+
+        .card-photo-layer {
+            position: absolute;
+            top: 2%;
+            right: 1.4%;
+            width: 46%;
+            height: 96%;
+            clip-path: polygon(12.7% 0%, 100% 0%, 100% 100%, 0% 100%);
+            background-color: #0a0a0a;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1;
+            transition: background-color 0.2s, outline 0.2s;
+        }
+
+        .card-bgb { 
+            position: relative; 
+            width: 100%;
+            height: auto;
+            display: block;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .card-bg, .card-outline {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            pointer-events: none;
+        }
+
+        .card-bg { z-index: 6; transition: filter 0.2s ease; }
+        .card-outline { z-index: 7; opacity: 0.8; mix-blend-mode: multiply; }
+
+        .btn-delete-card {
+            position: absolute;
+            top: 1.5%;
+            right: 1%;
+            width: clamp(22px, 2.8vw, 38px);
+            height: clamp(22px, 2.8vw, 38px);
+            background: rgba(180, 0, 0, 0.9);
+            color: var(--nva-text);
+            border: 2px solid var(--nva-text);
+            border-radius: 50%;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            font-size: clamp(12px, 1.6vw, 20px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 50;
+            line-height: 1;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.2s;
+        }
+
+        .match-card-container:hover .btn-delete-card { opacity: 1; pointer-events: auto; }
+        .btn-delete-card:hover { background-color: #ff0000; transform: scale(1.15); }
+
+        .btn-add-card-below {
+            position: absolute;
+            bottom: 2%;
+            left: 1.5%;
+            width: clamp(28px, 3.5vw, 46px);
+            height: clamp(28px, 3.5vw, 46px);
+            background: rgba(0, 150, 0, 0.9);
+            color: var(--nva-text);
+            border: 2px solid var(--nva-text);
+            border-radius: 50%;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            font-size: clamp(16px, 2.2vw, 26px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 50;
+            line-height: 1;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.8);
+        }
+
+        .match-card-container:hover .btn-add-card-below { opacity: 1; pointer-events: auto; }
+        .btn-add-card-below:hover { background-color: #00ff00; color: #000; transform: scale(1.15); }
+
+        .photo-img {
+            flex-shrink: 0;
+            display: none;
+            height: 100%;
+            width: auto;
+            object-fit: cover;
+            transform-origin: center center;
+            touch-action: none;
+            cursor: grab;
+            user-select: none;
+        }
+
+        .photo-img:active {
+            cursor: grabbing;
+        }
+
+        .photo-placeholder {
+            color: #aaaaaa;
+            font-family: Arial, sans-serif;
+            font-size: clamp(11px, 1.6vw, 18px);
+            font-weight: bold;
+            text-align: center;
+            padding: 10px;
+            pointer-events: none;
+            cursor: pointer;
+        }
+
+        .text-overlay {
+            position: absolute;
+            font-style: italic;
+            font-weight: 1200;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 7;
+            transition: background-color 0.2s, outline 0.2s;
+        }
+
+        .text-category {
+            top: 4.2%; left: 3%; width: 33%; height: 7%;
+            color: var(--nva-text); font-size: clamp(12px, 2.6vw, 48px);
+            justify-content: flex-start; padding-left: 0.3vw;
+            user-select: none; white-space: nowrap; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .badge-slot {
+            position: absolute; top: 13.5%; width: 15%; aspect-ratio: 1;
+            z-index: 3;
+            display: flex; align-items: center; justify-content: center; pointer-events: auto;
+            transition: background-color 0.2s, outline 0.2s;
+        }
+
+        .badge-slot img { width: 100%; height: 100%; object-fit: contain; display: none; }
+        .badge-home { left: 2.2%; }
+        .badge-away { right: 47.2%; }
+
+        .text-score-home, .text-score-away {
+            position: absolute; top: 20%; width: 11%; height: 45%;
+            line-height: 1; 
+            color: var(--nva-text);
+            text-shadow: 4px 4px 10px rgba(0, 0, 0, 0.95); cursor: pointer;
+            z-index: 4;
+            display: flex; align-items: center; justify-content: center;
+            white-space: nowrap; user-select: none;
+            overflow: hidden;
+            transition: background-color 0.2s, outline 0.2s;
+        }
+
+        .score-inner-text {
+            display: inline-block;
+            line-height: 1;
+            transform-origin: center center;
+            white-space: nowrap;
+        }
+
+        .text-score-home { right: 75%; }
+        .text-score-away { left: 30%; }
+
+        .text-score-divider {
+            position: absolute; top: 20%; left: 25%; width: 5%; height: 30%;
+            font-size: clamp(32px, 10vw, 240px); transform: scaleY(1.5);
+            transform-origin: center center; color: var(--nva-text);
+            display: flex; align-items: center; justify-content: center;
+            pointer-events: none; z-index: 4;
+        }
+
+        .team-container {
+            position: absolute; top: 63%; left: 26.2%; width: 20%; height: 30%; cursor: pointer; z-index: 5;
+            background: transparent;
+            border: none; outline: none; display: flex; align-items: center;
+            justify-content: center; overflow: hidden; text-align: center;
+            transition: background-color 0.2s, outline 0.2s;
+        }
+
+        .team-inner-text {
+            display: inline-block; line-height: 1.05; word-wrap: break-word; overflow-wrap: break-word;
+            white-space: normal; transform-origin: center center; text-shadow: 2px 2px 6px rgba(0,0,0,0.9);
+            padding-right: 0.8em; padding-left: 0.6em;
+        }
+
+        /* ==========================================================================
+           VENTANAS MODALES (ESTILOS GENERALES)
+           ========================================================================== */
+        .modal {
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0;
+            width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.85);
+            justify-content: center; align-items: center;
+        }
+
+        .modal-box {
+            background-color: var(--nva-bg-dark); border: 2px solid #555; padding: 24px;
+            border-radius: 10px; width: 90%; max-width: 480px; color: var(--nva-text);
+            font-family: Arial, sans-serif; text-align: center; box-shadow: 0 5px 25px rgba(0, 0, 0, 0.8);
+        }
+
+        .modal-box h3 { margin-bottom: 15px; font-size: 20px; }
+
+        .calendar-container { width: 100%; font-family: Arial, sans-serif; color: #fff; }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .calendar-header button { background: #333; color: #fff; border: 1px solid #555; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .calendar-header button:hover { background: var(--nva-primary); border-color: var(--nva-primary-hover); }
+
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 15px; }
+        .calendar-day-name { font-size: 11px; color: #888; font-weight: bold; text-align: center; padding-bottom: 5px; }
+        .calendar-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; background: #252525; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; user-select: none; transition: background 0.15s, color 0.15s; }
+        .calendar-day:hover { background: #444; }
+        .calendar-day.empty { background: transparent; cursor: default; }
+        .calendar-day.selected { background: var(--nva-primary) !important; color: var(--nva-text) !important; }
+        .calendar-day.in-range { background: rgba(209, 0, 0, 0.35); color: var(--nva-text); border-radius: 0; }
+        .calendar-info { font-size: 12px; color: #aaa; margin-bottom: 15px; min-height: 18px; }
+
+        .score-options-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px; }
+        .score-option-btn { background: #292929; color: var(--nva-text); border: 2px solid #444; padding: 15px 0; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 24px; font-family: 'Arial Black', Impact, sans-serif; transition: background 0.2s, border-color 0.2s, transform 0.1s; }
+        .score-option-btn:hover { background: var(--nva-primary); border-color: var(--nva-primary-hover); transform: scale(1.05); }
+
+        .modal-tabs { display: flex; gap: 5px; margin-bottom: 12px; border-bottom: 1px solid #444; padding-bottom: 8px; }
+        .modal-tab-btn { flex: 1; background: #252525; color: #aaa; border: 1px solid #444; padding: 8px; border-radius: 5px 5px 0 0; cursor: pointer; font-weight: bold; font-size: 12px; transition: background 0.2s, color 0.2s, border-color 0.2s; }
+        .modal-tab-btn.active { background: var(--nva-primary); color: #fff; border-color: var(--nva-primary-hover); }
+
+        .team-options-list { display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow-y: auto; margin-bottom: 16px; }
+        .team-option-btn { background: #292929; color: var(--nva-text); border: 1px solid #444; padding: 10px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s, border-color 0.2s; text-align: left; }
+        .team-option-btn:hover { background: #3d3d3d; border-color: var(--nva-success); }
+
+        .custom-input { width: 100%; padding: 10px; background: #252525; border: 1px solid #555; color: #fff; border-radius: 5px; font-size: 15px; margin-bottom: 15px; }
+        .btn-modal-action { background-color: var(--nva-primary); color: var(--nva-text); padding: 10px 24px; border: none; border-radius: 5px; font-size: 15px; font-weight: bold; cursor: pointer; }
+        .btn-modal-action:hover { background-color: var(--nva-primary-hover); }
+
+        /* EFECTOS GLOW RESULTADOS */
+        .glow-winner {
+            text-shadow: 0.2vw 0.2vw 0.5vw rgba(0,0,0,0.9), 0 0 2.5vw rgba(0, 255, 0, 0.9), 0 0 1vw rgba(0, 255, 0, 1) !important;
+            transition: text-shadow 0.3s ease;
+        }
+
+        .glow-loser {
+            text-shadow: 0.2vw 0.2vw 0.5vw rgba(0,0,0,0.9), 0 0 2.5vw rgba(255, 0, 0, 0.9), 0 0 1vw rgba(255, 0, 0, 1) !important;
+            transition: text-shadow 0.3s ease;
+        }
+
+        .glow-winner-img {
+            filter: drop-shadow(0 0 0.4vw rgba(0, 255, 0, 1)) drop-shadow(0 0 0.8vw rgba(0, 255, 0, 0.7)) !important;
+            transition: filter 0.3s ease;
+        }
+
+        .glow-loser-img {
+            filter: drop-shadow(0 0 0.4vw rgba(255, 0, 0, 1)) drop-shadow(0 0 0.8vw rgba(255, 0, 0, 0.7)) !important;
+            transition: filter 0.3s ease;
+        }
+
+        /* ==========================================================================
+           MODAL DE SELECCIÓN DE HISTORIAL DE TXT
+           ========================================================================== */
+        .history-dates-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 50vh;
+            overflow-y: auto;
+            overflow-x: hidden; /* <--- Añadir esta línea */
+            margin-top: 15px;
+            padding: 4px;       /* <--- Opcional: da espacio para que el scale no corte los bordes */
+        }
+
+        .history-date-btn {
+            background: #252525;
+            color: var(--nva-text);
+            border: 1px solid #444;
+            padding: 12px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s, border-color 0.2s, transform 0.1s;
+        }
+
+        .history-date-btn:hover {
+            background: var(--nva-btn-purple);
+            border-color: var(--nva-btn-purple-hover);
+            transform: scale(1.02);
+        }
+
+        .history-date-badge {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Botón flotante superior derecho para Cargar Historial -->
+    <div id="top-loader-bar">
+        <button id="btn-load-history">📂 Cargar historial</button>
+        <input type="file" id="txt-file-input" accept=".txt" style="display: none;">
+    </div>
+
+    <!-- Barra flotante de acciones en la esquina inferior derecha -->
+    <div id="excel-loader-bar">
+        <div class="bar-actions">
+            <button id="btn-reset">🔄 RESET</button>
+            <button id="btn-add-first">➕ NUEVO RECUADRO</button>
+            <button id="jpg-button">📥 DESCARGAR JPG</button>
+        </div>
+    </div>
+
+    <!-- Contenedor del área capturable -->
+    <div id="capture-area">
+        <header id="header-banner">
+            <img id="bg-image" src="Imagenes/TITULO.png" alt="Nou Volei Alzira">
+            <div id="clickable-logo" title="Banner superior"></div>
+            <div id="clickable-calendar" title="Haz clic para seleccionar el rango de fechas"></div>
+            <div id="text-container">
+                <span id="date-text"></span>
+            </div>
+        </header>
+
+        <main id="main-content"></main>
+    </div>
+
+    <!-- Modal Calendario Banner Superior -->
+    <div id="calendarModal" class="modal">
+        <div class="modal-box" style="max-width: 380px;">
+            <h3>Seleccionar Rango de Fechas</h3>
+            <div class="calendar-container">
+                <div class="calendar-header">
+                    <button id="prevMonthBtn">&lt;</button>
+                    <span id="calendarMonthTitle" style="font-weight: bold; font-size: 15px; text-transform: capitalize;"></span>
+                    <button id="nextMonthBtn">&gt;</button>
+                </div>
+                <div class="calendar-grid" id="calendarGridDaysNames">
+                    <div class="calendar-day-name">L</div>
+                    <div class="calendar-day-name">M</div>
+                    <div class="calendar-day-name">X</div>
+                    <div class="calendar-day-name">J</div>
+                    <div class="calendar-day-name">V</div>
+                    <div class="calendar-day-name">S</div>
+                    <div class="calendar-day-name">D</div>
+                </div>
+                <div class="calendar-grid" id="calendarDaysGrid"></div>
+                <div class="calendar-info" id="calendarInfoText">Haz clic en el día de inicio</div>
+            </div>
+            <button id="applyCalendarButton" class="btn-modal-action" disabled style="opacity: 0.5; cursor: not-allowed;">Aplicar Fechas</button>
+        </div>
+    </div>
+
+    <!-- Modal selección de tanteo -->
+    <div id="scoreModal" class="modal">
+        <div class="modal-box">
+            <h3 id="scoreModalTitle">Seleccionar Tanteo</h3>
+            <div class="score-options-grid">
+                <button class="score-option-btn" data-value="0">0</button>
+                <button class="score-option-btn" data-value="1">1</button>
+                <button class="score-option-btn" data-value="2">2</button>
+                <button class="score-option-btn" data-value="3">3</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal selección de equipos -->
+    <div id="teamPickerModal" class="modal">
+        <div class="modal-box">
+            <h3 id="modalTeamTitle">Seleccionar Equipo</h3>
+            <div class="modal-tabs">
+                <button id="tabNvaBtn" class="modal-tab-btn active">Equipos NVA</button>
+                <button id="tabOthersBtn" class="modal-tab-btn">Otros Equipos</button>
+            </div>
+            <div class="team-options-list" id="teamListContainer"></div>
+            <div style="border-top: 1px solid #444; padding-top: 12px;">
+                <input type="text" id="customTeamInput" class="custom-input" placeholder="O escribir nombre de equipo rival...">
+                <button id="applyCustomTeamBtn" class="btn-modal-action" style="background-color: #444;">Aplicar Rival</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Selección de Fechas del Historial TXT -->
+    <div id="historyModal" class="modal">
+        <div class="modal-box">
+            <h3>Seleccionar Fecha del Historial</h3>
+            <p style="font-size: 13px; color: #aaa; margin-bottom: 10px;">Selecciona una de las 5 primeras jornadas para cargar sus partidos:</p>
+            <div class="history-dates-list" id="historyDatesContainer"></div>
+        </div>
+    </div>
+
+    <!-- Modal de selección del modo de exportación JPG.
+         "TODO" conserva la exportación original completa.
+         "SEPARADO" genera un JPG por grupo: INFANTIL, CADETE y JUVENIL + SENIOR. -->
+    <div id="jpgModeModal" class="modal">
+        <div class="modal-box">
+            <h3>¿Cómo quieres descargar el cartel?</h3>
+            <p style="font-size:13px;color:#aaa;margin-bottom:18px;">
+                Selecciona el modo de exportación.
+            </p>
+            <div style="display:flex;gap:12px;justify-content:center;">
+                <button id="jpgModeAllBtn" class="btn-modal-action" style="background:var(--nva-btn-purple);">TODO</button>
+                <button id="jpgModeSeparateBtn" class="btn-modal-action" style="background:var(--nva-btn-green);">SEPARADO</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Plantilla del cuadro sin elementos inferiores -->
+    <template id="card-template">
+        <div class="match-card-container">
+            <button class="btn-delete-card" title="Eliminar este recuadro">✕</button>
+            <button class="btn-add-card-below" title="Crear nuevo recuadro debajo">+</button>
+
+            <!-- Capa 1: Foto al fondo -->
+            <div class="card-photo-layer" title="Haz clic para subir foto. Arrastra para moverla y usa la rueda del ratón o pellizco para zoom. Doble clic para cambiar foto.">
+                <span class="photo-placeholder">📷 Clic para subir foto</span>
+                <img class="photo-img" src="" alt="Foto del partido">
+                
+                <input type="file" accept="image/*" style="display: none;">
+            </div>
+
+            <!-- Capa 2: Fondo 3D -->
+            <img class="card-bgb" src="Imagenes/Cuadro BASE (fondo).png" alt="Fondo 3D">
+            
+            <!-- Capa 3: Escudos / Logos -->
+            <div class="badge-slot badge-home">
+                <img src="" alt="Escudo Local">
+            </div>
+            <div class="badge-slot badge-away">
+                <img src="" alt="Escudo Visitante">
+            </div>
+
+            <!-- Capa 4: Resultados / Tanteo -->
+            <div class="text-score-home" title="Haz clic para cambiar tanteo local">
+                <span class="score-inner-text">0</span>
+            </div>
+            <div class="text-score-divider">-</div>
+            <div class="text-score-away" title="Haz clic para cambiar tanteo visitante">
+                <span class="score-inner-text">0</span>
+            </div>
+
+            <!-- Capa 5: Nombres de equipos y categoría -->
+            <div class="text-overlay text-category"></div>
+            <div class="text-overlay team-container team-home-container" title="Seleccionar Equipo de Casa">
+                <span class="team-inner-text">HOME</span>
+            </div>
+            <div class="text-overlay team-container team-away-container" title="Seleccionar Equipo de Visita">
+                <span class="team-inner-text">VISIT</span>
+            </div>
+
+            <!-- Capa 6: Cuadro BASE (marco) -->
+            <img class="card-bg" src="Imagenes/Cuadro BASE.png" alt="Fondo Marco" data-original-src="Imagenes/Cuadro BASE.png">
+
+            <!-- Capa 7: Cuadro BASE (sombra) -->
+            <img class="card-outline" src="Imagenes/Cuadro BASE (sombra).png" alt="Contorno 3D">
+        </div>
+    </template>
+
+    <script>
+        // Configuración de áreas e interacciones
+        const CONFIG_AREA = { homeLeft: 4, homeWidth: 21, awayLeft: 30, awayWidth: 21, height: 28, bottomOffset: 16 };
+
+        let EQUIPOS_NVA_DATA = [
+            { LOGO: null, EQUIPO: "ALEVIN", CATEGORIA: "ALEVIN", COLOR: "008de9" },
+            { LOGO: null, EQUIPO: "ENOVA NVA", CATEGORIA: "INFANTIL 2ª DIVISION", COLOR: "dc6600" },
+            { LOGO: null, EQUIPO: "UP! SCHOOL NVA", CATEGORIA: "INFANTIL ZONAL", COLOR: "e9e300" },
+            { LOGO: null, EQUIPO: "JESSI ESPARZA NVA", CATEGORIA: "INFANTIL ZONAL", COLOR: "ffc547" },
+            { LOGO: null, EQUIPO: "ENOVA NVA", CATEGORIA: "CADETE 2ª DIVISION", COLOR: "fd008d" },
+            { LOGO: null, EQUIPO: "UP! SCHOOL NVA", CATEGORIA: "CADETE ZONAL", COLOR: "fa05e8" },
+            { LOGO: null, EQUIPO: "JESSI ESPARZA NVA", CATEGORIA: "CADETE ZONAL", COLOR: "fd75ea" },
+            { LOGO: null, EQUIPO: "ESPAI LABORAL NVA", CATEGORIA: "JUVENIL ZONAL", COLOR: "9a0dda" },
+            { LOGO: null, EQUIPO: "ENOVA NVA", CATEGORIA: "SENIOR 2ª DIVISION", COLOR: "b60809" },
+            { LOGO: null, EQUIPO: "ESCOLA NVA", CATEGORIA: "MIXTO", COLOR: "00cb00" },
+            { LOGO: null, EQUIPO: "CLUB NVA", CATEGORIA: "TODOS", COLOR: "0001e8" }
+        ];
+
+        let OTROS_EQUIPOS_DATA = [];
+
+        // Referencias del DOM
+        const jpgButton = document.getElementById('jpg-button');
+        const btnAddFirst = document.getElementById('btn-add-first');
+        const btnReset = document.getElementById('btn-reset');
+        const calendarArea = document.getElementById('clickable-calendar');
+        const calendarModal = document.getElementById('calendarModal');
+        const applyCalendarButton = document.getElementById('applyCalendarButton');
+        const dateText = document.getElementById('date-text');
+        const textContainer = document.getElementById('text-container');
+        const mainContent = document.getElementById('main-content');
+        const cardTemplate = document.getElementById('card-template');
+
+        // Referencias Historial TXT
+        const btnLoadHistory = document.getElementById('btn-load-history');
+        const txtFileInput = document.getElementById('txt-file-input');
+        const historyModal = document.getElementById('historyModal');
+        const historyDatesContainer = document.getElementById('historyDatesContainer');
+        let parsedHistoryGroups = [];
+
+        // Variables de estado
+        let calendarViewDate = new Date();
+        let selectedStartDate = null;
+        let selectedEndDate = null;
+        let currentActiveCard = null;
+        let currentTargetSide = 'home';
+        let activeModalTab = 'nva';
+        let currentScoreContainer = null;
+
+        // Referencias de Modales
+        const calendarMonthTitle = document.getElementById('calendarMonthTitle');
+        const calendarDaysGrid = document.getElementById('calendarDaysGrid');
+        const calendarInfoText = document.getElementById('calendarInfoText');
+        const prevMonthBtn = document.getElementById('prevMonthBtn');
+        const nextMonthBtn = document.getElementById('nextMonthBtn');
+        const teamPickerModal = document.getElementById('teamPickerModal');
+        const teamListContainer = document.getElementById('teamListContainer');
+        const customTeamInput = document.getElementById('customTeamInput');
+        const applyCustomTeamBtn = document.getElementById('applyCustomTeamBtn');
+        const modalTeamTitle = document.getElementById('modalTeamTitle');
+        const scoreModal = document.getElementById('scoreModal');
+        const scoreModalTitle = document.getElementById('scoreModalTitle');
+        const tabNvaBtn = document.getElementById('tabNvaBtn');
+        const tabOthersBtn = document.getElementById('tabOthersBtn');
+
+        const MONTH_NAMES = [
+            "enero", "febrero", "marzo", "abril", "mayo", "junio",
+            "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+        ];
+
+        // === SISTEMA TOAST ===
+        function showToast(message, isError = false) {
+            const toast = document.createElement('div');
+            toast.textContent = message;
+            toast.style.cssText = `
+                position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+                background: ${isError ? '#b40000' : 'var(--nva-success)'}; color: ${isError ? '#fff' : '#000'};
+                padding: 10px 20px; border-radius: 8px; font-weight: bold; z-index: 9999;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.5); font-family: Arial, sans-serif; font-size: 14px;
+            `;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // === ESCALADO Y AUTOAJUSTE DEL TEXTO INTERIOR DEL TANTEO ===
+        function autoFitScoreText(scoreBox) {
+            if (!scoreBox) return;
+            const span = scoreBox.querySelector('.score-inner-text');
+            if (!span) return;
+
+            span.style.transform = 'none';
+
+            const contWidth = scoreBox.clientWidth;
+            const contHeight = scoreBox.clientHeight;
+            if (contWidth === 0 || contHeight === 0) return;
+
+            const baseFontSize = contHeight;
+            span.style.fontSize = `${baseFontSize}px`;
+
+            const textWidth = span.scrollWidth;
+            const textHeight = span.scrollHeight;
+
+            if (textWidth === 0 || textHeight === 0) return;
+
+            const aspectY = 1.5;
+
+            const maxScaleX = contWidth / textWidth;
+            const maxScaleY = contHeight / (textHeight * aspectY);
+            
+            const fitFactor = Math.min(maxScaleX, maxScaleY);
+
+            const finalScaleX = fitFactor;
+            const finalScaleY = fitFactor * aspectY;
+
+            span.style.transform = `scale(${finalScaleX}, ${finalScaleY})`;
+        }
+
+        // === SISTEMA DE GUARDADO LOCAL (LOCALSTORAGE) ===
+        function saveAppState() {
+            const state = {
+                dateText: document.getElementById('date-text').textContent,
+                cards: []
+            };
+
+            document.querySelectorAll('.match-card-container').forEach(card => {
+                state.cards.push({
+                    category: card.querySelector('.text-category').textContent,
+                    homeTeam: card.querySelector('.team-home-container .team-inner-text').textContent,
+                    awayTeam: card.querySelector('.team-away-container .team-inner-text').textContent,
+                    homeScore: card.querySelector('.text-score-home .score-inner-text').textContent,
+                    awayScore: card.querySelector('.text-score-away .score-inner-text').textContent,
+                    homeLogo: card.querySelector('.badge-home img').getAttribute('src') || '',
+                    awayLogo: card.querySelector('.badge-away img').getAttribute('src') || '',
+                    homeLogoDisplay: card.querySelector('.badge-home img').style.display,
+                    awayLogoDisplay: card.querySelector('.badge-away img').style.display,
+                    colorCode: card.querySelector('.card-bg').dataset.appliedColor || ''
+                });
+            });
+
+            localStorage.setItem('nvaAppSavedState', JSON.stringify(state));
+        }
+
+        function loadAppState() {
+            const saved = localStorage.getItem('nvaAppSavedState');
+            if (!saved) return false; 
+
+            const state = JSON.parse(saved);
+            mainContent.innerHTML = '';
+
+            if (state.dateText) {
+                document.getElementById('date-text').textContent = state.dateText;
+                fitCalendarText();
+            }
+
+            if (state.cards && state.cards.length > 0) {
+                state.cards.forEach(cardData => {
+                    createNewCard(); 
+                    const currentCard = mainContent.lastElementChild;
+
+                    currentCard.querySelector('.text-category').textContent = cardData.category;
+                    
+                    const scoreHomeContainer = currentCard.querySelector('.text-score-home');
+                    const scoreAwayContainer = currentCard.querySelector('.text-score-away');
+                    
+                    scoreHomeContainer.querySelector('.score-inner-text').textContent = cardData.homeScore;
+                    scoreAwayContainer.querySelector('.score-inner-text').textContent = cardData.awayScore;
+
+                    autoFitScoreText(scoreHomeContainer);
+                    autoFitScoreText(scoreAwayContainer);
+
+                    const homeSpan = currentCard.querySelector('.team-home-container .team-inner-text');
+                    homeSpan.textContent = cardData.homeTeam;
+                    autoFitTeamText(currentCard.querySelector('.team-home-container'), homeSpan);
+
+                    const awaySpan = currentCard.querySelector('.team-away-container .team-inner-text');
+                    awaySpan.textContent = cardData.awayTeam;
+                    autoFitTeamText(currentCard.querySelector('.team-away-container'), awaySpan);
+
+                    const homeImg = currentCard.querySelector('.badge-home img');
+                    if (cardData.homeLogo) homeImg.src = cardData.homeLogo;
+                    homeImg.style.display = cardData.homeLogoDisplay || 'none';
+
+                    const awayImg = currentCard.querySelector('.badge-away img');
+                    if (cardData.awayLogo) awayImg.src = cardData.awayLogo;
+                    awayImg.style.display = cardData.awayLogoDisplay || 'none';
+
+                    if (cardData.colorCode) {
+                        const cardBg = currentCard.querySelector('.card-bg');
+                        cardBg.dataset.appliedColor = cardData.colorCode;
+                        applyColorFilter(cardBg, cardData.colorCode);
+                    } else {
+                        const cardBg = currentCard.querySelector('.card-bg');
+                        cardBg.dataset.appliedColor = 'FFFFFF';
+                        applyColorFilter(cardBg, 'FFFFFF');
+                    }
+
+                    updateMatchGlow(currentCard);
+                });
+            }
+            
+            updateAddFirstButtonVisibility();
+            return true;
+        }
+
+        function updateAddFirstButtonVisibility() {
+            const cardCount = mainContent.querySelectorAll('.match-card-container').length;
+            if (cardCount === 0) {
+                btnAddFirst.style.display = 'inline-block';
+                btnReset.style.display = 'none';
+            } else {
+                btnAddFirst.style.display = 'none';
+                btnReset.style.display = 'inline-block';
+            }
+        }
+
+        // === EVENTO BOTÓN RESET ===
+        btnReset.addEventListener('click', () => {
+            const confirmar = confirm('¿Estás seguro de que quieres borrar todo el cartel y empezar de cero?');
+            if (confirmar) {
+                mainContent.innerHTML = '';
+                document.getElementById('date-text').textContent = '';
+                localStorage.removeItem('nvaAppSavedState');
+
+                createNewCard();
+                saveAppState();
+
+                updateAddFirstButtonVisibility();
+            }
+        });
+
+        // PREPARAR TARJETAS PARA CAPTURA
+        async function prepareCardsForCapture() {
+            const promises = [];
+            document.querySelectorAll('.match-card-container').forEach(card => {
+                const cardBg = card.querySelector('.card-bg');
+                const cardOutline = card.querySelector('.card-outline');
+                
+                const p = new Promise((resolve) => {
+                    const imgBg = new Image();
+                    const imgOutline = new Image();
+                    imgBg.crossOrigin = "anonymous";
+                    imgOutline.crossOrigin = "anonymous";
+
+                    let loadedCount = 0;
+                    const onImageLoad = () => {
+                        loadedCount++;
+                        if (loadedCount === 2) {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = imgBg.naturalWidth || 1000;
+                            canvas.height = imgBg.naturalHeight || 444;
+                            const ctx = canvas.getContext('2d');
+                            
+                            ctx.drawImage(imgBg, 0, 0, canvas.width, canvas.height);
+                            ctx.globalCompositeOperation = 'multiply';
+                            ctx.globalAlpha = 0.8;
+                            ctx.drawImage(imgOutline, 0, 0, canvas.width, canvas.height);
+
+                            cardBg.dataset.tempCapturedSrc = cardBg.src;
+                            cardOutline.dataset.tempDisplay = cardOutline.style.display;
+
+                            cardBg.src = canvas.toDataURL('image/png');
+                            cardOutline.style.display = 'none';
+                            
+                            resolve();
+                        }
+                    };
+
+                    imgBg.onload = onImageLoad;
+                    imgOutline.onload = onImageLoad;
+                    imgBg.onerror = () => resolve();
+                    imgOutline.onerror = () => resolve();
+
+                    imgBg.src = cardBg.src;
+                    imgOutline.src = cardOutline.src;
+                });
+                promises.push(p);
+            });
+            await Promise.all(promises);
+        }
+
+        function restoreCardsAfterCapture() {
+            document.querySelectorAll('.match-card-container').forEach(card => {
+                const cardBg = card.querySelector('.card-bg');
+                const cardOutline = card.querySelector('.card-outline');
+                
+                if (cardBg.dataset.tempCapturedSrc) {
+                    cardBg.src = cardBg.dataset.tempCapturedSrc;
+                    delete cardBg.dataset.tempCapturedSrc;
+                }
+                if (cardOutline.dataset.tempDisplay !== undefined) {
+                    cardOutline.style.display = cardOutline.dataset.tempDisplay;
+                    delete cardOutline.dataset.tempDisplay;
+                }
+            });
+        }
+
+        // === EXPORTACIÓN JPG: SELECCIÓN DEL MODO ===
+        const jpgModeModal = document.getElementById('jpgModeModal');
+        const jpgModeAllBtn = document.getElementById('jpgModeAllBtn');
+        const jpgModeSeparateBtn = document.getElementById('jpgModeSeparateBtn');
+
+        // Al pulsar "DESCARGAR JPG" primero preguntamos el modo de exportación.
+        jpgButton.addEventListener('click', () => {
+            jpgModeModal.style.display = 'flex';
+        });
+
+        jpgModeAllBtn.addEventListener('click', async () => {
+            jpgModeModal.style.display = 'none';
+            await exportJpg('all');
+        });
+
+        jpgModeSeparateBtn.addEventListener('click', async () => {
+            jpgModeModal.style.display = 'none';
+            await exportJpg('separate');
+        });
+
+        // Agrupa las categorías del cartel para la exportación separada.
+        // JUVENIL y SENIOR se incluyen deliberadamente en el mismo JPG.
+        function getCategoryExportGroup(category) {
+            const normalized = String(category || '').trim().toUpperCase();
+            if (normalized.startsWith('INFANTIL')) return 'INFANTIL';
+            if (normalized.startsWith('CADETE')) return 'CADETE';
+            if (normalized.startsWith('JUVENIL') || normalized.startsWith('SENIOR')) return 'JUVENIL-SENIOR';
+            return null;
+        }
+
+        // Convierte un canvas en una descarga JPG.
+        function downloadCanvasAsJpg(canvas, filename) {
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL('image/jpeg', 0.95);
+            link.click();
+        }
+
+        // ==========================================================================
+        // GENERACIÓN AUTOMÁTICA DEL NOMBRE DEL ARCHIVO JPG
+        // Formato: "Resultados [fecha seleccionada] [Categoría].jpg"
+        //
+        // La fecha se obtiene directamente del texto que aparece en el encabezado
+        // del cartel. De este modo, si el usuario cambia el periodo seleccionado,
+        // el nombre de los JPG también cambia automáticamente.
+        // ==========================================================================
+        function getJpgFilename(category) {
+            const dateElement = document.getElementById('date-text');
+            let selectedDate = dateElement ? dateElement.textContent.trim() : '';
+
+            // Evitamos caracteres que Windows no permite en nombres de archivos.
+            // También convertimos varios espacios consecutivos en uno solo.
+            selectedDate = selectedDate
+                .replace(/[\\/:*?"<>|]/g, '-')
+                .replace(/\s+/g, ' ')
+                .trim();
+
+            // Si todavía no se ha seleccionado una fecha, utilizamos un texto
+            // neutro para que la descarga siga funcionando correctamente.
+            if (!selectedDate) selectedDate = 'Sin fecha';
+
+            // En el grupo JUVENIL-SENIOR mostramos el nombre de las dos categorías
+            // separado por un espacio, tal como solicita el formato del archivo.
+            const categoryLabel = category === 'JUVENIL-SENIOR'
+                ? 'JUVENIL SENIOR'
+                : String(category || 'TODO').trim();
+
+            return `Resultados ${selectedDate} ${categoryLabel}.jpg`;
+        }
+
+        // Captura el cartel completo o solamente las tarjetas del grupo indicado.
+        // El encabezado permanece siempre visible en las capturas separadas.
+        async function captureJpg(mode, groupName = '') {
+            const captureElement = document.getElementById('capture-area');
+            const cards = Array.from(document.querySelectorAll('.match-card-container'));
+
+            if (mode === 'all') {
+                return await html2canvas(captureElement, {
+                    backgroundColor: '#000000',
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true
+                });
+            }
+
+            const hiddenCards = [];
+            cards.forEach(card => {
+                const category = card.querySelector('.text-category')?.textContent || '';
+                if (getCategoryExportGroup(category) !== groupName) {
+                    hiddenCards.push(card);
+                    card.style.display = 'none';
+                }
+            });
+
+            if (hiddenCards.length === cards.length) {
+                hiddenCards.forEach(card => card.style.display = '');
+                return null;
+            }
+
+            try {
+                // Esperamos al reflow para que html2canvas no capture tarjetas ocultas.
+                await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 50)));
+
+                return await html2canvas(captureElement, {
+                    backgroundColor: '#000000',
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true
+                });
+            } finally {
+                // El cartel editable queda exactamente como estaba antes de capturar.
+                hiddenCards.forEach(card => card.style.display = '');
+            }
+        }
+
+        // Exportación principal: "TODO" genera un único JPG; "SEPARADO"
+        // genera hasta tres JPG, manteniendo el mismo encabezado/título.
+        async function exportJpg(mode) {
+            const originalText = jpgButton.innerHTML;
+            jpgButton.innerHTML = '⏳ PROCESANDO...';
+            jpgButton.style.pointerEvents = 'none';
+
+            const excelBar = document.getElementById('excel-loader-bar');
+            const topBar = document.getElementById('top-loader-bar');
+
+            try {
+                excelBar.style.display = 'none';
+                topBar.style.display = 'none';
+
+                // Conservamos la preparación original de fondos para las capturas.
+                await prepareCardsForCapture();
+
+                if (mode === 'all') {
+                    const canvas = await captureJpg('all');
+                    downloadCanvasAsJpg(canvas, getJpgFilename('TODO'));
+                    showToast('¡Imagen descargada con éxito!');
+                    return;
+                }
+
+                const groups = ['INFANTIL', 'CADETE', 'JUVENIL-SENIOR'];
+                let generated = 0;
+
+                for (const groupName of groups) {
+                    const canvas = await captureJpg('separate', groupName);
+                    if (!canvas) continue;
+
+                    downloadCanvasAsJpg(
+                        canvas,
+                        getJpgFilename(groupName)
+                    );
+                    generated++;
+
+                    // Pausa breve para que el navegador acepte las descargas consecutivas.
+                    await new Promise(resolve => setTimeout(resolve, 150));
+                }
+
+                if (generated > 0) {
+                    showToast(`¡${generated} JPG separado(s) descargado(s) con éxito!`);
+                } else {
+                    showToast('No hay tarjetas INFANTIL, CADETE, JUVENIL o SENIOR para exportar.', true);
+                }
+            } catch (err) {
+                console.error("Error html2canvas:", err);
+                showToast("Error al exportar. Comprueba los ficheros locales.", true);
+            } finally {
+                // Restauramos interfaz y fondos aunque la captura falle.
+                restoreCardsAfterCapture();
+                excelBar.style.display = 'flex';
+                topBar.style.display = 'flex';
+                jpgButton.innerHTML = originalText;
+                jpgButton.style.pointerEvents = 'auto';
+            }
+        }
+
+        // SISTEMA DE CARGA Y PROCESAMIENTO DE HISTORIAL DESDE TXT
+        // ==========================================================================
+        btnLoadHistory.addEventListener('click', () => {
+            txtFileInput.value = '';
+            txtFileInput.click();
+        });
+
+        txtFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                parseAndShowHistory(event.target.result);
+            };
+            reader.readAsText(file, 'UTF-8');
+        });
+
+        function parseAndShowHistory(txtContent) {
+            // Normalizar saltos de línea y separar bloques por líneas en blanco
+            const rawBlocks = txtContent.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split(/\n\s*\n/);
+            parsedHistoryGroups = [];
+
+            for (let block of rawBlocks) {
+                const lines = block.split('\n').map(l => l.trim()).filter(l => l !== '');
+                if (lines.length === 0) continue;
+
+                // Regla 1: La primera fila es la fecha
+                const dateStr = lines[0];
+                const matches = [];
+
+                // Regla 2: Filas siguientes con datos separados por "|"
+                // Formato: Equipo Casa | Equipo Visitante | Fecha Partido | Hora Partido | Campo | Categoria
+                for (let i = 1; i < lines.length; i++) {
+                    const parts = lines[i].split('|').map(p => p.trim());
+                    if (parts.length >= 2) {
+                        matches.push({
+                            homeTeam: parts[0] || '',
+                            awayTeam: parts[1] || '',
+                            matchDate: parts[2] || '',
+                            matchTime: parts[3] || '',
+                            venue: parts[4] || '',
+                            category: parts[parts.length - 1] || '' // Extrae el último valor de la fila (Categoría)
+                        });
+                    }
+                }
+
+                if (matches.length > 0) {
+                    parsedHistoryGroups.push({ date: dateStr, matches });
+                }
+
+                // Regla 3: Extraer solo los datos de las 5 primeras fechas
+                if (parsedHistoryGroups.length >= 5) break;
+            }
+
+            if (parsedHistoryGroups.length === 0) {
+                showToast("No se encontraron datos válidos en el archivo .txt", true);
+                return;
+            }
+
+            renderHistoryModal();
+        }
+
+        function renderHistoryModal() {
+            historyDatesContainer.innerHTML = '';
+            parsedHistoryGroups.forEach((group) => {
+                const btn = document.createElement('button');
+                btn.className = 'history-date-btn';
+                btn.innerHTML = `
+                    <span>📅 ${group.date}</span>
+                    <span class="history-date-badge">${group.matches.length} partido(s)</span>
+                `;
+                btn.addEventListener('click', () => {
+                    loadMatchesFromGroup(group);
+                    historyModal.style.display = 'none';
+                });
+                historyDatesContainer.appendChild(btn);
+            });
+            historyModal.style.display = 'flex';
+        }
+
+        function loadMatchesFromGroup(group) {
+            // Limpiar tarjetas del cartel actual
+            mainContent.innerHTML = '';
+
+            // Asignar fecha extraída al banner
+            document.getElementById('date-text').textContent = group.date.toLowerCase();
+            fitCalendarText();
+
+            // Crear recuadros para cada partido usando la función estándar
+            group.matches.forEach(match => {
+                createNewCard();
+                const card = mainContent.lastElementChild;
+                applyMatchDataToCard(card, match.homeTeam, match.awayTeam, match.category);
+            });
+
+            updateAddFirstButtonVisibility();
+            saveAppState();
+            showToast(`Cargados ${group.matches.length} partido(s) para la fecha seleccionada.`);
+        }
+
+        function applyMatchDataToCard(card, homeTeamName, awayTeamName, matchCategory = '') {
+            // Buscar coincidencia en bases de datos locales (Equipos NVA y Otros Equipos)
+            function findTeamData(teamName, matchCat = '') {
+                const search = teamName.trim().toUpperCase();
+                const catSearch = matchCat.trim().toUpperCase();
+
+                let found = null;
+                if (catSearch) {
+                    found = EQUIPOS_NVA_DATA.find(item => 
+                        (item.EQUIPO || item.equipo || '').toString().trim().toUpperCase() === search &&
+                        (item.CATEGORIA || item.categoria || '').toString().trim().toUpperCase() === catSearch
+                    );
+                }
+                if (!found) {
+                    found = EQUIPOS_NVA_DATA.find(item => (item.EQUIPO || item.equipo || '').toString().trim().toUpperCase() === search);
+                }
+                if (found) return { data: found, isNva: true };
+
+                if (catSearch) {
+                    found = OTROS_EQUIPOS_DATA.find(item => 
+                        (item.EQUIPO || item.equipo || '').toString().trim().toUpperCase() === search &&
+                        (item.CATEGORIA || item.categoria || '').toString().trim().toUpperCase() === catSearch
+                    );
+                }
+                if (!found) {
+                    found = OTROS_EQUIPOS_DATA.find(item => (item.EQUIPO || item.equipo || '').toString().trim().toUpperCase() === search);
+                }
+                if (found) return { data: found, isNva: false };
+
+                return null;
+            }
+
+            const homeMatch = findTeamData(homeTeamName, matchCategory);
+            const awayMatch = findTeamData(awayTeamName, matchCategory);
+
+            // 1. Asignar nombres
+            const homeSpan = card.querySelector('.team-home-container .team-inner-text');
+            const awaySpan = card.querySelector('.team-away-container .team-inner-text');
+            homeSpan.textContent = homeTeamName;
+            awaySpan.textContent = awayTeamName;
+
+            // 2. Asignar escudos / logos si existen
+            const homeBadgeImg = card.querySelector('.badge-home img');
+            if (homeMatch && homeMatch.data) {
+                const logoVal = homeMatch.data.LOGO || homeMatch.data.logo;
+                if (logoVal && String(logoVal).trim() !== "" && String(logoVal).trim() !== "NaN") {
+                    homeBadgeImg.src = `LOGOs/${logoVal}.png`;
+                    homeBadgeImg.style.display = 'block';
+                }
+            }
+
+            const awayBadgeImg = card.querySelector('.badge-away img');
+            if (awayMatch && awayMatch.data) {
+                const logoVal = awayMatch.data.LOGO || awayMatch.data.logo;
+                if (logoVal && String(logoVal).trim() !== "" && String(logoVal).trim() !== "NaN") {
+                    awayBadgeImg.src = `LOGOs/${logoVal}.png`;
+                    awayBadgeImg.style.display = 'block';
+                }
+            }
+
+            // 3. Aplicar categoría y color si es equipo NVA (o la categoría del historial)
+            const nvaTeamInfo = (homeMatch && homeMatch.isNva) ? homeMatch : ((awayMatch && awayMatch.isNva) ? awayMatch : null);
+            const categoryEl = card.querySelector('.text-category');
+            if (nvaTeamInfo && nvaTeamInfo.data) {
+                const categoryName = (nvaTeamInfo.data.CATEGORIA || nvaTeamInfo.data.categoria || matchCategory || '').toString().trim();
+                const colorCode = nvaTeamInfo.data.COLOR || nvaTeamInfo.data.color || '';
+
+                if (categoryName) categoryEl.textContent = categoryName;
+                if (colorCode) {
+                    const cardBg = card.querySelector('.card-bg');
+                    cardBg.dataset.appliedColor = colorCode;
+                    applyColorFilter(cardBg, colorCode);
+                }
+            } else if (matchCategory) {
+                categoryEl.textContent = matchCategory.trim();
+            }
+
+            // 4. Ajuste dinámico de dimensiones de texto
+            autoFitTeamText(card.querySelector('.team-home-container'), homeSpan);
+            autoFitTeamText(card.querySelector('.team-away-container'), awaySpan);
+        }
+
+        // ==========================================================================
+        // CARGA EXCEL Y FUNCIONES AUXILIARES
+        // ==========================================================================
+        function processWorkbook(workbook, sourceName) {
+            let nvaSheetName = "Equipos NVA";
+            let othersSheetName = "OTROS Equipos";
+
+            if (!workbook.Sheets[nvaSheetName]) nvaSheetName = workbook.SheetNames[0];
+            if (!workbook.Sheets[othersSheetName] && workbook.SheetNames.length > 1) othersSheetName = workbook.SheetNames[1];
+
+            let loadedNva = [];
+            let loadedOthers = [];
+
+            if (workbook.Sheets[nvaSheetName]) loadedNva = XLSX.utils.sheet_to_json(workbook.Sheets[nvaSheetName]);
+            if (workbook.Sheets[othersSheetName] && othersSheetName !== nvaSheetName) loadedOthers = XLSX.utils.sheet_to_json(workbook.Sheets[othersSheetName]);
+
+            if (loadedNva.length > 0 || loadedOthers.length > 0) {
+                if (loadedNva.length > 0) EQUIPOS_NVA_DATA = loadedNva;
+                if (loadedOthers.length > 0) OTROS_EQUIPOS_DATA = loadedOthers;
+
+                renderTeamModalList();
+                showToast(`Excel actualizado con éxito desde '${sourceName}'.`);
+                return true;
+            } else {
+                showToast("El archivo Excel está vacío o no es válido.", true);
+                return false;
+            }
+        }
+
+        async function tryAutoLoadExcel() {
+            const fileNames = ["DATOS.xls", "DATOS.xlsx", "Datos.xls", "Datos.xlsx"];
+            for (let fileName of fileNames) {
+                try {
+                    const response = await fetch(fileName);
+                    if (!response.ok) continue;
+                    const arrayBuffer = await response.arrayBuffer();
+                    const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+                    if (processWorkbook(workbook, fileName)) return;
+                } catch (err) {}
+            }
+        }
+
+        function fitCalendarText() {
+            if (!dateText.textContent) return;
+            dateText.style.transform = 'none';
+            const targetHeight = textContainer.clientHeight * 0.78;
+            dateText.style.fontSize = `${targetHeight}px`;
+
+            const availableWidth = textContainer.clientWidth;
+            const naturalTextWidth = dateText.offsetWidth;
+
+            if (naturalTextWidth > 0 && availableWidth > 0) {
+                const scaleX = Math.min(1, availableWidth / naturalTextWidth);
+                dateText.style.transform = scaleX < 1 ? `scaleX(${scaleX})` : 'none';
+            }
+        }
+
+        function renderCalendar() {
+            const year = calendarViewDate.getFullYear();
+            const month = calendarViewDate.getMonth();
+
+            calendarMonthTitle.textContent = `${MONTH_NAMES[month]} ${year}`;
+            calendarDaysGrid.innerHTML = '';
+
+            const firstDayOfMonth = new Date(year, month, 1);
+            let startDayOfWeek = firstDayOfMonth.getDay(); 
+            startDayOfWeek = (startDayOfWeek === 0) ? 6 : startDayOfWeek - 1;
+
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            for (let i = 0; i < startDayOfWeek; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'calendar-day empty';
+                calendarDaysGrid.appendChild(emptyCell);
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayCell = document.createElement('div');
+                dayCell.className = 'calendar-day';
+                dayCell.textContent = day;
+
+                const currentDate = new Date(year, month, day);
+                const timeVal = currentDate.getTime();
+
+                let isStart = selectedStartDate && timeVal === selectedStartDate.getTime();
+                let isEnd = selectedEndDate && timeVal === selectedEndDate.getTime();
+                let isInRange = selectedStartDate && selectedEndDate && timeVal > selectedStartDate.getTime() && timeVal < selectedEndDate.getTime();
+
+                if (isStart || isEnd) dayCell.classList.add('selected');
+                else if (isInRange) dayCell.classList.add('in-range');
+
+                dayCell.addEventListener('click', () => handleDateClick(currentDate));
+                calendarDaysGrid.appendChild(dayCell);
+            }
+
+            updateCalendarInfoAndButton();
+        }
+
+        function handleDateClick(date) {
+            if (!selectedStartDate || (selectedStartDate && selectedEndDate)) {
+                selectedStartDate = date;
+                selectedEndDate = null;
+            } else if (selectedStartDate && !selectedEndDate) {
+                if (date.getTime() < selectedStartDate.getTime()) selectedStartDate = date;
+                else selectedEndDate = date;
+            }
+            renderCalendar();
+        }
+
+        function updateCalendarInfoAndButton() {
+            if (selectedStartDate && selectedEndDate) {
+                calendarInfoText.textContent = `Seleccionado: ${selectedStartDate.getDate()} ${MONTH_NAMES[selectedStartDate.getMonth()]} al ${selectedEndDate.getDate()} ${MONTH_NAMES[selectedEndDate.getMonth()]}`;
+                applyCalendarButton.disabled = false; applyCalendarButton.style.opacity = '1'; applyCalendarButton.style.cursor = 'pointer';
+            } else if (selectedStartDate) {
+                calendarInfoText.textContent = `Inicio seleccionado. Selecciona la fecha final.`;
+                applyCalendarButton.disabled = true; applyCalendarButton.style.opacity = '0.5'; applyCalendarButton.style.cursor = 'not-allowed';
+            } else {
+                calendarInfoText.textContent = `Haz clic en el día de inicio`;
+                applyCalendarButton.disabled = true; applyCalendarButton.style.opacity = '0.5'; applyCalendarButton.style.cursor = 'not-allowed';
+            }
+        }
+
+        prevMonthBtn.addEventListener('click', () => { calendarViewDate.setMonth(calendarViewDate.getMonth() - 1); renderCalendar(); });
+        nextMonthBtn.addEventListener('click', () => { calendarViewDate.setMonth(calendarViewDate.getMonth() + 1); renderCalendar(); });
+
+        calendarArea.addEventListener('click', () => {
+            calendarViewDate = new Date(); selectedStartDate = null; selectedEndDate = null;
+            renderCalendar(); calendarModal.style.display = 'flex';
+        });
+
+        applyCalendarButton.addEventListener('click', () => {
+            if (!selectedStartDate || !selectedEndDate) return;
+            const rawString = `del ${selectedStartDate.getDate()} de ${MONTH_NAMES[selectedStartDate.getMonth()]} al ${selectedEndDate.getDate()} de ${MONTH_NAMES[selectedEndDate.getMonth()]} del ${selectedEndDate.getFullYear()}`;
+            dateText.textContent = rawString.toLowerCase();
+            fitCalendarText();
+            calendarModal.style.display = 'none';
+            saveAppState(); 
+        });
+
+        function updateMatchGlow(card) {
+            const scoreHomeContainer = card.querySelector('.text-score-home');
+            const scoreAwayContainer = card.querySelector('.text-score-away');
+            const scoreHomeSpan = scoreHomeContainer.querySelector('.score-inner-text');
+            const scoreAwaySpan = scoreAwayContainer.querySelector('.score-inner-text');
+            const teamHomeSpan = card.querySelector('.team-home-container .team-inner-text');
+            const teamAwaySpan = card.querySelector('.team-away-container .team-inner-text');
+            const logoHomeEl = card.querySelector('.badge-home img');
+            const logoAwayEl = card.querySelector('.badge-away img');
+
+            const scoreHome = parseInt(scoreHomeSpan.textContent) || 0;
+            const scoreAway = parseInt(scoreAwaySpan.textContent) || 0;
+
+            [scoreHomeSpan, scoreAwaySpan, teamHomeSpan, teamAwaySpan].forEach(el => { 
+                if (el) el.classList.remove('glow-winner', 'glow-loser'); 
+            });
+            [logoHomeEl, logoAwayEl].forEach(el => { 
+                if (el) el.classList.remove('glow-winner-img', 'glow-loser-img'); 
+            });
+
+            if (scoreHome > scoreAway) {
+                scoreHomeSpan.classList.add('glow-winner'); 
+                teamHomeSpan.classList.add('glow-winner');
+                if (logoHomeEl) logoHomeEl.classList.add('glow-winner-img');
+
+                scoreAwaySpan.classList.add('glow-loser'); 
+                teamAwaySpan.classList.add('glow-loser');
+                if (logoAwayEl) logoAwayEl.classList.add('glow-loser-img');
+            } else if (scoreAway > scoreHome) {
+                scoreAwaySpan.classList.add('glow-winner'); 
+                teamAwaySpan.classList.add('glow-winner');
+                if (logoAwayEl) logoAwayEl.classList.add('glow-winner-img');
+
+                scoreHomeSpan.classList.add('glow-loser'); 
+                teamHomeSpan.classList.add('glow-loser');
+                if (logoHomeEl) logoHomeEl.classList.add('glow-loser-img');
+            }
+        }
+
+        document.querySelectorAll('.score-option-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (currentScoreContainer) {
+                    const span = currentScoreContainer.querySelector('.score-inner-text');
+                    if (span) span.textContent = btn.getAttribute('data-value');
+                    
+                    autoFitScoreText(currentScoreContainer);
+
+                    const activeCard = currentScoreContainer.closest('.match-card-container');
+                    if (activeCard) updateMatchGlow(activeCard);
+                    saveAppState(); 
+                }
+                scoreModal.style.display = 'none';
+                currentScoreContainer = null;
+            });
+        });
+
+        function applyColorFilter(cardBg, colorCode) {
+            if (!colorCode || String(colorCode).trim() === '') return;
+            const cleanHex = String(colorCode).replace('#', '').trim();
+            if (cleanHex.length !== 6) return;
+
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.src = "Imagenes/Cuadro BASE.png"; 
+            
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth || 1000;
+                canvas.height = img.naturalHeight || 444;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                ctx.globalCompositeOperation = 'source-in';
+                ctx.fillStyle = '#' + cleanHex;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.globalCompositeOperation = 'source-over';
+                cardBg.src = canvas.toDataURL('image/png');
+                cardBg.style.filter = 'none'; 
+            };
+        }
+
+        function autoFitTeamText(container, span) {
+            span.style.transform = 'none';
+            const contWidth = container.clientWidth;
+            const contHeight = container.clientHeight;
+            if (contWidth === 0 || contHeight === 0) return;
+
+            const baseFontSize = contHeight * 0.38;
+            span.style.fontSize = `${baseFontSize}px`;
+
+            const textWidth = span.scrollWidth;
+            const textHeight = span.scrollHeight;
+
+            const scaleX = Math.min(1, contWidth / textWidth);
+            const scaleY = Math.min(1, contHeight / textHeight);
+
+            if (scaleX < 1 || scaleY < 1) span.style.transform = `scale(${scaleX}, ${scaleY})`;
+        }
+
+        function refreshAllTeamTexts() {
+            document.querySelectorAll('.match-card-container').forEach(card => {
+                const homeScoreBox = card.querySelector('.text-score-home');
+                const awayScoreBox = card.querySelector('.text-score-away');
+
+                autoFitTeamText(card.querySelector('.team-home-container'), card.querySelector('.team-home-container .team-inner-text'));
+                autoFitTeamText(card.querySelector('.team-away-container'), card.querySelector('.team-away-container .team-inner-text'));
+                
+                if (homeScoreBox) autoFitScoreText(homeScoreBox);
+                if (awayScoreBox) autoFitScoreText(awayScoreBox);
+            });
+        }
+
+        window.addEventListener('resize', () => { fitCalendarText(); refreshAllTeamTexts(); });
+
+        tabNvaBtn.addEventListener('click', () => { activeModalTab = 'nva'; tabNvaBtn.classList.add('active'); tabOthersBtn.classList.remove('active'); renderTeamModalList(); });
+        tabOthersBtn.addEventListener('click', () => { activeModalTab = 'others'; tabOthersBtn.classList.add('active'); tabNvaBtn.classList.remove('active'); renderTeamModalList(); });
+
+        function renderTeamModalList() {
+            teamListContainer.innerHTML = '';
+            let dataset = [];
+
+            if (activeModalTab === 'nva') {
+                dataset = [...EQUIPOS_NVA_DATA];
+            } else {
+                let currentCategory = "";
+                if (currentActiveCard) {
+                    const catEl = currentActiveCard.querySelector('.text-category');
+                    if (catEl) currentCategory = catEl.textContent.trim().toUpperCase();
+                }
+
+                if (currentCategory) {
+                    const matchingTeams = OTROS_EQUIPOS_DATA.filter(item => (item.CATEGORIA || item.categoria || '').toString().trim().toUpperCase() === currentCategory)
+                        .sort((a, b) => (a.EQUIPO || a.equipo || '').toString().toUpperCase().localeCompare((b.EQUIPO || b.equipo || '').toString().toUpperCase(), 'es'));
+                    const remainingTeams = OTROS_EQUIPOS_DATA.filter(item => (item.CATEGORIA || item.categoria || '').toString().trim().toUpperCase() !== currentCategory)
+                        .sort((a, b) => (a.EQUIPO || a.equipo || '').toString().toUpperCase().localeCompare((b.EQUIPO || b.equipo || '').toString().toUpperCase(), 'es'));
+                    dataset = [...matchingTeams, ...remainingTeams];
+                } else {
+                    dataset = [...OTROS_EQUIPOS_DATA].sort((a, b) => (a.EQUIPO || a.equipo || '').toString().toUpperCase().localeCompare((b.EQUIPO || b.equipo || '').toString().toUpperCase(), 'es'));
+                }
+            }
+
+            if (dataset.length === 0) {
+                teamListContainer.innerHTML = `<div style="color: #888; font-size: 13px; text-align: center; padding: 20px;">No hay equipos cargados en esta categoría.</div>`;
+                return;
+            }
+
+            dataset.forEach((item) => {
+                const btn = document.createElement('div');
+                btn.className = 'team-option-btn';
+                
+                const logoVal = item.LOGO || item.logo || '';
+                let teamName = item.EQUIPO || item.equipo || '';
+                const categoryName = (item.CATEGORIA || item.categoria || '').toString().trim();
+                const colorCode = item.COLOR || item.color || '';
+
+                const logoPreview = (logoVal && String(logoVal).trim() !== "NaN") 
+                    ? `<img src="LOGOs/${logoVal}.png" style="width:20px; height:20px; object-fit:contain; vertical-align:middle; margin-right:6px;" alt="Logo">` 
+                    : `<span style="color:#666; font-size:11px; margin-right:6px;">[Sin Logo]</span>`;
+
+                if (activeModalTab === 'nva') {
+                    const subtitle = categoryName ? ` - <span style="color:#ccc;">${categoryName}</span>` : '';
+                    btn.innerHTML = `<div style="display:flex; align-items:center; overflow:hidden; text-overflow:ellipsis;">${logoPreview} <b style="margin-right:6px;">${teamName}</b>${subtitle}</div>`;
+                } else {
+                    let currentCategory = "";
+                    if (currentActiveCard) {
+                        const catEl = currentActiveCard.querySelector('.text-category');
+                        if (catEl) currentCategory = catEl.textContent.trim().toUpperCase();
+                    }
+                    const isMatchingCategory = currentCategory && categoryName.toUpperCase() === currentCategory;
+                    const textStyle = isMatchingCategory ? "color: var(--nva-success); text-shadow: 0 0 8px rgba(0,255,102,0.4);" : "";
+                    btn.innerHTML = `<div style="display:flex; align-items:center; overflow:hidden; text-overflow:ellipsis;">${logoPreview} <b style="margin-right:6px; ${textStyle}">${teamName}</b></div>`;
+                }
+                
+                btn.addEventListener('click', () => {
+                    if (!currentActiveCard) return;
+
+                    if (!categoryName) {
+                        const newName = prompt("Este equipo no tiene categoría asignada. Puedes modificar su nombre antes de insertarlo:", teamName);
+                        if (newName === null) return; 
+                        if (newName.trim() !== "") teamName = newName.trim();
+                    }
+
+                    const cardBg = currentActiveCard.querySelector('.card-bg');
+                    const categoryEl = currentActiveCard.querySelector('.text-category');
+                    const targetCont = currentActiveCard.querySelector(currentTargetSide === 'home' ? '.team-home-container' : '.team-away-container');
+                    const targetSpan = targetCont.querySelector('.team-inner-text');
+                    const targetBadgeImg = currentActiveCard.querySelector(currentTargetSide === 'home' ? '.badge-home img' : '.badge-away img');
+
+                    targetSpan.textContent = teamName;
+                    autoFitTeamText(targetCont, targetSpan);
+
+                    if (logoVal && String(logoVal).trim() !== "" && String(logoVal).trim() !== "NaN") {
+                        targetBadgeImg.src = `LOGOs/${logoVal}.png`;
+                        targetBadgeImg.style.display = 'block';
+                    } else {
+                        targetBadgeImg.style.display = 'none';
+                    }
+
+                    if (activeModalTab === 'nva') {
+                        categoryEl.textContent = categoryName;
+                        if (colorCode) {
+                            applyColorFilter(cardBg, colorCode);
+                            cardBg.dataset.appliedColor = colorCode; 
+                        }
+                    }
+
+                    teamPickerModal.style.display = 'none';
+                    saveAppState(); 
+                });
+                teamListContainer.appendChild(btn);
+            });
+        }
+
+        applyCustomTeamBtn.addEventListener('click', () => {
+            const val = customTeamInput.value.trim();
+            if (val && currentActiveCard) {
+                const targetCont = currentActiveCard.querySelector(currentTargetSide === 'home' ? '.team-home-container' : '.team-away-container');
+                const targetSpan = targetCont.querySelector('.team-inner-text');
+                targetSpan.textContent = val;
+                autoFitTeamText(targetCont, targetSpan);
+                saveAppState(); 
+            }
+            teamPickerModal.style.display = 'none';
+            customTeamInput.value = '';
+        });
+
+        // ==========================================================================
+        // FABRICACIÓN Y GESTIÓN DE RECUADROS DE PARTIDO
+        // ==========================================================================
+        function createNewCard(insertAfterElement = null) {
+            const clone = cardTemplate.content.cloneNode(true);
+            const cardContainer = clone.querySelector('.match-card-container');
+            const deleteBtn = clone.querySelector('.btn-delete-card');
+            const addBelowBtn = clone.querySelector('.btn-add-card-below');
+            const homeCont = clone.querySelector('.team-home-container');
+            const awayCont = clone.querySelector('.team-away-container');
+            const homeSpan = homeCont.querySelector('.team-inner-text');
+            const awaySpan = awayCont.querySelector('.team-inner-text');
+            const scoreHomeBox = clone.querySelector('.text-score-home');
+            const scoreAwayBox = clone.querySelector('.text-score-away');
+            
+            const photoLayer = clone.querySelector('.card-photo-layer');
+            const photoInput = photoLayer.querySelector('input[type="file"]');
+            const photoImg = photoLayer.querySelector('.photo-img');
+            const photoPlaceholder = photoLayer.querySelector('.photo-placeholder');
+
+            const cardBg = clone.querySelector('.card-bg');
+            cardBg.dataset.appliedColor = 'FFFFFF';
+            applyColorFilter(cardBg, 'FFFFFF');
+
+            // --- VARIABLES DE GESTOS E IMAGEN ---
+            let imgScale = 1, imgTranslateX = 0, imgTranslateY = 0;
+            let isDraggingImg = false;
+            let dragStartX = 0, dragStartY = 0;
+            let initialPinchDistance = null;
+            let initialScale = 1;
+
+            function updateImgTransform() { 
+                photoImg.style.transform = `translate(${imgTranslateX}px, ${imgTranslateY}px) scale(${imgScale})`; 
+            }
+
+            function getDistance(touch1, touch2) {
+                return Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
+            }
+
+            // --- GESTOS TÁCTILES INSTANTÁNEOS ---
+            photoImg.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 2) {
+                    e.preventDefault();
+                    isDraggingImg = false;
+                    initialPinchDistance = getDistance(e.touches[0], e.touches[1]);
+                    initialScale = imgScale;
+                } else if (e.touches.length === 1) {
+                    e.preventDefault();
+                    isDraggingImg = true;
+                    dragStartX = e.touches[0].clientX - imgTranslateX;
+                    dragStartY = e.touches[0].clientY - imgTranslateY;
+                }
+            }, { passive: false });
+
+            photoImg.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 2) {
+                    e.preventDefault();
+                    if (initialPinchDistance) {
+                        const currentDistance = getDistance(e.touches[0], e.touches[1]);
+                        const scaleDiff = currentDistance / initialPinchDistance;
+                        imgScale = Math.max(0.05, initialScale * scaleDiff);
+                        updateImgTransform();
+                    }
+                } else if (e.touches.length === 1 && isDraggingImg) {
+                    e.preventDefault();
+                    imgTranslateX = e.touches[0].clientX - dragStartX;
+                    imgTranslateY = e.touches[0].clientY - dragStartY;
+                    updateImgTransform();
+                }
+            }, { passive: false });
+
+            photoImg.addEventListener('touchend', () => {
+                initialPinchDistance = null;
+                isDraggingImg = false;
+            });
+
+            // --- GESTOS DE RATÓN INSTANTÁNEOS ---
+            photoImg.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomIntensity = 0.1;
+                if (e.deltaY < 0) imgScale += zoomIntensity;
+                else imgScale = Math.max(0.05, imgScale - zoomIntensity);
+                updateImgTransform();
+            }, { passive: false });
+
+            photoImg.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                isDraggingImg = true;
+                dragStartX = e.clientX - imgTranslateX;
+                dragStartY = e.clientY - imgTranslateY;
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (isDraggingImg) {
+                    e.preventDefault();
+                    imgTranslateX = e.clientX - dragStartX;
+                    imgTranslateY = e.clientY - dragStartY;
+                    updateImgTransform();
+                }
+            });
+
+            window.addEventListener('mouseup', () => {
+                if (isDraggingImg) {
+                    isDraggingImg = false;
+                }
+            });
+
+            homeCont.style.left = `${CONFIG_AREA.homeLeft}%`; homeCont.style.width = `${CONFIG_AREA.homeWidth}%`; homeCont.style.height = `${CONFIG_AREA.height}%`; homeCont.style.bottom = `${CONFIG_AREA.bottomOffset}%`;
+            awayCont.style.left = `${CONFIG_AREA.awayLeft}%`; awayCont.style.width = `${CONFIG_AREA.awayWidth}%`; awayCont.style.height = `${CONFIG_AREA.height}%`; awayCont.style.bottom = `${CONFIG_AREA.bottomOffset}%`;
+
+            homeCont.addEventListener('click', () => {
+                currentActiveCard = cardContainer; currentTargetSide = 'home'; modalTeamTitle.textContent = 'Seleccionar Equipo de Casa';
+                const isHomeDefault = homeSpan.textContent.trim().toUpperCase() === 'HOME';
+                const isAwayDefault = awaySpan.textContent.trim().toUpperCase() === 'VISIT';
+                if (isHomeDefault && isAwayDefault) { activeModalTab = 'nva'; tabNvaBtn.classList.add('active'); tabOthersBtn.classList.remove('active'); }
+                else { activeModalTab = 'others'; tabOthersBtn.classList.add('active'); tabNvaBtn.classList.remove('active'); }
+                teamPickerModal.style.display = 'flex'; renderTeamModalList();
+            });
+
+            awayCont.addEventListener('click', () => {
+                currentActiveCard = cardContainer; currentTargetSide = 'away'; modalTeamTitle.textContent = 'Seleccionar Equipo de Visita';
+                const isHomeDefault = homeSpan.textContent.trim().toUpperCase() === 'HOME';
+                const isAwayDefault = awaySpan.textContent.trim().toUpperCase() === 'VISIT';
+                if (isHomeDefault && isAwayDefault) { activeModalTab = 'nva'; tabNvaBtn.classList.add('active'); tabOthersBtn.classList.remove('active'); } 
+                else { activeModalTab = 'others'; tabOthersBtn.classList.add('active'); tabNvaBtn.classList.remove('active'); }
+                teamPickerModal.style.display = 'flex'; renderTeamModalList();
+            });
+
+            scoreHomeBox.addEventListener('click', () => { currentScoreContainer = scoreHomeBox; scoreModalTitle.textContent = 'Seleccionar Tanteo Local'; scoreModal.style.display = 'flex'; });
+            scoreAwayBox.addEventListener('click', () => { currentScoreContainer = scoreAwayBox; scoreModalTitle.textContent = 'Seleccionar Tanteo Visitante'; scoreModal.style.display = 'flex'; });
+
+            deleteBtn.addEventListener('click', () => {
+                if (photoImg.src && !photoImg.src.endsWith(window.location.host + '/')) {
+                    photoImg.src = ''; 
+                }
+                cardContainer.remove();
+                updateAddFirstButtonVisibility();
+                saveAppState(); 
+            });
+
+            addBelowBtn.addEventListener('click', () => {
+                createNewCard(cardContainer);
+                saveAppState(); 
+            });
+
+            photoLayer.addEventListener('click', (e) => { if (e.target === photoLayer || e.target === photoPlaceholder) photoInput.click(); });
+            photoImg.addEventListener('dblclick', () => { photoInput.click(); });
+
+            photoInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        photoImg.src = event.target.result;
+                        photoImg.style.display = 'block';
+                        photoPlaceholder.style.display = 'none';
+                        imgScale = 1; imgTranslateX = 0; imgTranslateY = 0; updateImgTransform();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            if (insertAfterElement) insertAfterElement.after(cardContainer);
+            else mainContent.appendChild(cardContainer);
+
+            autoFitTeamText(homeCont, homeSpan);
+            autoFitTeamText(awayCont, awaySpan);
+            
+            autoFitScoreText(scoreHomeBox);
+            autoFitScoreText(scoreAwayBox);
+
+            cardContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            updateAddFirstButtonVisibility();
+        }
+
+        btnAddFirst.addEventListener('click', () => { createNewCard(); saveAppState(); });
+
+        // Cierre de ventanas modales haciendo clic fuera
+        window.addEventListener('click', (e) => {
+            if (e.target === calendarModal) calendarModal.style.display = 'none';
+            if (e.target === teamPickerModal) teamPickerModal.style.display = 'none';
+            if (e.target === scoreModal) { scoreModal.style.display = 'none'; currentScoreContainer = null; }
+            if (e.target === historyModal) historyModal.style.display = 'none';
+            if (e.target === jpgModeModal) jpgModeModal.style.display = 'none';
+        });
+
+        // === INICIALIZACIÓN DE LA APLICACIÓN ===
+        renderTeamModalList();
+        tryAutoLoadExcel();
+
+        if (!loadAppState()) {
+            createNewCard();
+        } else {
+            // Forzar el reajuste de textos una vez que el navegador ha calculated el layout/geometría
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    fitCalendarText();
+                    refreshAllTeamTexts();
+                }, 150);
+            });
+        }
+    </script>
+</body>
+</html>

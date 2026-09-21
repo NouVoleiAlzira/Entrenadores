@@ -1,0 +1,2641 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#000000">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="format-detection" content="telephone=no">
+    <title>Nou Volei Alzira - Selección de Equipos</title>
+    <!-- Librería SheetJS (XLSX) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Librería html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        /*
+         * ================================================================
+         * ESTILOS GENERALES Y COMPONENTES DE LA APLICACIÓN
+         * ================================================================
+         * La página está diseñada para funcionar tanto en escritorio como
+         * en móvil. Los recuadros de partidos usan tamaños relativos para
+         * conservar su proporción al cambiar el ancho de pantalla.
+         */
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        html {
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overscroll-behavior-y: none;
+        }
+        button, [onclick], .cal-cell:not(.empty), .campo-editable-info, .nombre-equipo.campo-editable, .header-hotspot-calendario {
+            touch-action: manipulation;
+        }
+        body.modal-abierto {
+            overflow: hidden;
+        }
+        
+        .header-container {
+            position: relative;
+            width: 100%;
+            cursor: default;
+            background-color: #000;
+            display: block;
+        }
+        
+        .header-img {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: contain;
+        }
+
+        .header-hotspot-calendario {
+            position: absolute;
+            top: 70%;
+            left: 54.5%;
+            width: 4.5%;
+            height: 20%;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        .header-texto-fecha {
+            position: absolute;
+            top: 70%;
+            left: 59%;
+            width: 36%;
+            height: auto;
+            color: #ffffff;
+            font-size: 2.5vw;
+            font-size: 2.5cqw;
+            font-weight: 600;
+            font-style: normal !important;
+            font-family: Arial, Helvetica, sans-serif;
+            text-transform: uppercase;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 15;
+            text-shadow: 2px 2px 6px rgba(0,0,0,0.9);
+            padding-left: 1vw;
+            padding-left: 1cqw;
+            padding-right: 1vw;
+            padding-right: 1cqw;
+            display: flex;
+            align-items: center;
+            overflow: visible;
+        }
+
+        .header-texto-fecha span {
+            display: inline-block;
+            white-space: nowrap;
+            transform-origin: left center;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #1a1a1a;
+            width: 92%;
+            max-width: 850px;
+            max-height: 85vh;
+            border: 2px solid #444;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.9);
+        }
+
+        .modal-header {
+            background-color: #242424;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #444;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.4em;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .header-botones {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-aceptar {
+            background-color: #0056b3;
+            color: white;
+            border: none;
+            padding: 8px 22px;
+            font-size: 1em;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+            .btn-aceptar:hover {
+                background-color: #004494;
+            }
+        }
+
+        .btn-reset {
+            background-color: #c82333;
+            color: white;
+            border: none;
+            padding: 8px 18px;
+            font-size: 1em;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+            .btn-reset:hover {
+                background-color: #a71d2a;
+            }
+        }
+
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+        }
+
+        /* Selector de Rango de Calendario */
+        .date-range-modal-content {
+            background-color: #181818;
+            border: 2px solid #00b0f0;
+            border-radius: 12px;
+            padding: 20px;
+            width: 90%;
+            max-width: 420px;
+            box-shadow: 0 10px 35px rgba(0, 176, 240, 0.2);
+            color: #fff;
+        }
+
+        .cal-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .cal-nav button {
+            background: #242424;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+            .cal-nav button:hover {
+                background: #00b0f0;
+                border-color: #00b0f0;
+            }
+        }
+
+        .cal-nav span {
+            font-size: 1.2em;
+            font-weight: bold;
+            text-transform: capitalize;
+        }
+
+        .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            text-align: center;
+        }
+
+        .cal-day-name {
+            font-weight: bold;
+            color: #00b0f0;
+            padding: 8px 0;
+            font-size: 0.85em;
+        }
+
+        .cal-cell {
+            padding: 10px 0;
+            background: #222;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.95em;
+            transition: background 0.15s, color 0.15s;
+            user-select: none;
+        }
+
+        .cal-cell.empty {
+            background: transparent;
+            cursor: default;
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+            .cal-cell:not(.empty):hover {
+                background: #333;
+                color: #00b0f0;
+            }
+        }
+
+        .cal-cell.selected-endpoint {
+            background: #00b0f0 !important;
+            color: #000 !important;
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(0, 176, 240, 0.6);
+        }
+
+        .cal-cell.in-range {
+            background: rgba(0, 176, 240, 0.28) !important;
+            color: #ffffff !important;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            color: #fff;
+            table-layout: auto;
+        }
+
+        th {
+            background-color: #2a2a2a;
+            padding: 14px 10px;
+            text-align: left;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            font-weight: 600;
+            border-bottom: 2px solid #444;
+        }
+
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #333;
+            vertical-align: middle;
+        }
+        
+        .team-icon {
+            width: 45px;
+            height: 45px;
+            object-fit: contain;
+            background: transparent;
+            padding: 2px;
+        }
+
+        .btn-casa, .btn-fuera {
+            background-color: #2a2a2a;
+            color: #ccc;
+            border: 2px solid #444;
+            padding: 6px 14px;
+            margin-right: 4px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+            .btn-casa:hover { background-color: #1e7e34; border-color: #1e7e34; color: #fff; }
+            .btn-fuera:hover { background-color: #bd2130; border-color: #bd2130; color: #fff; }
+        }
+
+        /* Sombreados de fila seleccionada más tenues */
+        tr.selected-casa { background-color: rgba(40, 167, 69, 0.08); }
+        tr.selected-casa .btn-casa { background-color: #28a745; border-color: #28a745; color: #fff; }
+
+        tr.selected-fuera { background-color: rgba(220, 53, 69, 0.08); }
+        tr.selected-fuera .btn-fuera { background-color: #dc3545; border-color: #dc3545; color: #fff; }
+        
+        .acciones-td { white-space: nowrap; }
+
+        .aviso-datos {
+            background: #18222c;
+            border-left: 4px solid #00bfff;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+            color: #bce8ff;
+            border-radius: 4px;
+        }
+
+        /* Recuadros de partido */
+        #contenedorRecuadros {
+            width: 100%;
+            padding-top: 1vh;
+            padding-bottom: 3vh;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5vh;
+        }
+
+        .recuadro-partido {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 100 / 16.23;
+            container-type: inline-size;
+            overflow: hidden;
+        }
+
+        .recuadro-partido .capa-fondo {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: fill;
+            display: block;
+        }
+
+        .recuadro-partido .capa-borde {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            -webkit-mask-image: var(--mask-img);
+            mask-image: var(--mask-img);
+            -webkit-mask-size: 100% 100%;
+            mask-size: 100% 100%;
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+            background-color: var(--color-equipo, #00b0f0);
+            pointer-events: none;
+        }
+
+        /*
+         * CATEGORÍA VERTICAL
+         * ------------------
+         * En pantalla se mantiene la rotación CSS original. El problema aparecía
+         * al rasterizar con html2canvas: algunas versiones/navegadores no reproducen
+         * de forma fiable la transformación de texto rotado.
+         *
+         * La corrección definitiva se aplica SOLO durante la captura (ver
+         * prepararCategoriasParaCaptura()). La interfaz normal sigue usando esta regla.
+         */
+        .texto-categoria-vertical {
+            position: absolute;
+            top: 0;
+            left: 0.2%;
+            width: 6.5%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000000;
+            font-weight: 800;
+            font-style: italic;
+            text-transform: uppercase;
+            font-size: 2.2cqw;
+
+            /* Rotación visual de la categoría en la página */
+            transform: rotate(270deg);
+            transform-origin: center center;
+            white-space: nowrap;
+
+            z-index: 5;
+            pointer-events: none;
+            user-select: none;
+            text-shadow: 0.05em 0.05em 0.2em rgba(255,255,255,0.9);
+        }
+        /*----------------------------------------------------------------------------------------------------------------------------------------------------------*/
+        .contenido-recuadro {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .area-equipo-izq {
+            position: absolute;
+            top: 10%;
+            left: 6.5%;
+            width: 17.5%;
+            height: 80%;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            overflow: visible;
+        }
+
+        .area-logo-izq {
+            position: absolute;
+            top: 13%;
+            right:66.5%; /*left: 24.5%;*/
+            width: 11%; /*width: 9%;*/
+            height: 74%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .area-logo-der {
+            position: absolute;
+            top: 13%;
+            left: 37.5%;
+            width: 11%;
+            height: 74%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .area-equipo-der {
+            position: absolute;
+            top: 10%;
+            left: 47%;
+            width: 17.5%;
+            height: 80%;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            overflow: visible;
+        }
+
+        .area-info {
+            position: absolute;
+            top: 10%;
+            left: 66%;
+            width: 31%;
+            height: 80%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 1vw;
+            gap: 1cqw;
+            padding-left: 1vw;
+            padding-left: 1cqw;
+            padding-right: 1vw;
+            padding-right: 1cqw;
+        }
+
+        .logo-img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            background: transparent;
+        }
+
+        .nombre-equipo {
+            font-weight: 750;
+            font-style: italic;
+            text-transform: uppercase;
+            font-size: 2.3cqw;
+            line-height: 0.95;
+            color: #ffffff;
+            white-space: normal; 
+            word-break: normal;
+            display: block;
+            width: 100%;
+            max-height: 100%;
+            justify-content: flex-end;
+            overflow: visible;
+            padding: 0.2em 0.3em !important; /* Ligeramente más ancho a los lados */
+            box-sizing: content-box;
+        }
+
+        .area-equipo-izq .nombre-equipo {
+            text-align: right;
+        }
+
+        .area-equipo-der .nombre-equipo {
+            text-align: left;
+        }
+
+        .nombre-equipo.campo-editable {
+            cursor: pointer;
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .nombre-equipo.campo-editable:hover {
+                color: #00b0f0;
+            }
+        }
+        .nombre-equipo.vacio {
+            color: #999;
+        }
+
+        .contenedor-item-info {
+            position: relative;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .campo-editable-info {
+            font-weight: 750;
+            font-style: italic;
+            text-transform: uppercase;
+            color: #fff;
+            font-size: 3vw;
+            font-size: 3cqw;
+            line-height: 1;
+            outline: none;
+            cursor: pointer;
+            white-space: nowrap;
+            display: inline-block;
+            transform-origin: left center;
+            width: auto;
+        }
+        .campo-editable-info.editable-texto {
+            cursor: text;
+        }
+        .campo-editable-info:focus {
+            color: #00b0f0;
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .campo-editable-info:hover {
+                color: #00b0f0;
+            }
+        }
+        .campo-editable-info.vacio {
+            color: #888;
+        }
+
+        .input-picker-oculto {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            pointer-events: none;
+            z-index: -1;
+            font-size: 16px;
+        }
+
+        .oculto-temporal-captura {
+            visibility: hidden !important;
+        }
+
+        .btn-captura-pagina {
+            position: fixed;
+            right: calc(16px + env(safe-area-inset-right));
+            bottom: calc(16px + env(safe-area-inset-bottom));
+            z-index: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #00b0f0;
+            color: #06202c;
+            border: none;
+            padding: 12px 18px;
+            border-radius: 30px;
+            font-size: 0.95em;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+            touch-action: manipulation;
+            transition: background-color 0.2s, transform 0.15s, opacity 0.2s;
+        }
+        .btn-captura-pagina svg {
+            flex-shrink: 0;
+        }
+        .btn-captura-pagina:active {
+            transform: scale(0.96);
+        }
+        .btn-captura-pagina:disabled {
+            opacity: 0.6;
+            cursor: default;
+            transform: none;
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .btn-captura-pagina:hover {
+                background-color: #33c2ff;
+            }
+        }
+        @media (max-width: 480px) {
+            .btn-captura-pagina {
+                padding: 10px 14px;
+                font-size: 0.8em;
+            }
+        }
+
+        .btn-guardar-historico {
+            position: fixed;
+            right: calc(16px + env(safe-area-inset-right));
+            bottom: calc(16px + env(safe-area-inset-bottom) + 62px);
+            z-index: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #28a745;
+            color: #ffffff;
+            border: none;
+            padding: 12px 18px;
+            border-radius: 30px;
+            font-size: 0.95em;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+            touch-action: manipulation;
+            transition: background-color 0.2s, transform 0.15s, opacity 0.2s;
+        }
+        .btn-guardar-historico svg {
+            flex-shrink: 0;
+        }
+        .btn-guardar-historico:active {
+            transform: scale(0.96);
+        }
+        .btn-guardar-historico:disabled {
+            opacity: 0.6;
+            cursor: default;
+            transform: none;
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .btn-guardar-historico:hover {
+                background-color: #34c759;
+            }
+        }
+        @media (max-width: 480px) {
+            .btn-guardar-historico {
+                padding: 10px 14px;
+                font-size: 0.8em;
+                bottom: calc(16px + env(safe-area-inset-bottom) + 54px);
+            }
+        }
+
+        .selector-hora-wrap {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            align-items: center;
+            padding: 20px 0;
+        }
+        .col-select {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        .col-select label {
+            font-size: 0.9em;
+            color: #aaa;
+            font-weight: bold;
+        }
+        .select-custom {
+            background-color: #242424;
+            color: #fff;
+            border: 2px solid #00b0f0;
+            border-radius: 6px;
+            padding: 10px 16px;
+            font-size: 1.5em;
+            font-weight: bold;
+            outline: none;
+            cursor: pointer;
+        }
+        .select-custom option {
+            background-color: #1a1a1a;
+            color: #fff;
+        }
+
+        /* Modal Rivales */
+        .item-rival {
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            border-left: 4px solid transparent;
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .item-rival:hover {
+                background-color: rgba(255, 255, 255, 0.08);
+            }
+        }
+        .fila-misma-categoria {
+            background: linear-gradient(90deg, rgba(40, 167, 69, 0.15) 0%, rgba(40, 167, 69, 0.02) 100%) !important;
+            border-left: 4px solid #28a745 !important;
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .fila-misma-categoria:hover {
+                background: linear-gradient(90deg, rgba(40, 167, 69, 0.3) 0%, rgba(40, 167, 69, 0.08) 100%) !important;
+            }
+        }
+        .badge-cat-misma {
+            display: inline-block;
+            background-color: rgba(40, 167, 69, 0.2);
+            color: #51e879;
+            border: 1px solid rgba(40, 167, 69, 0.5);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 0.85em;
+        }
+        .badge-cat-sin {
+            color: #777;
+            font-style: italic;
+            font-size: 0.85em;
+        }
+
+        /* Input de edición de rival */
+        .input-modal-texto {
+            width: 100%;
+            background: #242424;
+            color: #fff;
+            border: 2px solid #00b0f0;
+            border-radius: 6px;
+            padding: 12px 14px;
+            font-size: 1.1em;
+            font-weight: bold;
+            outline: none;
+            box-sizing: border-box;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 600px) {
+            .modal-content {
+                width: 96% !important;
+                margin: auto;
+            }
+
+            .modal-header {
+                padding: 10px 12px;
+            }
+
+            .modal-header h2 {
+                font-size: 1.1em;
+            }
+
+            .modal-body {
+                padding: 8px 4px;
+            }
+
+            table {
+                width: 100%;
+                table-layout: auto;
+            }
+
+            th, td {
+                padding: 6px 3px !important;
+                font-size: 0.8em;
+            }
+
+            .team-icon {
+                width: 28px !important;
+                height: 28px !important;
+            }
+
+            .btn-casa, .btn-fuera {
+                padding: 4px 5px !important;
+                margin: 0 1px !important;
+                font-size: 0.72em !important;
+                border-width: 1.5px;
+            }
+
+            .acciones-td {
+                white-space: nowrap;
+                padding-left: 2px !important;
+                padding-right: 2px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="areaCaptura" style="background-color: #000000; width: 100%; overflow: hidden;">
+        <div class="header-container" id="cabeceraContainer">
+            <img src="Imagenes/Titulo Base.png" class="header-img" alt="Nou Volei Alzira Calendario">
+            <div class="header-hotspot-calendario" onclick="abrirCalendarioRango()" title="Haz clic para seleccionar el rango de fechas"></div>
+            <div class="header-texto-fecha" id="headerTextoFecha"></div>
+        </div>
+
+        <div id="contenedorRecuadros"></div>
+    </div>
+
+    <!-- Modal Rango de Fechas -->
+    <div class="modal-overlay" id="modalDateRange">
+        <div class="date-range-modal-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #333; padding-bottom: 10px;">
+                <span style="font-weight: bold; color: #00b0f0; font-size: 1.1em;">Seleccionar Fechas</span>
+                <button type="button" class="btn-aceptar" style="padding: 5px 15px; font-size: 0.9em;" onclick="confirmarRangoActual()">CONFIRMAR</button>
+            </div>
+            <div class="cal-nav">
+                <button type="button" onclick="cambiarMesRango(-1)">&lt;</button>
+                <span id="calMesAnioLabel">Mes Año</span>
+                <button type="button" onclick="cambiarMesRango(1)">&gt;</button>
+            </div>
+            <div class="cal-grid">
+                <div class="cal-day-name">Lu</div>
+                <div class="cal-day-name">Ma</div>
+                <div class="cal-day-name">Mi</div>
+                <div class="cal-day-name">Ju</div>
+                <div class="cal-day-name">Vi</div>
+                <div class="cal-day-name">Sá</div>
+                <div class="cal-day-name">Do</div>
+            </div>
+            <div class="cal-grid" id="calDiasGrid"></div>
+        </div>
+    </div>
+
+    <!-- Modal Selección Principal -->
+    <div class="modal-overlay" id="modalEquipos">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Selección de equipos</h2>
+                <div class="header-botones">
+                    <button class="btn-reset" onclick="resetearSeleccion()">RESET</button>
+                    <button class="btn-aceptar" onclick="confirmarSeleccion()">ACEPTAR</button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div id="avisoEstado" class="aviso-datos" style="display: none;"></div>
+                <table id="tablaEquipos">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">Logo</th>
+                            <th>Nombre</th>
+                            <th>Categoría</th>
+                            <th style="text-align: center;">Juega</th>
+                        </tr>
+                    </thead>                            
+                    <tbody id="tablaBody">
+                        <tr>
+                            <td colspan="4" style="text-align:center; padding: 25px; color: #888;">
+                                Cargando equipos...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Rivales -->
+    <div class="modal-overlay" id="modalRivales">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Seleccionar Equipo Rival</h2>
+                <button class="btn-aceptar" onclick="cerrarModalRivales()">CERRAR</button>
+            </div>
+            <div class="modal-body">
+                <table id="tablaRivales">
+                    <thead>
+                        <tr>
+                            <th style="width: 70px;">Logo</th>
+                            <th>Nombre</th>
+                            <th>Categoría</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaRivalesBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Modificar Rival Distinta Categoría -->
+    <div class="modal-overlay" id="modalEditarRival">
+        <div class="modal-content" style="max-width: 480px;">
+            <div class="modal-header">
+                <h2>Modificar Nombre de Rival</h2>
+            </div>
+            <div class="modal-body">
+                <p style="color: #bbb; font-size: 0.9em; margin-top: 0;">El equipo seleccionado no pertenece exactamente a la misma categoría. Puedes modificar su nombre antes de agregarlo:</p>
+                <div style="margin: 15px 0;">
+                    <input type="text" id="inputEditarNombreRival" class="input-modal-texto" autocomplete="off" />
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                    <button class="btn-reset" style="background-color: #555;" onclick="cerrarModalEditarRival()">CANCELAR</button>
+                    <button class="btn-aceptar" onclick="confirmarEdicionRival()">APLICAR</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Selector de Hora -->
+    <div class="modal-overlay" id="modalHora">
+        <div class="modal-content" style="max-width: 380px;">
+            <div class="modal-header">
+                <h2>Seleccionar Hora</h2>
+                <button class="btn-aceptar" onclick="confirmarHoraModal()">ACEPTAR</button>
+            </div>
+            <div class="modal-body">
+                <div class="selector-hora-wrap">
+                    <div class="col-select">
+                        <label for="selectHoras">HORA</label>
+                        <select id="selectHoras" class="select-custom"></select>
+                    </div>
+                    <span style="font-size: 2em; font-weight: bold; margin-top: 20px;">:</span>
+                    <div class="col-select">
+                        <label for="selectMinutos">MINUTOS</label>
+                        <select id="selectMinutos" class="select-custom">
+                            <option value="00" selected>00</option>
+                            <option value="15">15</option>
+                            <option value="30">30</option>
+                            <option value="45">45</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botón flotante -->
+    <button type="button" id="btnCapturarPagina" class="btn-captura-pagina no-captura" onclick="capturarPaginaComoJPG()" aria-label="Descargar imagen de los partidos">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+            <path d="M9 3l-1.83 2H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2h-3.17L15 3H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+        </svg>
+        <span id="btnCapturarTexto">Descargar imagen</span>
+    </button>
+
+    <!-- Botón flotante: Guardar histórico -->
+    <button type="button" id="btnGuardarHistorico" class="btn-guardar-historico no-captura" onclick="guardarHistorico()" aria-label="Guardar datos en el histórico">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+            <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
+        </svg>
+        <span id="btnGuardarHistoricoTexto">Guardar histórico</span>
+    </button>
+
+    <script>
+        /*
+         * ================================================================
+         * DATOS, ESTADO Y LÓGICA PRINCIPAL
+         * ================================================================
+         * Este bloque controla:
+         *   1) carga de equipos desde DATOS.xls o datos de respaldo,
+         *   2) selección de partidos,
+         *   3) edición de rival, fecha, hora y ubicación,
+         *   4) generación de los recuadros.
+         */
+        const equiposRespaldo = [
+            {"LOGO": "Enova NVA - Infantil", "EQUIPO": "ENOVA NVA", "CATEGORIA": "INFANTIL 2ª DIVISION", "COLOR": "#c28b06", "CAMPO": "PALAU D'ESPORTS (ALZIRA)"},
+            {"LOGO": "Up School NVA - Infantil", "EQUIPO": "UP! SCHOOL NVA", "CATEGORIA": "INFANTIL ZONAL", "COLOR": "#ccca20", "CAMPO": "PALAU D'ESPORTS (ALZIRA)"},
+            {"LOGO": "Jessi Esparza NVA - Infantil", "EQUIPO": "JESSI ESPARZA NVA", "CATEGORIA": "INFANTIL ZONAL", "COLOR": "#e8cb73", "CAMPO": "PALAU D'ESPORTS (ALZIRA)"},
+            {"LOGO": "Enova NVA - Cadet", "EQUIPO": "ENOVA NVA", "CATEGORIA": "CADETE 2ª DIVISION", "COLOR": "#b2267f", "CAMPO": "PALAU D'ESPORTS (ALZIRA)"},
+            {"LOGO": "Up School NVA - Cadet", "EQUIPO": "UP! SCHOOL NVA", "CATEGORIA": "CADETE ZONAL", "COLOR": "#b033af", "CAMPO": "PALAU D'ESPORTS (ALZIRA)"},
+            {"LOGO": "Jessi Esparza NVA - Cadet", "EQUIPO": "JESSI ESPARZA NVA", "CATEGORIA": "CADETE ZONAL", "COLOR": "#da71d9", "CAMPO": "PALAU D'ESPORTS (ALZIRA)"},
+            {"LOGO": "Espai Laboral - Juvenil", "EQUIPO": "ESPAI LABORAL NVA", "CATEGORIA": "JUVENIL ZONAL", "COLOR": "#7f1dbd", "CAMPO": "PALAU D'ESPORTS (ALZIRA)"},
+            {"LOGO": "Enova NVA - Senior", "EQUIPO": "ENOVA NVA", "CATEGORIA": "SENIOR 2ª DIVISION", "COLOR": "#a01525", "CAMPO": "PALAU D'ESPORTS (ALZIRA)"},
+        ];
+
+        let listaEquiposGlobal = [];
+        let listaOtrosEquiposGlobal = [];
+        let workbookGlobal = null;
+        const modal = document.getElementById('modalEquipos');
+        const modalRivales = document.getElementById('modalRivales');
+        const modalEditarRival = document.getElementById('modalEditarRival');
+        const modalHora = document.getElementById('modalHora');
+        const modalDateRange = document.getElementById('modalDateRange');
+        let elementoHoraActual = null;
+
+        let datosCargados = false;
+        let elementoNombreRivalActual = null;
+        let elementoLogoRivalActual = null;
+        let recuadroPadreRivalActual = null;
+        let filaRivalPendienteEdicion = null;
+
+        let contadorModalesAbiertos = 0;
+        let scrollYAntesDelModal = 0;
+
+        function alAbrirModal() {
+            contadorModalesAbiertos++;
+            if (contadorModalesAbiertos === 1) {
+                scrollYAntesDelModal = window.scrollY || window.pageYOffset || 0;
+                document.body.classList.add('modal-abierto');
+                document.body.style.position = 'fixed';
+                document.body.style.top = `-${scrollYAntesDelModal}px`;
+                document.body.style.left = '0';
+                document.body.style.right = '0';
+                document.body.style.width = '100%';
+            }
+        }
+
+        function alCerrarModal() {
+            contadorModalesAbiertos = Math.max(0, contadorModalesAbiertos - 1);
+            if (contadorModalesAbiertos === 0) {
+                document.body.classList.remove('modal-abierto');
+                document.body.style.position = '';
+                document.body.style.top = '';
+                document.body.style.left = '';
+                document.body.style.right = '';
+                document.body.style.width = '';
+                window.scrollTo(0, scrollYAntesDelModal);
+            }
+        }
+
+        let mapaDatosPartidos = {};
+        const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+        let calFechaVista = new Date();
+        let calFechaInicio = null;
+        let calFechaFin = null;
+        let temporizadorCierreRango = null;
+        let calFechaInicioEfectiva = null;
+        let calFechaFinEfectiva = null;
+
+        function abrirCalendarioRango() {
+            modalDateRange.style.display = 'flex';
+            alAbrirModal();
+
+            if (calFechaInicioEfectiva) {
+                calFechaInicio = new Date(calFechaInicioEfectiva.getTime());
+                calFechaInicio.setHours(0, 0, 0, 0);
+
+                if (calFechaFinEfectiva) {
+                    calFechaFin = new Date(calFechaFinEfectiva.getTime());
+                    calFechaFin.setHours(0, 0, 0, 0);
+                } else {
+                    calFechaFin = null;
+                }
+                calFechaVista = new Date(calFechaInicio.getFullYear(), calFechaInicio.getMonth(), 1);
+            } else {
+                calFechaVista = new Date();
+                calFechaInicio = null;
+                calFechaFin = null;
+            }
+
+            renderizarCalendarioRango();
+        }
+
+        function confirmarRangoActual() {
+            if (calFechaInicio) {
+                if (!calFechaFin) {
+                    calFechaFin = new Date(calFechaInicio.getTime());
+                }
+                calFechaInicioEfectiva = new Date(calFechaInicio.getTime());
+                calFechaFinEfectiva = new Date(calFechaFin.getTime());
+                escribirTextoFechaEnCabecera(calFechaInicioEfectiva, calFechaFinEfectiva);
+            }
+
+            modalDateRange.style.display = 'none';
+            alCerrarModal();
+            abrirModal();
+        }
+
+        function seleccionarFechaRango(fecha) {
+            if (temporizadorCierreRango) clearTimeout(temporizadorCierreRango);
+
+            const f = new Date(fecha.getTime());
+            f.setHours(0, 0, 0, 0);
+
+            if (!calFechaInicio || (calFechaInicio && calFechaFin)) {
+                calFechaInicio = f;
+                calFechaFin = null;
+            } else if (calFechaInicio && !calFechaFin) {
+                if (f.getTime() === calFechaInicio.getTime()) {
+                    calFechaFin = f;
+                } else if (f.getTime() < calFechaInicio.getTime()) {
+                    calFechaFin = calFechaInicio;
+                    calFechaInicio = f;
+                } else {
+                    calFechaFin = f;
+                }
+            }
+
+            renderizarCalendarioRango();
+
+            if (calFechaInicio && calFechaFin) {
+                calFechaInicioEfectiva = new Date(calFechaInicio.getTime());
+                calFechaFinEfectiva = new Date(calFechaFin.getTime());
+
+                temporizadorCierreRango = setTimeout(() => {
+                    modalDateRange.style.display = 'none';
+                    alCerrarModal();
+                    escribirTextoFechaEnCabecera(calFechaInicioEfectiva, calFechaFinEfectiva);
+                    abrirModal();
+                }, 300);
+            }
+        }
+
+        function cambiarMesRango(delta) {
+            calFechaVista.setMonth(calFechaVista.getMonth() + delta);
+            renderizarCalendarioRango();
+        }
+
+        function renderizarCalendarioRango() {
+            if (!calFechaVista) calFechaVista = new Date();
+
+            const anio = calFechaVista.getFullYear();
+            const mes = calFechaVista.getMonth();
+
+            const labelMesAnio = document.getElementById('calMesAnioLabel');
+            if (labelMesAnio) {
+                labelMesAnio.textContent = `${meses[mes]} ${anio}`;
+            }
+
+            const grid = document.getElementById('calDiasGrid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            const primerDia = new Date(anio, mes, 1).getDay();
+            const offsetLunes = (primerDia === 0) ? 6 : primerDia - 1;
+            const totalDias = new Date(anio, mes + 1, 0).getDate();
+
+            for (let i = 0; i < offsetLunes; i++) {
+                const celdaVacia = document.createElement('div');
+                celdaVacia.className = 'cal-cell empty';
+                grid.appendChild(celdaVacia);
+            }
+
+            const tInicio = calFechaInicio ? new Date(calFechaInicio.getFullYear(), calFechaInicio.getMonth(), calFechaInicio.getDate()).getTime() : null;
+            const tFin = calFechaFin ? new Date(calFechaFin.getFullYear(), calFechaFin.getMonth(), calFechaFin.getDate()).getTime() : null;
+
+            for (let d = 1; d <= totalDias; d++) {
+                const celda = document.createElement('div');
+                celda.className = 'cal-cell';
+                celda.textContent = d;
+
+                const fechaCelda = new Date(anio, mes, d);
+                fechaCelda.setHours(0, 0, 0, 0);
+                const tCelda = fechaCelda.getTime();
+
+                if (tInicio !== null && tCelda === tInicio) celda.classList.add('selected-endpoint');
+                if (tFin !== null && tCelda === tFin) celda.classList.add('selected-endpoint');
+                if (tInicio !== null && tFin !== null && tCelda > tInicio && tCelda < tFin) celda.classList.add('in-range');
+
+                celda.onclick = () => seleccionarFechaRango(fechaCelda);
+                grid.appendChild(celda);
+            }
+        }
+
+        function escribirTextoFechaEnCabecera(fInicio, fFin) {
+            const dIni = fInicio.getDate();
+            const mesIni = meses[fInicio.getMonth()];
+            const anioIni = fInicio.getFullYear();
+
+            const dFin = fFin.getDate();
+            const mesFin = meses[fFin.getMonth()];
+            const anioFin = fFin.getFullYear();
+
+            let textoFinal = '';
+
+            if (dIni === dFin && fInicio.getMonth() === fFin.getMonth() && anioIni === anioFin) {
+                textoFinal = `${dIni} de ${mesIni} del ${anioIni}`;
+            } else if (fInicio.getMonth() === fFin.getMonth() && anioIni === anioFin) {
+                textoFinal = `del ${dIni} al ${dFin} de ${mesFin} del ${anioFin}`;
+            } else {
+                textoFinal = `del ${dIni} de ${mesIni} al ${dFin} de ${mesFin} del ${anioFin}`;
+            }
+
+            const elContenedor = document.getElementById('headerTextoFecha');
+            elContenedor.innerHTML = `<span>${textoFinal}</span>`;
+            autoAjustarTextoCabecera();
+        }
+
+        function autoAjustarTextoCabecera() {
+            const elContenedor = document.getElementById('headerTextoFecha');
+            const elSpan = elContenedor ? elContenedor.querySelector('span') : null;
+            if (!elSpan || !elContenedor) return;
+
+            elSpan.style.transform = 'scaleX(1)';
+            elSpan.style.lineHeight = '1.2';
+
+            const padding = parseFloat(window.getComputedStyle(elContenedor).paddingLeft) + 
+                            parseFloat(window.getComputedStyle(elContenedor).paddingRight);
+            const anchoDisponible = elContenedor.clientWidth - padding;
+            const anchoTexto = elSpan.scrollWidth;
+
+            if (anchoTexto > anchoDisponible && anchoDisponible > 0) {
+                const factorEscalaX = anchoDisponible / anchoTexto;
+                elSpan.style.transform = `scaleX(${factorEscalaX})`;
+            }
+        }
+
+        const selectH = document.getElementById('selectHoras');
+        for (let i = 0; i < 24; i++) {
+            const opt = document.createElement('option');
+            const val = i.toString().padStart(2, '0');
+            opt.value = val;
+            opt.textContent = val;
+            if (i === 9) opt.selected = true;
+            selectH.appendChild(opt);
+        }
+
+        function abrirModal() {
+            modal.style.display = 'flex';
+            alAbrirModal();
+            if (!datosCargados) {
+                intentarCargarExcelOUsarRespaldo();
+            }
+        }
+
+        function cerrarModal() {
+            modal.style.display = 'none';
+            alCerrarModal();
+        }
+
+        function cerrarModalRivales() {
+            modalRivales.style.display = 'none';
+            alCerrarModal();
+        }
+
+        function resetearSeleccion() {
+            const filas = document.querySelectorAll('#tablaBody tr[id^="fila-"]');
+            filas.forEach(tr => {
+                tr.classList.remove('selected-casa', 'selected-fuera');
+            });
+            mapaDatosPartidos = {};
+            document.getElementById('contenedorRecuadros').innerHTML = '';
+        }
+
+        function abrirSelectorHora(spanHora, recuadro) {
+            elementoHoraActual = spanHora;
+            const textoActual = spanHora.textContent.trim();
+            
+            const regex = /^(\d{1,2})\s*:\s*(\d{2})\s*H$/i;
+            const match = textoActual.match(regex);
+            if (match) {
+                selectH.value = match[1].padStart(2, '0');
+                document.getElementById('selectMinutos').value = match[2];
+            } else {
+                selectH.value = '09';
+                document.getElementById('selectMinutos').value = '00';
+            }
+            modalHora.style.display = 'flex';
+            alAbrirModal();
+        }
+
+        function confirmarHoraModal() {
+            if (elementoHoraActual) {
+                const h = selectH.value;
+                const m = document.getElementById('selectMinutos').value;
+                const valorFinal = `${h} : ${m} H`;
+                elementoHoraActual.textContent = valorFinal;
+                elementoHoraActual.classList.remove('vacio');
+                autoAjustarTextoInfo(elementoHoraActual);
+
+                const rec = elementoHoraActual.closest('.recuadro-partido');
+                if (rec && rec.datosEstado) {
+                    rec.datosEstado.hora = valorFinal;
+                }
+            }
+            modalHora.style.display = 'none';
+            alCerrarModal();
+        }
+
+        async function intentarCargarExcelOUsarRespaldo() {
+            const fileNames = ['DATOS.xls'];
+            let response = null;
+
+            for (let name of fileNames) {
+                try {
+                    const res = await fetch(name);
+                    if (res.ok) {
+                        response = res;
+                        break;
+                    }
+                } catch (e) {}
+            }
+
+            if (response) {
+                try {
+                    const arrayBuffer = await response.arrayBuffer();
+                    const data = new Uint8Array(arrayBuffer);
+                    workbookGlobal = XLSX.read(data, {type: 'array'});
+                    
+                    let sheetName = null;
+                    const posiblesPestañas = ["Equipos NVA", "equipos nva", "Equipos_NVA", "Equipos"];
+                    
+                    for (let p of posiblesPestañas) {
+                        if (workbookGlobal.Sheets[p]) {
+                            sheetName = p;
+                            break;
+                        }
+                    }
+
+                    if (!sheetName && workbookGlobal.SheetNames.length > 0) {
+                        sheetName = workbookGlobal.SheetNames[0];
+                    }
+
+                    if (sheetName && workbookGlobal.Sheets[sheetName]) {
+                        const sheet = workbookGlobal.Sheets[sheetName];
+                        const datosExcel = XLSX.utils.sheet_to_json(sheet);
+                        if (datosExcel.length > 0) {
+                            listaEquiposGlobal = datosExcel;
+                            renderizarTabla(listaEquiposGlobal);
+                            cargarPestañaOtrosEquipos();
+                            mostrarAviso("✅ Equipos cargados correctamente desde el archivo Excel.", false);
+                            datosCargados = true;
+                            return;
+                        }
+                    }
+                } catch (err) {
+                    console.warn("Error leyendo excel, usando respaldo:", err);
+                }
+            }
+
+            listaEquiposGlobal = equiposRespaldo;
+            listaOtrosEquiposGlobal = equiposRespaldo;
+            renderizarTabla(listaEquiposGlobal);
+            mostrarAviso("ℹ️ Usando datos integrados de respaldo.", true);
+            datosCargados = true;
+        }
+
+        function cargarPestañaOtrosEquipos() {
+            if (!workbookGlobal) return;
+            let sheetNameOtros = null;
+            const posibles = ["OTROS Equipos", "Otros Equipos", "otros equipos", "OTROS_EQUIPOS", "Otros"];
+            
+            for (let p of posibles) {
+                if (workbookGlobal.Sheets[p]) {
+                    sheetNameOtros = p;
+                    break;
+                }
+            }
+            if (!sheetNameOtros) {
+                for (let name of workbookGlobal.SheetNames) {
+                    if (name.toLowerCase().includes('otro')) {
+                        sheetNameOtros = name;
+                        break;
+                    }
+                }
+            }
+            if (sheetNameOtros && workbookGlobal.Sheets[sheetNameOtros]) {
+                const sheet = workbookGlobal.Sheets[sheetNameOtros];
+                listaOtrosEquiposGlobal = XLSX.utils.sheet_to_json(sheet);
+            } else {
+                listaOtrosEquiposGlobal = listaEquiposGlobal;
+            }
+        }
+
+        function mostrarAviso(texto, esAlerta) {
+            const aviso = document.getElementById('avisoEstado');
+            aviso.innerText = texto;
+            aviso.style.display = 'block';
+            if (esAlerta) {
+                aviso.style.background = '#2c2215';
+                aviso.style.borderColor = '#ffa500';
+                aviso.style.color = '#ffda9e';
+            } else {
+                aviso.style.background = '#152c1b';
+                aviso.style.borderColor = '#28a745';
+                aviso.style.color = '#a3ffb8';
+            }
+        }
+
+        function obtenerNombreEquipo(fila) {
+            return (fila['EQUIPO'] || fila['Nombre'] || fila['Equipo'] || fila['nombre'] || 'Equipo').toString().trim();
+        }
+        function obtenerCategoria(fila) {
+            return (fila['CATEGORIA'] || fila['Categoria'] || fila['Categoría'] || fila['CATEGORÍA'] || '').toString().trim();
+        }
+        function obtenerCampo(fila) {
+            return (fila['CAMPO'] || fila['Campo'] || fila['campo'] || fila['LUGAR'] || fila['Lugar'] || fila['UBICACION'] || fila['Ubicacion'] || fila['UBICACIÓN'] || fila['Ubicación'] || fila['PABELLON'] || fila['Pabellon'] || fila['PABELLÓN'] || fila['Pabellón'] || '').toString().trim();
+        }
+        function obtenerColor(fila) {
+            let c = fila['COLOR'] || fila['Color'] || fila['color'] || '';
+            c = (typeof c === 'string') ? c.trim() : '';
+            if (c === '') return '#00B0F0';
+            if (!c.startsWith('#')) c = '#' + c;
+            return c;
+        }
+        
+        function obtenerRutaLogo(fila) {
+            const logoValor = fila['LOGO'] || fila['Logo'] || fila['logo'] || fila['Icono'] || fila['ICONO'] || fila['Imagen'] || '';
+            const nombre = obtenerNombreEquipo(fila);
+            let rutaBase = '';
+            if (logoValor && typeof logoValor === 'string' && logoValor.trim() !== '') {
+                let val = logoValor.trim();
+                if (!val.toLowerCase().endsWith('.png') && !val.toLowerCase().endsWith('.jpg') && !val.toLowerCase().endsWith('.jpeg') && !val.toLowerCase().endsWith('.svg')) {
+                    rutaBase = val + '.png';
+                } else {
+                    rutaBase = val;
+                }
+            } else {
+                rutaBase = nombre.trim() + '.png';
+            }
+            // Evita duplicar la carpeta si ya estuviera escrita en el excel
+            if (!rutaBase.toLowerCase().startsWith('logos/') && !rutaBase.toLowerCase().startsWith('logos\\')) {
+                return 'LOGOs/' + rutaBase;
+            }
+            return rutaBase;
+        }
+
+        const SVG_LOGO_VACIO = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='none'/></svg>";
+
+        function renderizarTabla(datos) {
+            const tbody = document.getElementById('tablaBody');
+            tbody.innerHTML = '';
+
+            datos.forEach((fila, index) => {
+                const tr = document.createElement('tr');
+                tr.id = `fila-${index}`;
+
+                const nombre = obtenerNombreEquipo(fila);
+                const categoria = obtenerCategoria(fila);
+                const rutaLogo = obtenerRutaLogo(fila);
+
+                tr.innerHTML = `
+                    <td>
+                        <img src="${rutaLogo}" class="team-icon" alt="${nombre}" 
+                             onerror="this.onerror=null; this.src=SVG_LOGO_VACIO;">
+                    </td>
+                    <td style="font-weight: 600;">${nombre}</td>
+                    <td style="color: #bbb;">${categoria}</td>
+                    <td class="acciones-td">
+                        <button class="btn-casa" onclick="seleccionarEquipo(${index}, 'casa')">CASA</button>
+                        <button class="btn-fuera" onclick="seleccionarEquipo(${index}, 'fuera')">FUERA</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function seleccionarEquipo(index, tipo) {
+            const tr = document.getElementById(`fila-${index}`);
+            const yaCasa = tr.classList.contains('selected-casa');
+            const yaFuera = tr.classList.contains('selected-fuera');
+
+            tr.classList.remove('selected-casa', 'selected-fuera');
+
+            if (tipo === 'casa' && !yaCasa) {
+                tr.classList.add('selected-casa');
+            } else if (tipo === 'fuera' && !yaFuera) {
+                tr.classList.add('selected-fuera');
+            }
+        }
+
+        const RUTA_FONDO = 'Imagenes/Recuadro (fondo).png';
+        const RUTA_MASCARA_IMG = 'Imagenes/Recuadro (mascara).png';
+        const RUTA_MASCARA = `url('${RUTA_MASCARA_IMG}')`;
+
+        function confirmarSeleccion() {
+            generarRecuadros();
+            cerrarModal();
+            const cont = document.getElementById('contenedorRecuadros');
+            if (cont.children.length > 0) {
+                cont.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        function generarRecuadros() {
+            const cont = document.getElementById('contenedorRecuadros');
+            
+            const recuadrosExistentes = cont.querySelectorAll('.recuadro-partido');
+            recuadrosExistentes.forEach(rec => {
+                const idx = rec.getAttribute('data-index');
+                if (idx !== null && rec.datosEstado) {
+                    mapaDatosPartidos[idx] = { ...rec.datosEstado };
+                }
+            });
+
+            const filas = document.querySelectorAll('#tablaBody tr[id^="fila-"]');
+            const nuevosIndices = [];
+            
+            filas.forEach(tr => {
+                let tipo = null;
+                if (tr.classList.contains('selected-casa')) tipo = 'casa';
+                else if (tr.classList.contains('selected-fuera')) tipo = 'fuera';
+                if (!tipo) return;
+
+                const index = parseInt(tr.id.replace('fila-', ''), 10);
+                nuevosIndices.push({ index, tipo });
+            });
+
+            const setNuevos = new Set(nuevosIndices.map(n => n.index.toString()));
+            Object.keys(mapaDatosPartidos).forEach(k => {
+                if (!setNuevos.has(k)) {
+                    delete mapaDatosPartidos[k];
+                }
+            });
+
+            cont.innerHTML = '';
+
+            nuevosIndices.forEach(item => {
+                const fila = listaEquiposGlobal[item.index];
+                if (!fila) return;
+
+                let estadoGuardado = mapaDatosPartidos[item.index];
+                if (estadoGuardado && estadoGuardado.tipo !== item.tipo) {
+                    estadoGuardado.tipo = item.tipo;
+                    if (item.tipo === 'casa') {
+                        estadoGuardado.lugar = "PALAU D'ESPORTS (ALZIRA)";
+                    } else {
+                        let campoRival = '';
+                        if (estadoGuardado.rivalNombre) {
+                            const rivalEncontrado = listaOtrosEquiposGlobal.find(
+                                r => obtenerNombreEquipo(r).toLowerCase() === estadoGuardado.rivalNombre.toLowerCase()
+                            );
+                            if (rivalEncontrado) {
+                                campoRival = obtenerCampo(rivalEncontrado);
+                            }
+                        }
+                        estadoGuardado.lugar = campoRival;
+                    }
+                }
+                const nuevoRecuadro = crearRecuadro(fila, item.tipo, item.index, estadoGuardado);
+                cont.appendChild(nuevoRecuadro);
+            });
+        }
+
+        function crearRecuadro(fila, tipo, indexFila, estadoInicial) {
+            const color = obtenerColor(fila);
+            const logoClub = obtenerRutaLogo(fila);
+            const categoriaClub = obtenerCategoria(fila);
+            const esCasa = (tipo === 'casa');
+            const nombreClub = obtenerNombreEquipo(fila);
+
+            let campoPredefinido = esCasa ? "PALAU D'ESPORTS (ALZIRA)" : "";
+
+            const estado = estadoInicial || {
+                tipo: tipo,
+                rivalNombre: '',
+                rivalLogo: '',
+                fecha: '',
+                hora: '',
+                lugar: campoPredefinido
+            };
+            mapaDatosPartidos[indexFila] = estado;
+
+            const recuadro = document.createElement('div');
+            recuadro.className = 'recuadro-partido';
+            recuadro.setAttribute('data-index', indexFila);
+            recuadro.datosEstado = estado;
+            recuadro.setAttribute('data-categoria', categoriaClub);
+            recuadro.style.setProperty('--color-equipo', color);
+            recuadro.style.setProperty('--mask-img', RUTA_MASCARA);
+
+            const imgFondo = document.createElement('img');
+            imgFondo.className = 'capa-fondo';
+            imgFondo.src = RUTA_FONDO;
+            imgFondo.alt = 'Fondo';
+
+            const capaBorde = document.createElement('div');
+            capaBorde.className = 'capa-borde';
+
+            const primeraPalabraCat = categoriaClub ? categoriaClub.split(' ')[0] : '';
+            const textoVerticalCat = document.createElement('div');
+            textoVerticalCat.className = 'texto-categoria-vertical';
+            textoVerticalCat.textContent = primeraPalabraCat;
+
+            const contenido = document.createElement('div');
+            contenido.className = 'contenido-recuadro';
+
+            const areaIzq = document.createElement('div');
+            areaIzq.className = 'area-equipo-izq';
+            const spanIzq = document.createElement('span');
+            spanIzq.className = 'nombre-equipo';
+            areaIzq.appendChild(spanIzq);
+
+            const areaLogoIzq = document.createElement('div');
+            areaLogoIzq.className = 'area-logo-izq';
+            const logoIzq = document.createElement('img');
+            logoIzq.className = 'logo-img';
+            logoIzq.onerror = function () { this.onerror = null; this.src = SVG_LOGO_VACIO; };
+            areaLogoIzq.appendChild(logoIzq);
+
+            const areaLogoDer = document.createElement('div');
+            areaLogoDer.className = 'area-logo-der';
+            const logoDer = document.createElement('img');
+            logoDer.className = 'logo-img';
+            logoDer.onerror = function () { this.onerror = null; this.src = SVG_LOGO_VACIO; };
+            areaLogoDer.appendChild(logoDer);
+
+            const areaDer = document.createElement('div');
+            areaDer.className = 'area-equipo-der';
+            const spanDer = document.createElement('span');
+            spanDer.className = 'nombre-equipo';
+            areaDer.appendChild(spanDer);
+
+            if (esCasa) {
+                spanIzq.textContent = nombreClub;
+                logoIzq.src = logoClub;
+
+                if (estado.rivalNombre && estado.rivalNombre.trim() !== '') {
+                    spanDer.textContent = estado.rivalNombre;
+                    spanDer.classList.add('campo-editable');
+                    logoDer.src = estado.rivalLogo || SVG_LOGO_VACIO;
+                } else {
+                    spanDer.textContent = 'SELECCIONAR RIVAL';
+                    spanDer.classList.add('campo-editable', 'vacio');
+                    logoDer.src = SVG_LOGO_VACIO;
+                }
+                logoDer.style.cursor = 'pointer';
+
+                const dispararModal = () => abrirModalRivales(spanDer, logoDer, categoriaClub, recuadro);
+                spanDer.onclick = dispararModal;
+                logoDer.onclick = dispararModal;
+            } else {
+                if (estado.rivalNombre && estado.rivalNombre.trim() !== '') {
+                    spanIzq.textContent = estado.rivalNombre;
+                    spanIzq.classList.add('campo-editable');
+                    logoIzq.src = estado.rivalLogo || SVG_LOGO_VACIO;
+                } else {
+                    spanIzq.textContent = 'SELECCIONAR RIVAL';
+                    spanIzq.classList.add('campo-editable', 'vacio');
+                    logoIzq.src = SVG_LOGO_VACIO;
+                }
+                logoIzq.style.cursor = 'pointer';
+
+                spanDer.textContent = nombreClub;
+                logoDer.src = logoClub;
+
+                const dispararModal = () => abrirModalRivales(spanIzq, logoIzq, categoriaClub, recuadro);
+                spanIzq.onclick = dispararModal;
+                logoIzq.onclick = dispararModal;
+            }
+
+            const areaInfo = construirInfoPartido(recuadro, estado);
+
+            contenido.appendChild(areaIzq);
+            contenido.appendChild(areaLogoIzq);
+            contenido.appendChild(areaLogoDer);
+            contenido.appendChild(areaDer);
+            contenido.appendChild(areaInfo);
+
+            recuadro.appendChild(imgFondo);
+            recuadro.appendChild(capaBorde);
+            recuadro.appendChild(textoVerticalCat);
+            recuadro.appendChild(contenido);
+
+            setTimeout(() => {
+                autoAjustarTextoEquipo(spanIzq);
+                autoAjustarTextoEquipo(spanDer);
+                const camposInfo = areaInfo.querySelectorAll('.campo-editable-info');
+                camposInfo.forEach(c => autoAjustarTextoInfo(c));
+            }, 60);
+
+            return recuadro;
+        }
+
+        function aplicarRivalSeleccionado(nombre, rutaLogo, filaRival) {
+            if (elementoNombreRivalActual) {
+                elementoNombreRivalActual.textContent = nombre;
+                elementoNombreRivalActual.classList.remove('vacio');
+                setTimeout(() => autoAjustarTextoEquipo(elementoNombreRivalActual), 20);
+
+                const contenedorRecuadro = recuadroPadreRivalActual || elementoNombreRivalActual.closest('.recuadro-partido');
+                if (contenedorRecuadro && contenedorRecuadro.datosEstado) {
+                    contenedorRecuadro.datosEstado.rivalNombre = nombre;
+                    contenedorRecuadro.datosEstado.rivalLogo = rutaLogo;
+                }
+
+                if (contenedorRecuadro && elementoNombreRivalActual.parentElement.classList.contains('area-equipo-izq')) {
+                    const campoLugar = contenedorRecuadro.querySelector('.campo-lugar');
+                    const lugarRival = obtenerCampo(filaRival);
+                    if (campoLugar) {
+                        if (lugarRival && lugarRival.trim() !== '') {
+                            campoLugar.textContent = lugarRival;
+                            campoLugar.classList.remove('vacio');
+                            if (contenedorRecuadro.datosEstado) contenedorRecuadro.datosEstado.lugar = lugarRival;
+                        } else {
+                            campoLugar.textContent = 'UBICACION';
+                            campoLugar.classList.add('vacio');
+                            if (contenedorRecuadro.datosEstado) contenedorRecuadro.datosEstado.lugar = '';
+                        }
+                        setTimeout(() => autoAjustarTextoInfo(campoLugar), 20);
+                    }
+                }
+            }
+            if (elementoLogoRivalActual) {
+                elementoLogoRivalActual.src = rutaLogo;
+            }
+        }
+
+        function abrirModalEditarRival(fila) {
+            filaRivalPendienteEdicion = fila;
+            const input = document.getElementById('inputEditarNombreRival');
+            input.value = obtenerNombreEquipo(fila);
+            modalEditarRival.style.display = 'flex';
+            alAbrirModal();
+            setTimeout(() => {
+                input.focus();
+                input.select();
+            }, 100);
+        }
+
+        function cerrarModalEditarRival() {
+            modalEditarRival.style.display = 'none';
+            alCerrarModal();
+            filaRivalPendienteEdicion = null;
+        }
+
+        function confirmarEdicionRival() {
+            if (!filaRivalPendienteEdicion) return;
+            const nuevoNombre = document.getElementById('inputEditarNombreRival').value.trim() || obtenerNombreEquipo(filaRivalPendienteEdicion);
+            const rutaLogo = obtenerRutaLogo(filaRivalPendienteEdicion);
+            
+            aplicarRivalSeleccionado(nuevoNombre, rutaLogo, filaRivalPendienteEdicion);
+            cerrarModalEditarRival();
+        }
+
+        function abrirModalRivales(elementoNombre, elementoLogo, categoriaClub, recuadroPadre) {
+            elementoNombreRivalActual = elementoNombre;
+            elementoLogoRivalActual = elementoLogo;
+            recuadroPadreRivalActual = recuadroPadre;
+            
+            const tbody = document.getElementById('tablaRivalesBody');
+            tbody.innerHTML = '';
+
+            const catFiltro = (categoriaClub || '').trim().toLowerCase();
+            let mismaCategoria = [];
+            let sinCategoria = [];
+
+            listaOtrosEquiposGlobal.forEach(fila => {
+                const cat = obtenerCategoria(fila);
+                const catLower = cat.trim().toLowerCase();
+
+                if (catFiltro !== '' && catLower !== '' && catLower === catFiltro) {
+                    mismaCategoria.push(fila);
+                } else {
+                    sinCategoria.push(fila);
+                }
+            });
+
+            mismaCategoria.sort((a, b) => obtenerNombreEquipo(a).localeCompare(obtenerNombreEquipo(b), 'es', { sensitivity: 'base' }));
+            sinCategoria.sort((a, b) => obtenerNombreEquipo(a).localeCompare(obtenerNombreEquipo(b), 'es', { sensitivity: 'base' }));
+
+            mismaCategoria.forEach(fila => {
+                const tr = document.createElement('tr');
+                tr.className = 'item-rival fila-misma-categoria';
+
+                const nombre = obtenerNombreEquipo(fila);
+                const categoria = obtenerCategoria(fila);
+                const rutaLogo = obtenerRutaLogo(fila);
+
+                tr.innerHTML = `
+                    <td>
+                        <img src="${rutaLogo}" class="team-icon" alt="${nombre}" 
+                             onerror="this.onerror=null; this.src=SVG_LOGO_VACIO;">
+                    </td>
+                    <td style="font-weight: 700; color: #fff;">${nombre}</td>
+                    <td><span class="badge-cat-misma">${categoria}</span></td>
+                `;
+
+                tr.onclick = () => {
+                    cerrarModalRivales();
+                    aplicarRivalSeleccionado(nombre, rutaLogo, fila);
+                };
+                tbody.appendChild(tr);
+            });
+
+            sinCategoria.forEach(fila => {
+                const tr = document.createElement('tr');
+                tr.className = 'item-rival';
+
+                const nombre = obtenerNombreEquipo(fila);
+                const categoria = obtenerCategoria(fila);
+                const rutaLogo = obtenerRutaLogo(fila);
+
+                tr.innerHTML = `
+                    <td>
+                        <img src="${rutaLogo}" class="team-icon" alt="${nombre}" 
+                             onerror="this.onerror=null; this.src=SVG_LOGO_VACIO;">
+                    </td>
+                    <td style="font-weight: 600; color: #ddd;">${nombre}</td>
+                    <td><span class="badge-cat-sin">${categoria || 'Otra categoría'}</span></td>
+                `;
+
+                tr.onclick = () => {
+                    cerrarModalRivales();
+                    abrirModalEditarRival(fila);
+                };
+                tbody.appendChild(tr);
+            });
+
+            if (mismaCategoria.length === 0 && sinCategoria.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="3" style="text-align: center; color: #999; padding: 25px;">
+                            No se encontraron equipos rivales.
+                        </td>
+                    </tr>
+                `;
+            }
+
+            modalRivales.style.display = 'flex';
+            alAbrirModal();
+        }
+
+        function construirInfoPartido(recuadro, estado) {
+            const info = document.createElement('div');
+            info.className = 'area-info';
+
+            // 1. FECHA
+            const contFecha = document.createElement('div');
+            contFecha.className = 'contenedor-item-info';
+            const spanFecha = document.createElement('span');
+            spanFecha.className = 'campo-editable-info';
+
+            if (estado.fecha && estado.fecha.trim() !== '') {
+                spanFecha.textContent = estado.fecha;
+            } else {
+                spanFecha.textContent = 'FECHA';
+                spanFecha.classList.add('vacio');
+            }
+            
+            const inputFecha = document.createElement('input');
+            inputFecha.type = 'date';
+            inputFecha.className = 'input-picker-oculto';
+
+            spanFecha.onclick = () => {
+                if (typeof inputFecha.showPicker === 'function') {
+                    inputFecha.showPicker();
+                } else {
+                    inputFecha.focus();
+                    inputFecha.click();
+                }
+            };
+
+            inputFecha.addEventListener('change', function () {
+                if (this.value) {
+                    const partes = this.value.split('-');
+                    const anio = partes[0];
+                    const mes = meses[parseInt(partes[1], 10) - 1];
+                    const dia = parseInt(partes[2], 10);
+                    const fechaTxt = `${dia} de ${mes} de ${anio}`;
+
+                    spanFecha.textContent = fechaTxt;
+                    spanFecha.classList.remove('vacio');
+                    if (recuadro && recuadro.datosEstado) {
+                        recuadro.datosEstado.fecha = fechaTxt;
+                    }
+                    autoAjustarTextoInfo(spanFecha);
+                }
+            });
+
+            contFecha.appendChild(spanFecha);
+            contFecha.appendChild(inputFecha);
+            info.appendChild(contFecha);
+
+            // 2. HORA
+            const contHora = document.createElement('div');
+            contHora.className = 'contenedor-item-info';
+            const spanHora = document.createElement('span');
+            spanHora.className = 'campo-editable-info';
+
+            if (estado.hora && estado.hora.trim() !== '') {
+                spanHora.textContent = estado.hora;
+            } else {
+                spanHora.textContent = 'HORA';
+                spanHora.classList.add('vacio');
+            }
+
+            spanHora.onclick = () => {
+                abrirSelectorHora(spanHora, recuadro);
+            };
+
+            contHora.appendChild(spanHora);
+            info.appendChild(contHora);
+
+            // 3. CAMPO / UBICACION
+            const contLugar = document.createElement('div');
+            contLugar.className = 'contenedor-item-info';
+            const spanLugar = document.createElement('span');
+            spanLugar.className = 'campo-editable-info editable-texto campo-lugar';
+            spanLugar.contentEditable = 'true';
+
+            if (estado.lugar && estado.lugar.trim() !== '') {
+                spanLugar.textContent = estado.lugar;
+            } else {
+                spanLugar.textContent = 'UBICACION';
+                spanLugar.classList.add('vacio');
+            }
+
+            spanLugar.addEventListener('focus', function () {
+                if (this.classList.contains('vacio')) {
+                    this.textContent = '';
+                    this.classList.remove('vacio');
+                }
+            });
+
+            spanLugar.addEventListener('blur', function () {
+                if (this.textContent.trim() === '') {
+                    this.textContent = 'UBICACION';
+                    this.classList.add('vacio');
+                    if (recuadro && recuadro.datosEstado) recuadro.datosEstado.lugar = '';
+                } else {
+                    if (recuadro && recuadro.datosEstado) recuadro.datosEstado.lugar = this.textContent.trim();
+                }
+                autoAjustarTextoInfo(this);
+            });
+
+            spanLugar.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.blur();
+                }
+            });
+
+            spanLugar.addEventListener('paste', function (e) {
+                e.preventDefault();
+                const text = (e.clipboardData || window.clipboardData).getData('text');
+                const cleanText = text.replace(/[\r\n]+/g, ' ').trim();
+
+                if (document.queryCommandSupported && document.queryCommandSupported('insertText')) {
+                    document.execCommand('insertText', false, cleanText);
+                } else {
+                    const selection = window.getSelection();
+                    if (selection && selection.rangeCount > 0 && this.contains(selection.anchorNode)) {
+                        const range = selection.getRangeAt(0);
+                        range.deleteContents();
+                        range.insertNode(document.createTextNode(cleanText));
+                        range.collapse(false);
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                    } else {
+                        this.textContent += cleanText;
+                    }
+                }
+            });
+
+            spanLugar.addEventListener('input', function () {
+                if (recuadro && recuadro.datosEstado && !this.classList.contains('vacio')) {
+                    recuadro.datosEstado.lugar = this.textContent.trim();
+                }
+                autoAjustarTextoInfo(this);
+            });
+
+            contLugar.appendChild(spanLugar);
+            info.appendChild(contLugar);
+
+            return info;
+        }
+
+        function autoAjustarTextoInfo(el) {
+            if (!el) return;
+            el.style.transform = 'scaleX(0.7)';
+            
+            const contenedor = el.parentElement;
+            if (!contenedor) return;
+
+            const anchoDisponible = contenedor.clientWidth - 12;
+            const anchoTexto = el.scrollWidth;
+            const anchoRenderizado = anchoTexto * 0.7;
+
+            if (anchoRenderizado > anchoDisponible && anchoDisponible > 0) {
+                const escalaFinal = (anchoDisponible / anchoTexto);
+                el.style.transform = `scaleX(${escalaFinal})`;
+            }
+        }
+
+        // Medidor de texto auxiliar en canvas
+        let canvasContextMedicion = null;
+        function getCanvasContext() {
+            if (!canvasContextMedicion) {
+                const canvas = document.createElement('canvas');
+                canvasContextMedicion = canvas.getContext('2d');
+            }
+            return canvasContextMedicion;
+        }
+
+        function calcularLineasSinDeformar(palabras, anchoMaximo, fontStyle) {
+            const ctx = getCanvasContext();
+            ctx.font = fontStyle;
+            const lineas = [];
+            let lineaActual = '';
+
+            for (let i = 0; i < palabras.length; i++) {
+                const palabra = palabras[i];
+                const lineaPrueba = lineaActual ? (lineaActual + ' ' + palabra) : palabra;
+                const anchoPrueba = ctx.measureText(lineaPrueba).width;
+
+                if (anchoPrueba <= anchoMaximo) {
+                    lineaActual = lineaPrueba;
+                } else {
+                    if (lineaActual) {
+                        lineas.push(lineaActual);
+                        lineaActual = palabra;
+                    } else {
+                        // Una sola palabra sobrepasa el ancho
+                        lineas.push(palabra);
+                        lineaActual = '';
+                    }
+                }
+            }
+            if (lineaActual) {
+                lineas.push(lineaActual);
+            }
+            return lineas;
+        }
+
+        function autoAjustarTextoEquipo(el) {
+            if (!el) return;
+            const contenedor = el.parentElement;
+            if (!contenedor) return;
+
+            const anchoDisponible = contenedor.clientWidth;
+            const altoDisponible = contenedor.clientHeight;
+            if (anchoDisponible <= 0 || altoDisponible <= 0) return;
+
+            const textoOriginal = (el.innerText || el.textContent).replace(/\s+/g, ' ').trim();
+            if (!textoOriginal) return;
+
+            const palabras = textoOriginal.split(' ');
+            const estilo = window.getComputedStyle(el);
+            const fontWeight = estilo.fontWeight || '750';
+            const fontStyleStr = estilo.fontStyle || 'italic';
+            const fontFamily = estilo.fontFamily || 'sans-serif';
+
+            // Tamaño de fuente base (proporcional al contenedor del recuadro)
+            const recuadro = el.closest('.recuadro-partido');
+            const anchoBaseRecuadro = recuadro ? recuadro.clientWidth : anchoDisponible * 5;
+            let fontSizePx = anchoBaseRecuadro * 0.023; // 2.3cqw
+            
+            const minFontSizePx = anchoBaseRecuadro * 0.012;
+
+            while (fontSizePx >= minFontSizePx) {
+                const fontCss = `${fontStyleStr} ${fontWeight} ${fontSizePx}px ${fontFamily}`;
+                const lineas = calcularLineasSinDeformar(palabras, anchoDisponible, fontCss);
+
+                const lineAlt = fontSizePx * 0.95;
+                const altoTotal = lineas.length * lineAlt;
+
+                if (lineas.length <= 3 && altoTotal <= altoDisponible) {
+                    el.style.fontSize = fontSizePx + 'px';
+                    el.style.lineHeight = '0.95';
+                    el.style.transform = 'none';
+                    el.innerHTML = lineas.map(l => `<span>${l}</span>`).join('<br>');
+                    return;
+                }
+                fontSizePx -= 0.5;
+            }
+
+            // Si es sumamente largo, se aplica en 3 líneas con el tamaño mínimo
+            const fontCssFinal = `${fontStyleStr} ${fontWeight} ${fontSizePx}px ${fontFamily}`;
+            const lineasFinales = calcularLineasSinDeformar(palabras, anchoDisponible, fontCssFinal);
+            el.style.fontSize = fontSizePx + 'px';
+            el.style.lineHeight = '0.95';
+            el.style.transform = 'none';
+            el.innerHTML = lineasFinales.slice(0, 3).map(l => `<span>${l}</span>`).join('<br>');
+        }
+
+        window.addEventListener('resize', () => {
+            document.querySelectorAll('.nombre-equipo').forEach(el => autoAjustarTextoEquipo(el));
+            document.querySelectorAll('.campo-editable-info').forEach(el => autoAjustarTextoInfo(el));
+            autoAjustarTextoCabecera();
+        });
+
+        function esperarImagenesCargadas() {
+            const imgs = Array.from(document.images);
+            const pendientes = imgs.filter(img => img.src && !img.complete);
+            if (pendientes.length === 0) return Promise.resolve();
+            return Promise.all(pendientes.map(img => new Promise(resolve => {
+                img.addEventListener('load', resolve, { once: true });
+                img.addEventListener('error', resolve, { once: true });
+                setTimeout(resolve, 4000);
+            })));
+        }
+
+        function formatearFechaParaArchivo(fInicio, fFin) {
+            const dIni = fInicio.getDate();
+            const mesIni = meses[fInicio.getMonth()];
+            const anioIni = fInicio.getFullYear();
+            const dFin = fFin.getDate();
+            const mesFin = meses[fFin.getMonth()];
+            const anioFin = fFin.getFullYear();
+
+            if (dIni === dFin && fInicio.getMonth() === fFin.getMonth() && anioIni === anioFin) {
+                return `${dIni} de ${mesIni} del ${anioIni}`;
+            }
+            if (fInicio.getMonth() === fFin.getMonth() && anioIni === anioFin) {
+                return `del ${dIni} al ${dFin} de ${mesFin} del ${anioFin}`;
+            }
+            return `del ${dIni} de ${mesIni} al ${dFin} de ${mesFin} del ${anioFin}`;
+        }
+
+        function construirNombreArchivoCaptura() {
+            let sufijo = '';
+            if (calFechaInicio && calFechaFin) {
+                sufijo = ' ' + formatearFechaParaArchivo(calFechaInicio, calFechaFin);
+            } else {
+                const elSpan = document.querySelector('#headerTextoFecha span');
+                if (elSpan && elSpan.textContent.trim() !== '') {
+                    sufijo = ' ' + elSpan.textContent.trim();
+                }
+            }
+            let nombre = 'Partidos' + sufijo;
+            nombre = nombre.replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim();
+            return nombre + '.jpg';
+        }
+
+        function descargarBlobComoArchivo(blob, nombreArchivo) {
+            const url = URL.createObjectURL(blob);
+            const soportaDescarga = ('download' in document.createElement('a'));
+
+            if (soportaDescarga) {
+                const enlace = document.createElement('a');
+                enlace.href = url;
+                enlace.download = nombreArchivo;
+                enlace.style.display = 'none';
+                document.body.appendChild(enlace);
+                enlace.click();
+                document.body.removeChild(enlace);
+                setTimeout(() => URL.revokeObjectURL(url), 4000);
+            } else {
+                const nuevaVentana = window.open(url, '_blank');
+                if (!nuevaVentana) {
+                    alert('No se pudo abrir la imagen. Permite las ventanas emergentes e inténtalo de nuevo.');
+                }
+                setTimeout(() => URL.revokeObjectURL(url), 15000);
+            }
+        }
+
+        /*
+         * ================================================================
+         * CAPTURA DE LA PÁGINA COMO JPG
+         * ================================================================
+         * html2canvas no siempre representa correctamente transformaciones
+         * CSS complejas (en particular, texto rotado) al convertir el DOM
+         * a un canvas. Para evitarlo, antes de capturar sustituimos SOLO en
+         * el DOM clonado por html2canvas la categoría vertical por una imagen
+         * SVG rasterizable que ya contiene el texto girado.
+         *
+         * Importante: el DOM real de la aplicación NO se modifica de forma
+         * permanente. Por eso la edición, selección y demás funcionalidades
+         * siguen funcionando exactamente igual después de descargar el JPG.
+         */
+
+        let imagenMascaraCache = null;
+
+        function cargarImagenMascara() {
+            return new Promise((resolve, reject) => {
+                if (imagenMascaraCache) { resolve(imagenMascaraCache); return; }
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => { imagenMascaraCache = img; resolve(img); };
+                img.onerror = () => reject(new Error('No se pudo cargar la imagen de máscara: ' + RUTA_MASCARA_IMG));
+                img.src = RUTA_MASCARA_IMG;
+            });
+        }
+
+        async function generarImagenesCapaBorde(escala) {
+            const capas = Array.from(document.querySelectorAll('.capa-borde'));
+            const reemplazos = [];
+            if (capas.length === 0) return reemplazos;
+
+            let maskImg = null;
+            try {
+                maskImg = await cargarImagenMascara();
+            } catch (err) {
+                console.warn('Captura: no se pudo preparar la máscara del recuadro, se ocultará el borde de color.', err);
+            }
+
+            capas.forEach(capa => {
+                if (!maskImg) {
+                    capa.classList.add('oculto-temporal-captura');
+                    reemplazos.push({ original: capa, generada: null });
+                    return;
+                }
+
+                const ancho = capa.offsetWidth;
+                const alto = capa.offsetHeight;
+                if (ancho === 0 || alto === 0) return;
+
+                try {
+                    const colorFinal = getComputedStyle(capa).backgroundColor || '#00b0f0';
+                    const factor = Math.max(1, Math.min(escala || 1.5, 3));
+
+                    const canvasTmp = document.createElement('canvas');
+                    canvasTmp.width = Math.round(ancho * factor);
+                    canvasTmp.height = Math.round(alto * factor);
+                    const ctx = canvasTmp.getContext('2d');
+
+                    ctx.drawImage(maskImg, 0, 0, canvasTmp.width, canvasTmp.height);
+                    ctx.globalCompositeOperation = 'source-in';
+                    ctx.fillStyle = colorFinal;
+                    ctx.fillRect(0, 0, canvasTmp.width, canvasTmp.height);
+
+                    const imgGenerada = document.createElement('img');
+                    imgGenerada.src = canvasTmp.toDataURL('image/png');
+                    imgGenerada.className = 'capa-borde-render no-captura-limpiar';
+                    imgGenerada.style.position = 'absolute';
+                    imgGenerada.style.top = '0';
+                    imgGenerada.style.left = '0';
+                    imgGenerada.style.width = '100%';
+                    imgGenerada.style.height = '100%';
+                    imgGenerada.style.pointerEvents = 'none';
+                    imgGenerada.alt = '';
+
+                    capa.classList.add('oculto-temporal-captura');
+                    capa.insertAdjacentElement('afterend', imgGenerada);
+
+                    reemplazos.push({ original: capa, generada: imgGenerada });
+                } catch (err) {
+                    console.warn('Captura: no se pudo generar el borde de color para un recuadro, se ocultará.', err);
+                    capa.classList.add('oculto-temporal-captura');
+                    reemplazos.push({ original: capa, generada: null });
+                }
+            });
+
+            return reemplazos;
+        }
+
+        function eliminarImagenesCapaBorde(reemplazos) {
+            reemplazos.forEach(({ original, generada }) => {
+                if (generada && generada.parentElement) {
+                    generada.parentElement.removeChild(generada);
+                }
+                if (original) {
+                    original.classList.remove('oculto-temporal-captura');
+                }
+            });
+        }
+
+        /**
+         * Prepara una representación robusta de las categorías verticales
+         * exclusivamente dentro del documento clonado que recibe html2canvas.
+         *
+         * ¿Por qué SVG?
+         * - El navegador pinta el texto y la rotación dentro de la propia imagen.
+         * - html2canvas ya no necesita interpretar "transform: rotate(...)" sobre
+         *   un elemento de texto HTML.
+         * - El documento original conserva el texto HTML y su comportamiento.
+         */
+        function prepararCategoriasParaCaptura(documentoClonado) {
+            if (!documentoClonado) return;
+
+            const categorias = documentoClonado.querySelectorAll('.texto-categoria-vertical');
+
+            categorias.forEach((categoria) => {
+                const recuadro = categoria.closest('.recuadro-partido');
+                if (!recuadro) return;
+
+                const anchoRecuadro = recuadro.offsetWidth;
+                const altoRecuadro = recuadro.offsetHeight;
+                if (anchoRecuadro <= 0 || altoRecuadro <= 0) return;
+
+                const estilo = window.getComputedStyle(categoria);
+                const texto = (categoria.textContent || '').trim();
+                if (!texto) return;
+
+                // Mismo centro geométrico que el elemento CSS original....................................................................
+                const izquierdaPct = 0.4; /*posicion horizontal */
+                const anchoElementoPct = 6.5;
+                const centroX = (anchoRecuadro * (izquierdaPct / 100)) +
+                                (anchoRecuadro * (anchoElementoPct / 100) / 2);
+                const centroY = altoRecuadro / 2;
+
+                const fontSize = parseFloat(estilo.fontSize) || (anchoRecuadro * 0.022);
+                const fontFamily = estilo.fontFamily || 'Arial, Helvetica, sans-serif';
+                const fontWeight = estilo.fontWeight || '800';
+                const fontStyle = estilo.fontStyle || 'italic';
+                const color = estilo.color || '#000000';
+
+                // Escapado XML para que el texto nunca rompa el SVG.
+                const textoSVG = texto
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&apos;');
+
+                const fontFamilySVG = fontFamily.replace(/"/g, '&quot;');
+
+                /*
+                 * El texto se rota DENTRO del SVG. Por tanto html2canvas
+                 * captura una imagen ya girada y no necesita procesar la
+                 * transformación CSS problemática.
+                 */
+                const svg = `
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         width="${anchoRecuadro}"
+                         height="${altoRecuadro}"
+                         viewBox="0 0 ${anchoRecuadro} ${altoRecuadro}">
+                        <defs>
+                            <filter id="sombraCategoria"
+                                    x="-30%" y="-30%" width="160%" height="160%">
+                                <feDropShadow dx="${fontSize * 0.05}"
+                                              dy="${fontSize * 0.05}"
+                                              stdDeviation="${fontSize * 0.10}"
+                                              flood-color="#ffffff"
+                                              flood-opacity="0.90"/>
+                            </filter>
+                        </defs>
+                        <text x="${centroX}"
+                              y="${centroY}"
+                              text-anchor="middle"
+                              dominant-baseline="middle"
+                              transform="rotate(270 ${centroX} ${centroY})"
+                              fill="${color}"
+                              font-family="${fontFamilySVG}"
+                              font-size="${fontSize}px"
+                              font-weight="${fontWeight}"
+                              font-style="${fontStyle}"
+                              filter="url(#sombraCategoria)">${textoSVG}</text>
+                    </svg>
+                `;
+
+                const imagenCategoria = documentoClonado.createElement('img');
+                imagenCategoria.className = 'categoria-vertical-render';
+                imagenCategoria.alt = '';
+                imagenCategoria.src =
+                    'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+
+                // La imagen ocupa todo el recuadro y el SVG decide dónde va el texto.
+                imagenCategoria.style.position = 'absolute';
+                imagenCategoria.style.top = '0';
+                imagenCategoria.style.left = '0';
+                imagenCategoria.style.width = '100%';
+                imagenCategoria.style.height = '100%';
+                imagenCategoria.style.zIndex = '5';
+                imagenCategoria.style.pointerEvents = 'none';
+
+                // Ocultamos la versión CSS SOLO dentro del clon.
+                categoria.style.visibility = 'hidden';
+                categoria.insertAdjacentElement('afterend', imagenCategoria);
+            });
+        }
+
+        async function capturarPaginaComoJPG() {
+            const boton = document.getElementById('btnCapturarPagina');
+            const textoBoton = document.getElementById('btnCapturarTexto');
+            if (!boton || boton.disabled) return;
+
+            if (typeof html2canvas !== 'function') {
+                alert('No se ha podido cargar la herramienta de captura. Revisa tu conexión a Internet e inténtalo de nuevo.');
+                return;
+            }
+
+            const textoOriginal = textoBoton ? textoBoton.textContent : 'Descargar imagen';
+            boton.disabled = true;
+            if (textoBoton) textoBoton.textContent = 'Generando...';
+
+            let reemplazosCapaBorde = [];
+
+            try {
+                await esperarImagenesCargadas();
+
+                const areaCaptura = document.getElementById('areaCaptura') || document.body;
+                const anchoExacto = areaCaptura.offsetWidth;
+                const altoExacto = areaCaptura.offsetHeight;
+                const anchoVentana = window.innerWidth;
+                const altoVentana = window.innerHeight;
+
+                const escala = window.devicePixelRatio && window.devicePixelRatio > 1
+                    ? Math.min(window.devicePixelRatio, 2.5)
+                    : 1.5;
+
+                reemplazosCapaBorde = await generarImagenesCapaBorde(escala);
+                await new Promise(resolve => setTimeout(resolve, 60));
+
+                const canvas = await html2canvas(areaCaptura, {
+                    backgroundColor: '#000000',
+                    useCORS: true,
+                    allowTaint: false,
+                    scale: escala,
+                    width: anchoExacto,
+                    height: altoExacto,
+                    windowWidth: anchoVentana,
+                    windowHeight: altoVentana,
+                    x: 0,
+                    y: 0,
+                    scrollX: 0,
+                    scrollY: 0,
+
+                    /*
+                     * onclone corrige las categorías verticales únicamente en
+                     * la copia que html2canvas utiliza para generar el JPG.
+                     */
+                    onclone: (documentoClonado) => {
+                        prepararCategoriasParaCaptura(documentoClonado);
+                    },
+
+                    ignoreElements: (el) => el && el.classList && el.classList.contains('no-captura')
+                });
+
+                const nombreArchivo = construirNombreArchivoCaptura();
+
+                canvas.toBlob((blob) => {
+                    if (!blob) {
+                        alert('No se ha podido generar la imagen. Inténtalo de nuevo.');
+                        return;
+                    }
+                    descargarBlobComoArchivo(blob, nombreArchivo);
+                }, 'image/jpeg', 0.92);
+
+            } catch (err) {
+                console.error('Error al generar la captura de la página:', err);
+                alert('No se ha podido generar la imagen. Inténtalo de nuevo.');
+            } finally {
+                eliminarImagenesCapaBorde(reemplazosCapaBorde);
+                boton.disabled = false;
+                if (textoBoton) textoBoton.textContent = textoOriginal;
+            }
+        }
+    </script>
+
+    <script>
+        /*
+         * ================================================================
+         * GUARDAR HISTÓRICO (Historico.txt)
+         * ================================================================
+         * Usa File System Access API cuando está disponible y mantiene
+         * un fallback mediante localStorage + descarga del archivo.
+         */
+        // ================== GUARDAR HISTÓRICO (Historico.txt) ==================
+
+        const HIST_DB_NOMBRE = 'NouVoleiAlziraDB';
+        const HIST_DB_VERSION = 1;
+        const HIST_DB_STORE = 'handles';
+        const HIST_CLAVE_HANDLE = 'historicoTxtHandle';
+        const HIST_CLAVE_LOCALSTORAGE = 'historicoTxtContenido';
+
+        function histAbrirDB() {
+            return new Promise((resolve, reject) => {
+                if (!('indexedDB' in window)) { reject(new Error('IndexedDB no soportado')); return; }
+                const req = indexedDB.open(HIST_DB_NOMBRE, HIST_DB_VERSION);
+                req.onupgradeneeded = () => {
+                    if (!req.result.objectStoreNames.contains(HIST_DB_STORE)) {
+                        req.result.createObjectStore(HIST_DB_STORE);
+                    }
+                };
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function histObtenerHandleGuardado() {
+            try {
+                const db = await histAbrirDB();
+                return await new Promise((resolve, reject) => {
+                    const tx = db.transaction(HIST_DB_STORE, 'readonly');
+                    const store = tx.objectStore(HIST_DB_STORE);
+                    const req = store.get(HIST_CLAVE_HANDLE);
+                    req.onsuccess = () => resolve(req.result || null);
+                    req.onerror = () => reject(req.error);
+                });
+            } catch (err) {
+                return null;
+            }
+        }
+
+        async function histGuardarHandle(handle) {
+            try {
+                const db = await histAbrirDB();
+                await new Promise((resolve, reject) => {
+                    const tx = db.transaction(HIST_DB_STORE, 'readwrite');
+                    const store = tx.objectStore(HIST_DB_STORE);
+                    const req = store.put(handle, HIST_CLAVE_HANDLE);
+                    req.onsuccess = () => resolve();
+                    req.onerror = () => reject(req.error);
+                });
+            } catch (err) {
+                console.warn('No se pudo recordar el archivo histórico seleccionado.', err);
+            }
+        }
+
+        function histObtenerTextoFechaGeneral() {
+            const elSpan = document.querySelector('#headerTextoFecha span');
+            if (elSpan && elSpan.textContent.trim() !== '') {
+                return elSpan.textContent.trim();
+            }
+            return '';
+        }
+
+        function histConstruirBloqueDatos() {
+            const lineas = [];
+            lineas.push(histObtenerTextoFechaGeneral());
+
+            const recuadros = document.querySelectorAll('.recuadro-partido');
+            recuadros.forEach(recuadro => {
+                const nombresEquipo = recuadro.querySelectorAll('.nombre-equipo');
+
+                // Reemplazar saltos de línea/etiquetas por espacios y limpiar espacios dobles
+                const equipoCasa = nombresEquipo[0] 
+                    ? (nombresEquipo[0].innerText || nombresEquipo[0].textContent).replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim() 
+                    : '';
+
+                const equipoVisitante = nombresEquipo[1] 
+                    ? (nombresEquipo[1].innerText || nombresEquipo[1].textContent).replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim() 
+                    : '';
+
+                const estado = recuadro.datosEstado || {};
+                const fecha = (estado.fecha || '').trim();
+                const hora = (estado.hora || '').trim();
+                const lugar = (estado.lugar || '').trim();
+                const categoria = (recuadro.getAttribute('data-categoria') || '').trim();
+
+                lineas.push(`${equipoCasa} | ${equipoVisitante} | ${fecha} | ${hora} | ${lugar} | ${categoria}`);
+            });
+
+            return lineas.join('\n');
+        }
+
+        async function histLeerArchivoComoTexto(handle) {
+            const archivo = await handle.getFile();
+            return await archivo.text();
+        }
+
+        async function histGuardarConFileSystemAPI(bloqueNuevo) {
+            let handle = await histObtenerHandleGuardado();
+
+            if (handle) {
+                const permisoActual = await handle.queryPermission({ mode: 'readwrite' });
+                if (permisoActual !== 'granted') {
+                    const permisoSolicitado = await handle.requestPermission({ mode: 'readwrite' });
+                    if (permisoSolicitado !== 'granted') {
+                        handle = null;
+                    }
+                }
+            }
+
+            if (!handle) {
+                handle = await window.showSaveFilePicker({
+                    suggestedName: 'Historico.txt',
+                    types: [{ description: 'Archivo de texto', accept: { 'text/plain': ['.txt'] } }]
+                });
+                await histGuardarHandle(handle);
+            }
+
+            let contenidoActual = '';
+            try {
+                contenidoActual = await histLeerArchivoComoTexto(handle);
+            } catch (err) {
+                contenidoActual = '';
+            }
+
+            const nuevoContenido = contenidoActual.trim() !== ''
+                ? bloqueNuevo + '\n\n' + contenidoActual
+                : bloqueNuevo;
+
+            const writable = await handle.createWritable();
+            await writable.write(nuevoContenido);
+            await writable.close();
+        }
+
+        function histDescargarFallback(bloqueNuevo) {
+            let contenidoPrevio = '';
+            try {
+                contenidoPrevio = localStorage.getItem(HIST_CLAVE_LOCALSTORAGE) || '';
+            } catch (err) {
+                contenidoPrevio = '';
+            }
+
+            const nuevoContenido = contenidoPrevio.trim() !== ''
+                ? bloqueNuevo + '\n\n' + contenidoPrevio
+                : bloqueNuevo;
+
+            try {
+                localStorage.setItem(HIST_CLAVE_LOCALSTORAGE, nuevoContenido);
+            } catch (err) {
+                console.warn('No se pudo guardar el histórico en el almacenamiento local del navegador.', err);
+            }
+
+            const blob = new Blob([nuevoContenido], { type: 'text/plain;charset=utf-8' });
+            descargarBlobComoArchivo(blob, 'Historico.txt');
+        }
+
+        async function guardarHistorico() {
+            const boton = document.getElementById('btnGuardarHistorico');
+            const textoBoton = document.getElementById('btnGuardarHistoricoTexto');
+            if (!boton || boton.disabled) return;
+
+            const textoOriginal = textoBoton ? textoBoton.textContent : 'Guardar histórico';
+            boton.disabled = true;
+            if (textoBoton) textoBoton.textContent = 'Guardando...';
+
+            try {
+                const bloqueNuevo = histConstruirBloqueDatos();
+
+                if ('showSaveFilePicker' in window) {
+                    try {
+                        await histGuardarConFileSystemAPI(bloqueNuevo);
+                    } catch (err) {
+                        if (err && err.name === 'AbortError') {
+                            return;
+                        }
+                        console.warn('No se pudo guardar directamente en el archivo, se usará la descarga.', err);
+                        histDescargarFallback(bloqueNuevo);
+                    }
+                } else {
+                    histDescargarFallback(bloqueNuevo);
+                }
+            } catch (err) {
+                console.error('Error al guardar el histórico:', err);
+                alert('No se ha podido guardar el histórico. Inténtalo de nuevo.');
+            } finally {
+                boton.disabled = false;
+                if (textoBoton) textoBoton.textContent = textoOriginal;
+            }
+        }
+    </script>
+</body>
+</html>
