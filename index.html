@@ -5053,6 +5053,7 @@
     if (ghSettings.user && ghSettings.repo && navigator.onLine) {
       (async () => {
         await fetchOtrosFromGitHub();
+        await refreshFichasList();
         const el = document.getElementById("screenOtros");
         if (el && el.classList.contains("active")) renderOtros();
       })();
@@ -5112,11 +5113,92 @@
     try { return JSON.parse(localStorage.getItem("NVA_FICHAS_VER")) || {}; } catch (e) { return {}; }
   }
 
-  function openFicha(team) {
-    const name = fichaFileName(team);
+  // Lista (en caché) de los PDF de la carpeta "Fichas". Se refresca al abrir OTROS
+  // y al pulsar una ficha que no se encuentra en la caché.
+  let fichasFilesCache = (() => {
+    try { return JSON.parse(localStorage.getItem("NVA_FICHAS_FILES")) || []; } catch (e) { return []; }
+  })();
+
+  async function refreshFichasList() {
+    const files = await listGitHubFolder(FICHAS_FOLDER);
+    if (!files) return false; // sin conexión / GitHub sin configurar: se conserva la caché
+    fichasFilesCache = files.filter(f => f.name && /\.pdf$/i.test(f.name)).map(f => f.name);
+    localStorage.setItem("NVA_FICHAS_FILES", JSON.stringify(fichasFilesCache));
+    return true;
+  }
+
+  // Localiza el PDF del equipo sin distinguir mayúsculas, acentos, espacios ni signos:
+  // "Licencias NVA A (Infantil).pdf", "licencias_nva_a_infantil.pdf"... valen igual.
+  // Si no hay uno con categoría, se admite "Licencias <nombre>.pdf" o "Licencias <categoría>.pdf".
+  function findFichaName(team) {
+    const norm = s => sanitizeFileName(s).replace(/_/g, "").toLowerCase();
+    const strip = n => n.replace(/\.pdf$/i, "");
+    const wanted = [
+      norm("Licencias " + getTeamKey(team)),
+      norm("Licencias " + team.name),
+      norm("Licencias " + team.category)
+    ];
+    for (const w of wanted) {
+      const hit = fichasFilesCache.find(n => norm(strip(n)) === w);
+      if (hit) return hit;
+    }
+    return null;
+  }
+
+  function fichaUrl(name) {
     const ver = fichaVersions()[name];
     // Ruta relativa: la carpeta "Fichas" está en el mismo repositorio que esta página.
-    window.open(`${FICHAS_FOLDER}/${name}${ver ? "?v=" + ver : ""}`, "_blank", "noopener");
+    return `${FICHAS_FOLDER}/${encodeURIComponent(name)}${ver ? "?v=" + ver : ""}`;
+  }
+
+  // Descarga el PDF por la API de GitHub (mismo repositorio que usa el resto de la app).
+  // Así no depende de dónde esté publicada esta página ni de la caché de GitHub Pages,
+  // y siempre se ve la última versión subida.
+  async function fetchFichaBlob(name) {
+    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${FICHAS_FOLDER}/${encodeURIComponent(name)}`;
+    const headers = { "Accept": "application/vnd.github.raw+json" };
+    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
+    const res = await fetch(url, { headers, cache: "no-store" });
+    if (!res.ok) {
+      const err = new Error("HTTP " + res.status);
+      err.status = res.status;
+      throw err;
+    }
+    return new Blob([await res.arrayBuffer()], { type: "application/pdf" });
+  }
+
+  async function openFicha(team) {
+    const label = `${team.name} (${team.category})`;
+    const canApi = !!(ghSettings.user && ghSettings.repo && navigator.onLine);
+
+    // La pestaña se abre ya (gesto del usuario) para que el navegador no la bloquee.
+    const w = window.open("", "_blank");
+    if (!w) { alert("El navegador ha bloqueado la ventana emergente. Permítela e inténtalo de nuevo."); return; }
+    w.opener = null;
+    try { w.document.write("<p style='font-family:sans-serif;padding:20px'>Cargando ficha…</p>"); } catch (e) {}
+
+    let name = findFichaName(team);
+    if (!name && canApi) { await refreshFichasList(); name = findFichaName(team); }
+    if (!name) name = fichaFileName(team); // nombre estándar: Licencias_<equipo>.pdf
+
+    if (canApi) {
+      try {
+        const blob = await fetchFichaBlob(name);
+        w.location.href = URL.createObjectURL(blob);
+        return;
+      } catch (e) {
+        if (e.status) {
+          w.close();
+          const hint = e.status === 404
+            ? "Comprueba que el PDF está en esa carpeta y repositorio (las mayúsculas cuentan)."
+            : "Comprueba el token de GitHub o inténtalo más tarde.";
+          alert(`No se pudo abrir la ficha de ${label}.\nGitHub responde ${e.status} para "${FICHAS_FOLDER}/${name}" en ${ghSettings.user}/${ghSettings.repo}.\n${hint}`);
+          return;
+        }
+        // Fallo de red: se intenta la ruta relativa como último recurso.
+      }
+    }
+    w.location.href = fichaUrl(name);
   }
 
   function pickFichaPdf(team) {
@@ -5136,8 +5218,9 @@
   }
 
   async function uploadFichaPdf(team, file) {
-    const name = fichaFileName(team);
-    const path = `${FICHAS_FOLDER}/${name}`;
+    await refreshFichasList();
+    const name = findFichaName(team) || fichaFileName(team);
+    const path = `${FICHAS_FOLDER}/${encodeURIComponent(name)}`;
     const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${path}`;
     const auth = { "Authorization": `token ${ghSettings.token}` };
 
@@ -5161,6 +5244,10 @@
     });
     if (!putRes.ok) throw new Error(`HTTP ${putRes.status} al subir ${path}`);
 
+    if (!fichasFilesCache.includes(name)) {
+      fichasFilesCache.push(name);
+      localStorage.setItem("NVA_FICHAS_FILES", JSON.stringify(fichasFilesCache));
+    }
     const vers = fichaVersions();
     vers[name] = Date.now();
     localStorage.setItem("NVA_FICHAS_VER", JSON.stringify(vers));
