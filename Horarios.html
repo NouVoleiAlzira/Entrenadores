@@ -205,46 +205,48 @@
   .toolbar-actions{display:flex; gap:8px; flex-wrap:wrap;}
   .export-msg{color:var(--danger); font-size:12.5px; margin:0 0 10px; min-height:0;}
   .export-msg:empty{display:none;}
+  /* ---- Horario en formato DIN A4 apaisado (297 x 210 mm = 1683 x 1190 px) ---- */
+  .schedule-viewport{overflow-x:auto; border-radius:var(--radius-md);}
+  .schedule-sizer{position:relative;}
   .schedule-capture{
+    position:absolute; left:0; top:0; transform-origin:0 0;
+    width:1683px; height:1190px; display:flex; flex-direction:column;
     background:linear-gradient(160deg, #0A2463 0%, #1A4A9C 55%, #2F7BC8 100%);
-    border-radius:var(--radius-md); padding:24px; overflow:hidden;
+    border-radius:var(--radius-md); padding:22px 20px; overflow:hidden;
   }
-  .schedule-scroll{overflow-x:auto; padding-bottom:6px;}
-  .sched-header{text-align:center; margin:2px 0 18px;}
+  .schedule-scroll{flex:1; min-height:0; display:flex;}
+  .sched-header{text-align:center; margin:0 0 14px; flex:none;}
   .sched-title{
-    color:#fff; font-family:'Oswald'; font-weight:700; font-size:34px; line-height:1.1;
+    color:#fff; font-family:'Oswald'; font-weight:700; font-size:68px; line-height:1.1;
     letter-spacing:.05em; text-transform:uppercase; margin:0;
   }
   .sched-season{
     color:#FFC85C; font-family:'Oswald'; font-weight:500; font-size:19px; letter-spacing:.14em;
     text-transform:uppercase; margin:6px 0 0;
   }
-  @media (max-width:600px){
-    .sched-title{font-size:24px;}
-    .sched-season{font-size:15px;}
-  }
-  .sched-grid{display:grid; width:max-content; background:var(--sc-white);}
+  .sched-grid{display:grid; flex:1; min-width:0; background:transparent;}
   .gcell{border-right:1px solid var(--sc-line); border-bottom:1px solid var(--sc-line); position:relative;}
   .gh-corner{background:#F3F7FD; border-top:1px solid var(--sc-line);}
   .gh-day{
     background:var(--sc-ink); color:#fff; display:flex; align-items:center; justify-content:center;
-    font-family:'Oswald'; font-weight:600; font-size:13px; letter-spacing:.06em; text-transform:uppercase;
+    font-family:'Oswald'; font-weight:600; font-size:30px; letter-spacing:.08em; text-transform:uppercase;
     border-color:var(--sc-ink);
   }
   .gh-group{
     background:#C9DBF3; color:var(--sc-ink); display:flex; align-items:center; justify-content:center;
-    font-family:'Oswald'; font-weight:600; font-size:11.5px; letter-spacing:.04em; text-transform:uppercase;
-    text-align:center; padding:2px;
+    font-family:'Oswald'; font-weight:600; font-size:16px; letter-spacing:.04em; text-transform:uppercase;
+    text-align:center; padding:2px; line-height:1.15;
   }
   .gh-standalone{background:#DCE8F8;}
   .gh-pista{
     background:#EAF1FB; color:var(--sc-ink); display:flex; align-items:center; justify-content:center;
-    font-family:'Inter'; font-weight:600; font-size:10.5px; letter-spacing:.03em; text-transform:uppercase;
+    font-family:'Inter'; font-weight:700; font-size:15px; letter-spacing:.02em; text-transform:uppercase;
+    white-space:nowrap;
   }
   .gb-time{background:var(--sc-white); border-right:2px solid var(--sc-ink);}
   .time-label{
-    position:absolute; right:6px; transform:translateY(-50%);
-    font-size:10px; color:var(--sc-ink); opacity:.75; font-family:'Inter'; font-weight:600;
+    position:absolute; right:7px; transform:translateY(-50%);
+    font-size:15px; color:var(--sc-ink); opacity:.9; font-family:'Inter'; font-weight:600;
     white-space:nowrap;
   }
   .gb-col{background:var(--sc-white);}
@@ -260,10 +262,12 @@
   .na-bottom{border-top:1px solid rgba(14,31,74,.6);}
   .train-seg{position:absolute; left:1px; right:1px; border-radius:3px;}
   .train-label{
-    position:absolute; left:2px; right:2px; display:flex; align-items:center; justify-content:center;
-    text-align:center; font-size:10.5px; line-height:1.15; font-weight:700; color:#fff;
-    text-shadow:0 1px 2px rgba(0,0,0,.55); padding:2px; pointer-events:none; overflow:hidden;
+    position:absolute; left:1px; right:1px; display:flex; align-items:center; justify-content:center;
+    text-align:center; font-size:12px; line-height:1.18; font-weight:700; color:#000;
+    padding:2px 1px; pointer-events:none; overflow:hidden;
   }
+  .tl-inner{max-width:100%;}
+  .tl-time{display:inline-block; white-space:nowrap; font-size:10.5px; font-weight:700;}
   .legend{display:flex; flex-wrap:wrap; gap:10px 18px; margin-top:16px; padding:0 2px;}
   .legend-item{display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; color:#fff;}
   .legend .swatch{width:12px; height:12px; border-radius:3px; flex:none; border:1px solid rgba(255,255,255,.55);}
@@ -358,15 +362,19 @@
       </div>
     </div>
     <p class="export-msg" id="exportMsg" role="status"></p>
-    <div class="schedule-capture" id="scheduleCapture">
-      <div class="sched-header">
-        <h3 class="sched-title">Horarios Nou Volei Alzira</h3>
-        <p class="sched-season">Temporada 2026/27</p>
+    <div class="schedule-viewport" id="scheduleViewport">
+      <div class="schedule-sizer" id="scheduleSizer">
+        <div class="schedule-capture" id="scheduleCapture">
+          <div class="sched-header">
+            <h3 class="sched-title">Horarios Nou Volei Alzira</h3>
+            <p class="sched-season">Temporada 2026/27</p>
+          </div>
+          <div class="schedule-scroll">
+            <div class="sched-grid" id="scheduleGrid"></div>
+          </div>
+          <div class="legend" id="scheduleLegend"></div>
+        </div>
       </div>
-      <div class="schedule-scroll">
-        <div class="sched-grid" id="scheduleGrid"></div>
-      </div>
-      <div class="legend" id="scheduleLegend"></div>
     </div>
   </section>
 
@@ -381,7 +389,8 @@
   var DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes'];
   var STORAGE_KEY = 'voley_scheduler_state_v1';
 
-  var GUTTER_W = 58, COL_W = 102, ROW1 = 32, ROW2 = 28, ROW3 = 24, PPM = 1.55;
+  var GUTTER_W = 62, GAP_W = 12, ROW1 = 54, ROW2 = 34, ROW3 = 40;
+  var CAP_W = 1683, CAP_H = 1190; // DIN A4 apaisado (297 x 210 mm)
   var anyUnavailable = false;
 
   function uid(p){ return p + '_' + Math.random().toString(36).slice(2,9); }
@@ -782,15 +791,18 @@
     if(maxEnd - minStart < 60) maxEnd = minStart + 60;
     anyUnavailable = false;
     var totalMinutes = maxEnd - minStart;
-    var bodyH = totalMinutes * PPM;
+    function pct(m){ return ((m - minStart) / totalMinutes * 100) + '%'; }
+    function pctLen(a, b){ return ((b - a) / totalMinutes * 100) + '%'; }
 
     var columns = [];
     var dayGroups = [];
+    var tracks = [];   // pistas de columnas: 'minmax(0,1fr)' por pista y separador por día
     var colIndex = 2;
 
     DAYS.forEach(function(dayName, dayIdx){
       var activeCourts = state.courts.filter(function(c){ return c.days[dayIdx]; });
       if(activeCourts.length === 0) activeCourts = [{id:null, name:'Sin pistas asignadas', group:'', placeholder:true}];
+      if(dayIdx > 0){ tracks.push(GAP_W + 'px'); colIndex++; } // separación vertical entre días
       var dayStartCol = colIndex;
       var i = 0;
       while(i < activeCourts.length){
@@ -802,21 +814,20 @@
           var clusterStartCol = colIndex;
           clusterCourts.forEach(function(c){
             columns.push({day:dayIdx, court:c, colNum:colIndex, standalone:false, clusterStartCol:clusterStartCol, clusterColCount:clusterCourts.length, groupLabel:c.group});
-            colIndex++;
+            tracks.push('minmax(0,1fr)'); colIndex++;
           });
           i = j;
         } else {
           columns.push({day:dayIdx, court:court, colNum:colIndex, standalone:true, clusterStartCol:colIndex, clusterColCount:1, groupLabel: court.placeholder ? court.name : court.name});
-          colIndex++;
+          tracks.push('minmax(0,1fr)'); colIndex++;
           i++;
         }
       }
       dayGroups.push({name:dayName, startCol:dayStartCol, colCount: colIndex - dayStartCol});
     });
 
-    var totalDataCols = colIndex - 2;
-    grid.style.gridTemplateColumns = GUTTER_W + 'px repeat(' + totalDataCols + ', ' + COL_W + 'px)';
-    grid.style.gridTemplateRows = ROW1 + 'px ' + ROW2 + 'px ' + ROW3 + 'px ' + bodyH + 'px';
+    grid.style.gridTemplateColumns = GUTTER_W + 'px ' + tracks.join(' ');
+    grid.style.gridTemplateRows = ROW1 + 'px ' + ROW2 + 'px ' + ROW3 + 'px minmax(0,1fr)';
 
     addCell(grid, '1 / span 3', '1', 'gh-corner', '');
 
@@ -841,22 +852,20 @@
     });
 
     var gutterBody = addCell(grid, '4', '1', 'gb-time', '');
-    gutterBody.style.height = bodyH + 'px';
     for(var m = minStart; m <= maxEnd; m += 30){
       var lbl = document.createElement('div');
       lbl.className = 'time-label';
-      lbl.style.top = ((m - minStart) * PPM) + 'px';
+      lbl.style.top = pct(m);
       lbl.textContent = toTime(m);
       gutterBody.appendChild(lbl);
     }
 
     columns.forEach(function(col){
       var cell = addCell(grid, '4', String(col.colNum), 'gb-col', '');
-      cell.style.height = bodyH + 'px';
       for(var hm = minStart; hm < maxEnd; hm += 30){
         var hl = document.createElement('div');
         hl.className = 'hline';
-        hl.style.top = ((hm - minStart) * PPM) + 'px';
+        hl.style.top = pct(hm);
         cell.appendChild(hl);
       }
       if(col.court.placeholder) return;
@@ -868,8 +877,8 @@
         if(toMinute <= fromMin) return;
         var sh = document.createElement('div');
         sh.className = 'na-shade ' + cls;
-        sh.style.top = ((fromMin - minStart) * PPM) + 'px';
-        sh.style.height = ((toMinute - fromMin) * PPM) + 'px';
+        sh.style.top = pct(fromMin);
+        sh.style.height = pctLen(fromMin, toMinute);
         cell.appendChild(sh);
         anyUnavailable = true;
       }
@@ -895,8 +904,8 @@
         if(!covering.length) continue;
         var seg = document.createElement('div');
         seg.className = 'train-seg';
-        seg.style.top = ((segS - minStart) * PPM) + 'px';
-        seg.style.height = ((segE - segS) * PPM) + 'px';
+        seg.style.top = pct(segS);
+        seg.style.height = pctLen(segS, segE);
         if(covering.length === 1){
           seg.style.background = covering[0].color;
         } else {
@@ -913,16 +922,35 @@
       dayTrainings.forEach(function(t){
         var lbl2 = document.createElement('div');
         lbl2.className = 'train-label';
-        lbl2.style.top = ((t.s - minStart) * PPM) + 'px';
-        lbl2.style.height = ((t.e - t.s) * PPM) + 'px';
-        lbl2.title = t.name + ' · ' + t.start + '–' + t.end;
-        lbl2.textContent = t.name;
+        lbl2.style.top = pct(t.s);
+        lbl2.style.height = pctLen(t.s, t.e);
+        lbl2.title = t.name + ' (' + t.start + '–' + t.end + ')';
+        var inner = document.createElement('div');
+        inner.className = 'tl-inner';
+        inner.appendChild(document.createTextNode(t.name + ' '));
+        var tm = document.createElement('span');
+        tm.className = 'tl-time';
+        tm.textContent = '(' + t.start + '–' + t.end + ')';
+        inner.appendChild(tm);
+        lbl2.appendChild(inner);
         cell.appendChild(lbl2);
       });
     });
 
     renderLegend();
   }
+
+  // Vista previa: el horario tiene tamaño fijo A4 y se escala para caber en pantalla
+  function fitPreview(){
+    var vp = document.getElementById('scheduleViewport');
+    var sizer = document.getElementById('scheduleSizer');
+    var cap = document.getElementById('scheduleCapture');
+    var s = Math.max(0.4, vp.clientWidth / CAP_W);
+    sizer.style.width = (CAP_W * s) + 'px';
+    sizer.style.height = (CAP_H * s) + 'px';
+    cap.style.transform = 'scale(' + s + ')';
+  }
+  window.addEventListener('resize', fitPreview);
 
   function addCell(grid, row, col, cls, text){
     var div = document.createElement('div');
@@ -969,38 +997,35 @@
   // es idéntico en móvil, tablet y escritorio.
   async function renderScheduleCanvas(){
     var target = document.getElementById('scheduleCapture');
-    var grid = document.getElementById('scheduleGrid');
     if(document.fonts && document.fonts.ready){ try{ await document.fonts.ready; }catch(e){} }
 
-    var cs = getComputedStyle(target);
-    var padding = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
-    var fullW = Math.ceil(grid.scrollWidth) + padding;
-    var fullH = Math.ceil(target.scrollHeight) + 8;
     var scale = 2;
-    if(fullW * fullH * scale * scale > MAX_PIXELS){
-      scale = Math.max(1, Math.sqrt(MAX_PIXELS / (fullW * fullH)));
+    if(CAP_W * CAP_H * scale * scale > MAX_PIXELS){
+      scale = Math.max(1, Math.sqrt(MAX_PIXELS / (CAP_W * CAP_H)));
     }
 
     return html2canvas(target, {
       backgroundColor: EXPORT_BG,
       scale: scale,
-      windowWidth: fullW,
-      width: fullW,
+      width: CAP_W,
+      height: CAP_H,
+      windowWidth: CAP_W,
+      windowHeight: CAP_H,
       useCORS: true,
       onclone: function(doc){
         var cap = doc.getElementById('scheduleCapture');
-        var scroller = cap.querySelector('.schedule-scroll');
+        var sizer = doc.getElementById('scheduleSizer');
+        var vp = doc.getElementById('scheduleViewport');
         var mainEl = doc.querySelector('main');
         mainEl.style.maxWidth = 'none';
         mainEl.style.padding = '0';
         mainEl.style.margin = '0';
-        cap.style.width = fullW + 'px';
-        cap.style.maxWidth = 'none';
-        cap.style.overflow = 'visible';
+        vp.style.overflow = 'visible';
+        vp.style.borderRadius = '0';
+        sizer.style.width = CAP_W + 'px';
+        sizer.style.height = CAP_H + 'px';
+        cap.style.transform = 'none';
         cap.style.borderRadius = '0';
-        scroller.style.overflow = 'visible';
-        scroller.style.width = 'max-content';
-        scroller.style.paddingBottom = '0';
       }
     });
   }
@@ -1036,14 +1061,13 @@
       throw new Error('No se pudo cargar la librería de PDF. Comprueba tu conexión e inténtalo de nuevo.');
     }
     var jsPDF = window.jspdf.jsPDF;
-    // Página con las mismas proporciones que el horario (297 mm de ancho, como un A4 apaisado),
-    // de modo que el fondo degradado ocupa la página entera sin bordes.
-    var pageW = 297;
-    var pageH = pageW * canvas.height / canvas.width;
+    // DIN A4 apaisado (297 x 210 mm): el horario tiene exactamente esa proporción
+    // y el fondo degradado ocupa la página entera sin bordes.
+    var pageW = 297, pageH = 210;
     var doc = new jsPDF({
-      orientation: pageW >= pageH ? 'landscape' : 'portrait',
+      orientation: 'landscape',
       unit: 'mm',
-      format: [pageW, pageH]
+      format: 'a4'
     });
     doc.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, pageW, pageH);
     await saveBlob(doc.output('blob'), 'horarios-nou-volei-alzira-2026-27.pdf');
@@ -1089,6 +1113,7 @@
   }
 
   renderAll();
+  fitPreview();
 })();
 </script>
 </body>
