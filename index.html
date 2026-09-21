@@ -1277,6 +1277,72 @@
       outline: none;
     }
     .ms-set-input:focus { border-color: #0284c7; }
+  
+    /* =====================================================================
+       HORARIOS DE ENTRENAMIENTO (pantalla nueva)
+       ===================================================================== */
+    .hz-status {
+      text-align: center; font-size: 0.75rem; font-weight: 700; margin: -6px 0 10px 0;
+      color: #bbf7d0; text-shadow: 0 0 3px rgba(0,0,0,0.9);
+    }
+    .hz-status.dirty { color: #fde68a; }
+    .hz-arrow { flex: none; margin-left: 8px; }
+    .hz-panel {
+      background: #ffffff; color: #0f172a; border-radius: 12px; padding: 12px;
+      margin: -2px 0 10px 0; font-size: 0.85rem; box-shadow: 2px 2px 4px #000000;
+    }
+    .hz-hint { font-size: 0.74rem; color: #64748b; margin: 2px 0 8px 0; line-height: 1.35; }
+    .hz-warn { font-size: 0.72rem; color: #b91c1c; font-weight: 600; margin: 3px 0 0 2px; }
+    .hz-info { font-size: 0.72rem; color: #0369a1; font-weight: 600; margin: 3px 0 0 2px; }
+    .hz-sub-btn {
+      width: 100%; background: #f1f5f9; color: var(--azul-dark); border: 1px solid var(--gray-border);
+      border-radius: 10px; padding: 10px 12px; font-size: 0.86rem; font-weight: 700; text-align: left;
+      cursor: pointer; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .hz-sub-btn.open { border-color: var(--rosa-brand); background: #fdf2f8; }
+    .hz-sub-panel { border-left: 3px solid var(--rosa-brand); padding: 4px 0 4px 10px; margin: 0 0 12px 6px; }
+    .hz-dot {
+      display: inline-block; width: 14px; height: 14px; border-radius: 50%;
+      border: 1px solid rgba(0,0,0,0.55); vertical-align: -2px; margin-right: 4px; flex: none;
+    }
+    .hz-label { font-size: 0.7rem; font-weight: 700; color: #64748b; margin: 6px 0 2px 2px; display: block; }
+    .hz-team-set { display: grid; grid-template-columns: 38px minmax(0,1fr); gap: 6px 8px; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--gray-border); }
+    .hz-team-set:last-child { border-bottom: none; }
+    .hz-team-set input[type="color"] { width: 38px; height: 34px; border: 1px solid var(--gray-border); border-radius: 6px; padding: 1px; background: #fff; cursor: pointer; }
+    .hz-team-set .hz-team-name { font-weight: 700; font-size: 0.82rem; }
+    .hz-team-set .hz-team-label { grid-column: 1 / -1; }
+    .hz-court { background: #f8fafc; border: 1px solid var(--gray-border); border-radius: 10px; padding: 8px; margin-bottom: 8px; }
+    .hz-court-head { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+    .hz-win { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px; margin-bottom: 6px; }
+    .hz-days { display: flex; gap: 4px; margin-bottom: 6px; }
+    .hz-chip {
+      flex: 1; min-width: 0; padding: 6px 0; border-radius: 6px; border: 1px solid var(--gray-border);
+      background: #f1f5f9; color: #64748b; font-weight: 800; font-size: 0.78rem; cursor: pointer;
+    }
+    .hz-chip.on { background: var(--btn-fondorAzul); color: #fff; border-color: #0e044a; }
+    .hz-times { display: flex; gap: 6px; align-items: center; }
+    .hz-times select { flex: 1; min-width: 0; }
+    .hz-mini-btn {
+      background: #e0e7ff; color: var(--azul-primary); border: 1px dashed #818cf8; border-radius: 8px;
+      padding: 6px 10px; font-weight: 700; font-size: 0.75rem; cursor: pointer; width: 100%; margin-top: 2px;
+    }
+    .hz-mini-btn.danger { background: #fee2e2; color: #b91c1c; border-color: #f87171; }
+    .hz-team-btn {
+      width: 100%; background: #f1f5f9; color: var(--azul-dark); border: 1px solid var(--gray-border);
+      border-radius: 10px; padding: 10px 12px; font-size: 0.88rem; font-weight: 700; text-align: left;
+      cursor: pointer; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .hz-team-btn.open { border-color: var(--rosa-brand); background: #fdf2f8; }
+    .hz-train { background: #f8fafc; border: 1px solid var(--gray-border); border-radius: 10px; padding: 8px; margin-bottom: 8px; }
+    .hz-train.draft { border-style: dashed; background: #ffffff; }
+    .hz-train-r1 { display: grid; grid-template-columns: 34% minmax(0,1fr); gap: 6px; margin-bottom: 6px; }
+    .hz-train-r2 { display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr) auto; gap: 6px; align-items: center; }
+    .hz-train-r2 .btn-del { font-size: 1.05rem; padding: 2px 6px; }
+    .hz-draft-title { font-size: 0.72rem; font-weight: 800; color: var(--morado-accent); margin-bottom: 6px; }
+    .hz-canvas { width: 100%; height: auto; display: block; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.45); background: #1e3c72; }
+    .hz-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .hz-actions button { flex: 1; min-width: 0; margin-bottom: 0; }
+    .hz-add-venue { display: flex; gap: 6px; margin-top: 8px; }
   </style>
 </head>
 <body>
@@ -1340,7 +1406,8 @@
       <button class="btn-pdf-mode2" style="flex:1; min-width:0; margin-bottom:20;" onclick="window.open('Resultados.html', '_blank', 'noopener')">🏆 Resultados de la semana</button>
     </div>
 
-      <button class="btn-pdf-mode2" style="flex:1; min-width:0;" onclick="window.open('Horarios.html', '_blank', 'noopener')">📆 Horarios Club NVA</button>
+    <div class="section-title" style="margin-top:20px;">🗓️ Horarios de entrenamiento</div>
+    <button class="btn-pdf-mode2" style="margin-bottom:20px;" onclick="openHorarios()">🗓️ Horarios</button>
   </div>
 
   <!-- PANTALLA OTROS: botones de información e instrucciones -->
@@ -1348,6 +1415,56 @@
     <div class="section-title">Otros · Información e Instrucciones</div>
     <div id="otrosList"></div>
     <input type="file" id="fichaFileInput" accept="application/pdf,.pdf" style="display:none;">
+  </div>
+
+  <!-- PANTALLA: HORARIOS DE ENTRENAMIENTO -->
+  <div class="screen" id="screenHorarios">
+    <div class="section-title">🗓️ Horarios de Entrenamiento</div>
+    <div id="hzStatus" class="hz-status"></div>
+
+    <!-- 1. AJUSTES -->
+    <button class="coach-btn" id="hzBtn_settings" onclick="hzToggleSection('settings')">
+      <span>⚙️ 1. Ajustes (colores, pabellones y pistas)</span> <span class="hz-arrow">➤</span>
+    </button>
+    <div class="hz-panel" id="hzSec_settings" style="display:none;"></div>
+
+    <!-- 2. ENTRENAMIENTOS POR EQUIPO -->
+    <button class="coach-btn" id="hzBtn_trainings" onclick="hzToggleSection('trainings')">
+      <span>🏐 2. Entrenamientos por equipo</span> <span class="hz-arrow">➤</span>
+    </button>
+    <div class="hz-panel" id="hzSec_trainings" style="display:none;"></div>
+
+    <!-- 3. HORARIO SEMANAL -->
+    <button class="coach-btn" id="hzBtn_schedule" onclick="hzToggleSection('schedule')">
+      <span>🖼️ 3. Horario semanal (imagen / PDF)</span> <span class="hz-arrow">➤</span>
+    </button>
+    <div class="hz-panel" id="hzSec_schedule" style="display:none;">
+      <canvas id="hzCanvas" class="hz-canvas" width="2970" height="2100"></canvas>
+      <div id="hzSchedNote" class="hz-hint" style="margin-top:8px;"></div>
+      <div class="hz-actions">
+        <button class="btn-pdf-mode2" onclick="hzOpenZoom()">🔍 Ampliar</button>
+        <button class="btn-pdf-mode" onclick="withLoading(hzDownloadPNG, 'Generando imagen...')">🖼️ Imagen</button>
+        <button class="btn-pdf-mode" onclick="withLoading(hzDownloadPDF, 'Generando PDF...')">📄 PDF</button>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:8px;">
+      <button class="btn-save-session" style="flex:1; padding:12px; font-size:0.9rem;" onclick="withLoading(saveHorarios, 'Guardando Horarios.json en GitHub...')">💾 Guardar Horarios.json en GitHub</button>
+      <button class="btn-save-session" style="flex:0 0 auto; width:auto; white-space:nowrap; padding:12px; font-size:0.9rem; background: var(--btn-fondoVerde);" onclick="withLoading(refreshHorarios, 'Refrescando Horarios...')">🔄 Refrescar</button>
+    </div>
+  </div>
+
+  <!-- MODAL: HORARIOS AMPLIADO -->
+  <div class="modal-backdrop" id="modalHzZoom">
+    <div class="modal-box" style="max-width: 98vw; width: 98vw; max-height: 94vh;">
+      <div class="modal-header">
+        <div class="modal-title">Horarios · vista ampliada</div>
+        <button class="btn-close-modal" onclick="hzCloseZoom()">✕</button>
+      </div>
+      <div style="overflow: auto; -webkit-overflow-scrolling: touch; flex: 1; background:#1e3c72; border-radius:8px;">
+        <img id="hzZoomImg" alt="Horarios Nou Volei Alzira" style="width: 1500px; max-width: none; display: block;">
+      </div>
+    </div>
   </div>
 
   <!-- PANTALLA 2: REGISTRO DE ENTRENAMIENTO -->
@@ -3696,6 +3813,7 @@
     tablonData = { tablonText: "" };
     otrosData = [];
     otrosOpenId = null;
+    if (typeof hzResetLocal === "function") hzResetLocal();
     offlineQueue = [];
     allTrainingLogs = [];
     warningsData = {};
@@ -3816,7 +3934,8 @@
       fetchWarningsFromGitHub(),
       fetchQueriesFromGitHub(),
       fetchTablonFromGitHub(),
-      fetchOtrosFromGitHub()
+      fetchOtrosFromGitHub(),
+      (typeof fetchHorariosFromGitHub === "function" ? fetchHorariosFromGitHub() : Promise.resolve())
     ]);
 
     refreshActiveScreenUI();
@@ -3846,6 +3965,11 @@
     const screenOtrosEl = document.getElementById("screenOtros");
     if (screenOtrosEl && screenOtrosEl.classList.contains("active")) {
       renderOtros();
+    }
+
+    const screenHorariosEl = document.getElementById("screenHorarios");
+    if (screenHorariosEl && screenHorariosEl.classList.contains("active") && typeof hzRenderAll === "function") {
+      hzRenderAll();
     }
 
     const tablonEl = document.getElementById("tablonTextarea");
@@ -5369,6 +5493,965 @@
     const text = (e.clipboardData || window.clipboardData).getData("text/plain");
     document.execCommand("insertText", false, text);
   });
+</script>
+
+<script>
+  // =====================================================================
+  //  MÓDULO HORARIOS
+  //  Pantalla para crear los horarios semanales de entrenamiento del club:
+  //   1) Ajustes: temporada, colores de equipos, pabellones y pistas con su
+  //      disponibilidad (días + hora de inicio/fin).
+  //   2) Entrenamientos por equipo (día, pabellón/pista, hora inicio y fin).
+  //   3) Horario semanal dibujado en un <canvas> A4 apaisado -> PNG / PDF.
+  //  Todo se guarda en local (NVA_HORARIOS_DATA) y en GitHub: Horarios.json
+  // =====================================================================
+  const HZ_FILE = "Horarios.json";
+  const HZ_LS_KEY = "NVA_HORARIOS_DATA";
+  const HZ_DIRTY_KEY = "NVA_HORARIOS_DIRTY";
+  const HZ_DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
+  const HZ_DAYS_SHORT = ["L", "M", "X", "J", "V"];
+  const HZ_FONT = '"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+
+  // ---------- utilidades ----------
+  function hzEl(id) { return document.getElementById(id); }
+  function hzUid(p) { return p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function hzEsc(s) {
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function hzT2M(t) {
+    const m = /^(\d{1,2}):(\d{2})$/.exec(String(t || ""));
+    return m ? (+m[1]) * 60 + (+m[2]) : NaN;
+  }
+  function hzM2T(m) { return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); }
+  function hzNorm(s) { return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); }
+  function hzValidTime(t) { const m = hzT2M(t); return !isNaN(m) && m >= 0 && m <= 1440; }
+
+  // ---------- modelo de datos ----------
+  function hzNormalize(raw) {
+    const d = (raw && typeof raw === "object") ? raw : {};
+    const out = { season: "2026/27", teamColors: {}, teamLabels: {}, venues: [], trainings: {}, updated: "" };
+    if (typeof d.season === "string" && d.season.trim()) out.season = d.season.trim();
+    if (typeof d.updated === "string") out.updated = d.updated;
+    if (d.teamColors && typeof d.teamColors === "object") {
+      Object.keys(d.teamColors).forEach(k => { if (/^#[0-9a-f]{6}$/i.test(d.teamColors[k])) out.teamColors[k] = d.teamColors[k]; });
+    }
+    if (d.teamLabels && typeof d.teamLabels === "object") {
+      Object.keys(d.teamLabels).forEach(k => { if (typeof d.teamLabels[k] === "string") out.teamLabels[k] = d.teamLabels[k]; });
+    }
+    (Array.isArray(d.venues) ? d.venues : []).forEach(v => {
+      if (!v || typeof v !== "object") return;
+      const venue = { id: String(v.id || hzUid("v")), name: String(v.name || "Pabellón"), courts: [] };
+      (Array.isArray(v.courts) ? v.courts : []).forEach((c, ci) => {
+        if (!c || typeof c !== "object") return;
+        const court = { id: String(c.id || hzUid("c")), name: String(c.name || ("Pista " + (ci + 1))), availability: [] };
+        (Array.isArray(c.availability) ? c.availability : []).forEach(w => {
+          if (!w || !hzValidTime(w.start) || !hzValidTime(w.end)) return;
+          const days = (Array.isArray(w.days) ? w.days : []).map(Number).filter(n => n >= 1 && n <= 5);
+          if (!days.length || hzT2M(w.end) <= hzT2M(w.start)) return;
+          court.availability.push({
+            days: Array.from(new Set(days)).sort(),
+            start: hzM2T(hzT2M(w.start)), end: hzM2T(hzT2M(w.end))
+          });
+        });
+        venue.courts.push(court);
+      });
+      out.venues.push(venue);
+    });
+    if (d.trainings && typeof d.trainings === "object") {
+      Object.keys(d.trainings).forEach(k => {
+        const arr = Array.isArray(d.trainings[k]) ? d.trainings[k] : [];
+        out.trainings[k] = arr.filter(t => t && Number(t.day) >= 1 && Number(t.day) <= 5 && t.courtId &&
+          hzValidTime(t.start) && hzValidTime(t.end) && hzT2M(t.end) > hzT2M(t.start))
+          .map(t => ({ id: String(t.id || hzUid("t")), day: Number(t.day), courtId: String(t.courtId),
+            start: hzM2T(hzT2M(t.start)), end: hzM2T(hzT2M(t.end)) }));
+      });
+    }
+    return out;
+  }
+
+  function hzLoadLocal() {
+    try { return hzNormalize(JSON.parse(localStorage.getItem(HZ_LS_KEY))); }
+    catch (e) { return hzNormalize(null); }
+  }
+
+  let hz = hzLoadLocal();
+  let hzDirty = localStorage.getItem(HZ_DIRTY_KEY) === "1";
+  let hzDraft = {};   // fila "en curso" (aún incompleta) por equipo
+  const hzUI = {
+    open: { settings: false, trainings: false, schedule: false },
+    sub: { season: false, teams: false, venues: false },
+    venueOpen: {},
+    teamOpen: null
+  };
+
+  function hzPersistLocal() {
+    try { localStorage.setItem(HZ_LS_KEY, JSON.stringify(hz)); } catch (e) { console.error(e); }
+  }
+  function hzSetDirty(v) {
+    hzDirty = v;
+    try { localStorage.setItem(HZ_DIRTY_KEY, v ? "1" : "0"); } catch (e) {}
+    hzUpdateStatus();
+  }
+  function hzResetLocal() { hz = hzNormalize(null); hzDirty = false; hzDraft = {}; }
+
+  // "flags": s = repintar Ajustes, t = repintar Entrenamientos. El horario se repinta siempre si está abierto.
+  function hzChanged(flags) {
+    flags = flags || "";
+    hz.updated = new Date().toISOString();
+    hzPersistLocal();
+    hzSetDirty(true);
+    if (flags.indexOf("s") >= 0) hzRenderSettings();
+    if (flags.indexOf("t") >= 0) hzRenderTrainings();
+    if (hzUI.open.schedule) hzRenderSchedule();
+  }
+
+  function hzUpdateStatus() {
+    const el = hzEl("hzStatus");
+    if (!el) return;
+    el.className = "hz-status" + (hzDirty ? " dirty" : "");
+    el.textContent = hzDirty ? "● Cambios sin guardar en GitHub" : "✔ Sin cambios pendientes de guardar";
+  }
+
+  // ---------- colores por defecto ----------
+  const HZ_PALETTES = [
+    [["escol", "escue", "mixt"], ["#33cc33", "#7fe07f", "#b5f0b5"]],
+    [["alev"], ["#00b0f0", "#66ccf5", "#a5e0fa"]],
+    [["infan"], ["#ff9900", "#ffc800", "#ffcc66"]],
+    [["cadet"], ["#e0129a", "#ff66ff", "#ff99cc"]],
+    [["juven"], ["#a855d6", "#c08be3", "#dcc0f0"]],
+    [["junio"], ["#2e75b6", "#5b9bd5", "#9dc3e6"]],
+    [["senior"], ["#e03030", "#ee6666", "#f5a3a3"]]
+  ];
+  const HZ_FALLBACK = ["#f4b183", "#a9d18e", "#9dc3e6", "#ffd966", "#c9a0dc", "#f8a5c2"];
+
+  function hzDefaultColor(team, idx) {
+    const name = hzNorm(team.name), cat = hzNorm(team.category);
+    const teams = appData.teams || [];
+    for (const [keys, pal] of HZ_PALETTES) {
+      const byName = keys.some(k => name.indexOf(k) === 0 || name.indexOf(" " + k) >= 0);
+      const byCat = keys.some(k => cat.indexOf(k) === 0);
+      if (byName || byCat) {
+        let n = 0;
+        for (let i = 0; i < idx; i++) {
+          const o = teams[i];
+          if (o && hzNorm(o.category) === cat) n++;
+        }
+        return pal[n % pal.length];
+      }
+    }
+    return HZ_FALLBACK[idx % HZ_FALLBACK.length];
+  }
+
+  function hzEnsureColors() {
+    let changed = false;
+    (appData.teams || []).forEach((t, i) => {
+      const k = getTeamKey(t);
+      if (!hz.teamColors[k]) { hz.teamColors[k] = hzDefaultColor(t, i); changed = true; }
+    });
+    if (changed) hzPersistLocal();
+  }
+
+  function hzTeamsMap() {
+    const m = {};
+    (appData.teams || []).forEach(t => { m[getTeamKey(t)] = t; });
+    return m;
+  }
+  function hzLabelParts(team, key) {
+    const custom = (hz.teamLabels[key] || "").trim();
+    if (custom) return { cat: custom, suf: "" };
+    const suf = String(team.name || "").replace(/^\s*NVA\b[\s._-]*/i, "").trim();
+    return { cat: String(team.category || "").trim(), suf };
+  }
+
+  // ---------- pistas / disponibilidad ----------
+  function hzCourtInfo(courtId) {
+    for (const v of hz.venues) for (const c of v.courts) if (c.id === courtId) return { venue: v, court: c };
+    return null;
+  }
+  function hzAvail(court, day) {
+    const iv = court.availability.filter(w => w.days.indexOf(day) >= 0)
+      .map(w => [hzT2M(w.start), hzT2M(w.end)]).sort((a, b) => a[0] - b[0]);
+    const out = [];
+    iv.forEach(x => {
+      const l = out[out.length - 1];
+      if (l && x[0] <= l[1]) l[1] = Math.max(l[1], x[1]); else out.push([x[0], x[1]]);
+    });
+    return out;
+  }
+  function hzTrainingsUsingCourt(courtId) {
+    let n = 0;
+    Object.keys(hz.trainings).forEach(k => { n += (hz.trainings[k] || []).filter(t => t.courtId === courtId).length; });
+    return n;
+  }
+  function hzRemoveTrainingsOfCourt(courtId) {
+    Object.keys(hz.trainings).forEach(k => { hz.trainings[k] = (hz.trainings[k] || []).filter(t => t.courtId !== courtId); });
+    Object.keys(hzDraft).forEach(k => { if (hzDraft[k] && hzDraft[k].courtId === courtId) hzDraft[k].courtId = ""; });
+  }
+
+  // ---------- desplegables de hora ----------
+  function hzTimeOpts(from, to, sel, blank) {
+    const mins = [];
+    for (let m = from; m <= to; m += 15) mins.push(m);
+    const sm = hzT2M(sel);
+    if (!isNaN(sm) && mins.indexOf(sm) < 0 && sm >= from && sm <= to) { mins.push(sm); mins.sort((a, b) => a - b); }
+    let h = blank ? `<option value="">${blank}</option>` : "";
+    mins.forEach(m => {
+      const t = hzM2T(m);
+      h += `<option value="${t}"${t === sel ? " selected" : ""}>${t}</option>`;
+    });
+    return h;
+  }
+  const HZ_MIN = 6 * 60, HZ_MAX = 24 * 60;
+
+  // =====================================================================
+  //  NAVEGACIÓN Y SECCIONES DESPLEGABLES
+  // =====================================================================
+  function openHorarios() {
+    hzEnsureColors();
+    hzRenderAll();
+    showScreen("screenHorarios");
+    hzEl("btnBack").style.display = "flex";
+    window.scrollTo(0, 0);
+    if (ghSettings.user && ghSettings.repo && navigator.onLine) {
+      (async () => {
+        await fetchHorariosFromGitHub();
+        const el = hzEl("screenHorarios");
+        if (el && el.classList.contains("active")) hzRenderAll();
+      })();
+    }
+  }
+
+  function hzToggleSection(k) {
+    hzUI.open[k] = !hzUI.open[k];
+    hzApplyOpen();
+    if (k === "schedule" && hzUI.open[k]) hzRenderSchedule();
+  }
+  function hzApplyOpen() {
+    ["settings", "trainings", "schedule"].forEach(k => {
+      const open = !!hzUI.open[k];
+      hzEl("hzSec_" + k).style.display = open ? "block" : "none";
+      const btn = hzEl("hzBtn_" + k);
+      btn.classList.toggle("selected", open);
+      btn.querySelector(".hz-arrow").textContent = open ? "🔻" : "➤";
+    });
+  }
+  function hzToggleSub(k) { hzUI.sub[k] = !hzUI.sub[k]; hzRenderSettings(); }
+  function hzToggleVenue(id) { hzUI.venueOpen[id] = !hzUI.venueOpen[id]; hzRenderSettings(); }
+  function hzToggleTeam(i) {
+    const t = (appData.teams || [])[i];
+    if (!t) return;
+    const k = getTeamKey(t);
+    hzUI.teamOpen = hzUI.teamOpen === k ? null : k;
+    hzRenderTrainings();
+  }
+
+  function hzRenderAll() {
+    hzUpdateStatus();
+    hzRenderSettings();
+    hzRenderTrainings();
+    hzApplyOpen();
+    if (hzUI.open.schedule) hzRenderSchedule();
+  }
+
+  // =====================================================================
+  //  SECCIÓN 1: AJUSTES
+  // =====================================================================
+  function hzSub(key, title, body, extraBadge) {
+    const open = !!hzUI.sub[key];
+    return `<button class="hz-sub-btn ${open ? "open" : ""}" onclick="hzToggleSub('${key}')">
+        <span>${title}${extraBadge || ""}</span><span>${open ? "🔻" : "➤"}</span></button>
+      ${open ? `<div class="hz-sub-panel">${body}</div>` : ""}`;
+  }
+
+  function hzRenderSettings() {
+    const box = hzEl("hzSec_settings");
+    if (!box) return;
+    const teams = appData.teams || [];
+
+    // Temporada
+    const seasonBody = `
+      <span class="hz-label">Texto que aparece bajo el título (Temporada …)</span>
+      <input type="text" class="app-input" value="${hzEsc(hz.season)}" maxlength="20" placeholder="2026/27"
+             onchange="hzSetSeason(this.value)">`;
+
+    // Equipos y colores
+    let teamsBody = "";
+    if (!teams.length) {
+      teamsBody = `<div class="hz-hint">No hay equipos creados. Añádelos en ⚙️ Opciones → Equipos.</div>`;
+    } else {
+      teamsBody = `<div class="hz-hint">Elige el color de cada equipo. El texto del horario siempre va en negro. Opcionalmente puedes cambiar el texto que se muestra en el horario.</div>`;
+      teams.forEach((t, i) => {
+        const key = getTeamKey(t);
+        const lp = hzLabelParts(Object.assign({}, t), "__none__");
+        const auto = (lp.cat + " " + lp.suf).trim();
+        teamsBody += `<div class="hz-team-set">
+          <input type="color" value="${hzEsc(hz.teamColors[key] || "#dddddd")}" onchange="hzSetTeamColor(${i}, this.value)" title="Color del equipo">
+          <div class="hz-team-name">${hzEsc(t.name)} <small class="badge">${hzEsc(t.category)}</small></div>
+          <input type="text" class="app-input hz-team-label" value="${hzEsc(hz.teamLabels[key] || "")}"
+                 placeholder="Texto en horario: ${hzEsc(auto)}" onchange="hzSetTeamLabel(${i}, this.value)">
+        </div>`;
+      });
+    }
+
+    // Pabellones y pistas
+    let venuesBody = `<div class="hz-hint">Cada pabellón puede tener varias pistas. Para cada pista indica los días y las horas en que está disponible (puedes añadir varias franjas). Fuera de esas horas el horario se sombrea en gris.</div>`;
+    hz.venues.forEach(v => {
+      const open = !!hzUI.venueOpen[v.id];
+      venuesBody += `<button class="hz-sub-btn ${open ? "open" : ""}" onclick="hzToggleVenue('${v.id}')">
+          <span>🏟️ ${hzEsc(v.name)} <small class="badge">${v.courts.length} pista${v.courts.length === 1 ? "" : "s"}</small></span>
+          <span>${open ? "🔻" : "➤"}</span></button>`;
+      if (open) {
+        venuesBody += `<div class="hz-sub-panel">
+          <span class="hz-label">Nombre del pabellón</span>
+          <div class="hz-court-head">
+            <input type="text" class="app-input" value="${hzEsc(v.name)}" onchange="hzSetVenueName('${v.id}', this.value)">
+            <button class="btn-del" title="Eliminar pabellón" onclick="hzDelVenue('${v.id}')">🗑</button>
+          </div>`;
+        v.courts.forEach(c => {
+          venuesBody += `<div class="hz-court">
+            <span class="hz-label" style="margin-top:0;">Pista</span>
+            <div class="hz-court-head">
+              <input type="text" class="app-input" value="${hzEsc(c.name)}" onchange="hzSetCourtName('${v.id}','${c.id}', this.value)">
+              <button class="btn-del" title="Eliminar pista" onclick="hzDelCourt('${v.id}','${c.id}')">🗑</button>
+            </div>
+            <span class="hz-label">Disponibilidad</span>`;
+          c.availability.forEach((w, wi) => {
+            const chips = HZ_DAYS_SHORT.map((lbl, di) => {
+              const d = di + 1;
+              return `<button class="hz-chip ${w.days.indexOf(d) >= 0 ? "on" : ""}" title="${HZ_DAYS[di]}"
+                        onclick="hzToggleWinDay('${v.id}','${c.id}',${wi},${d})">${lbl}</button>`;
+            }).join("");
+            venuesBody += `<div class="hz-win">
+                <div class="hz-days">${chips}</div>
+                <div class="hz-times">
+                  <select class="app-select" onchange="hzSetWinTime('${v.id}','${c.id}',${wi},'start',this.value)">${hzTimeOpts(HZ_MIN, HZ_MAX - 15, w.start)}</select>
+                  <span>–</span>
+                  <select class="app-select" onchange="hzSetWinTime('${v.id}','${c.id}',${wi},'end',this.value)">${hzTimeOpts(hzT2M(w.start) + 15, HZ_MAX, w.end)}</select>
+                  <button class="btn-del" title="Eliminar franja" onclick="hzDelWin('${v.id}','${c.id}',${wi})">🗑</button>
+                </div>
+              </div>`;
+          });
+          if (!c.availability.length) venuesBody += `<div class="hz-warn">Sin disponibilidad: esta pista no aparecerá en el horario.</div>`;
+          venuesBody += `<button class="hz-mini-btn" onclick="hzAddWin('${v.id}','${c.id}')">+ Añadir franja de disponibilidad</button>
+            </div>`;
+        });
+        venuesBody += `<button class="hz-mini-btn" onclick="hzAddCourt('${v.id}')">+ Añadir pista a ${hzEsc(v.name)}</button></div>`;
+      }
+    });
+    venuesBody += `<div class="hz-add-venue">
+        <input type="text" id="hzNewVenueName" class="app-input" placeholder="Nombre del nuevo pabellón">
+        <button class="btn-add" onclick="hzAddVenue()">+</button>
+      </div>`;
+
+    box.innerHTML =
+      hzSub("season", "📅 Temporada", seasonBody, ` <small class="badge">${hzEsc(hz.season)}</small>`) +
+      hzSub("teams", "🎨 Equipos y colores", teamsBody, ` <small class="badge">${teams.length}</small>`) +
+      hzSub("venues", "🏟️ Pabellones y pistas", venuesBody, ` <small class="badge">${hz.venues.length}</small>`);
+  }
+
+  function hzSetSeason(v) { hz.season = String(v).trim() || "2026/27"; hzChanged("s"); }
+  function hzSetTeamColor(i, v) {
+    const t = (appData.teams || [])[i]; if (!t) return;
+    hz.teamColors[getTeamKey(t)] = v; hzChanged("t");
+  }
+  function hzSetTeamLabel(i, v) {
+    const t = (appData.teams || [])[i]; if (!t) return;
+    const k = getTeamKey(t);
+    if (String(v).trim()) hz.teamLabels[k] = String(v).trim(); else delete hz.teamLabels[k];
+    hzChanged("t");
+  }
+
+  function hzNewCourt(name) {
+    return { id: hzUid("c"), name, availability: [{ days: [1, 2, 3, 4, 5], start: "16:30", end: "23:00" }] };
+  }
+  function hzFindVenue(id) { return hz.venues.find(v => v.id === id); }
+  function hzFindCourt(vid, cid) { const v = hzFindVenue(vid); return v ? v.courts.find(c => c.id === cid) : null; }
+
+  function hzAddVenue() {
+    const inp = hzEl("hzNewVenueName");
+    const name = (inp.value || "").trim();
+    if (!name) { inp.focus(); return; }
+    const v = { id: hzUid("v"), name, courts: [hzNewCourt("Pista 1")] };
+    hz.venues.push(v);
+    hzUI.venueOpen[v.id] = true;
+    hzChanged("st");
+  }
+  function hzDelVenue(id) {
+    const v = hzFindVenue(id); if (!v) return;
+    let n = 0; v.courts.forEach(c => { n += hzTrainingsUsingCourt(c.id); });
+    if (!confirm(`¿Eliminar el pabellón "${v.name}" y todas sus pistas?` + (n ? `\n\nSe eliminarán también ${n} entrenamiento(s) asignados a él.` : ""))) return;
+    v.courts.forEach(c => hzRemoveTrainingsOfCourt(c.id));
+    hz.venues = hz.venues.filter(x => x.id !== id);
+    hzChanged("st");
+  }
+  function hzSetVenueName(id, val) {
+    const v = hzFindVenue(id); if (!v) return;
+    v.name = String(val).trim() || "Pabellón";
+    hzChanged("t");
+  }
+  function hzAddCourt(vid) {
+    const v = hzFindVenue(vid); if (!v) return;
+    v.courts.push(hzNewCourt("Pista " + (v.courts.length + 1)));
+    hzChanged("st");
+  }
+  function hzDelCourt(vid, cid) {
+    const v = hzFindVenue(vid), c = hzFindCourt(vid, cid); if (!c) return;
+    const n = hzTrainingsUsingCourt(cid);
+    if (!confirm(`¿Eliminar la pista "${c.name}"?` + (n ? `\n\nSe eliminarán también ${n} entrenamiento(s) asignados a ella.` : ""))) return;
+    hzRemoveTrainingsOfCourt(cid);
+    v.courts = v.courts.filter(x => x.id !== cid);
+    hzChanged("st");
+  }
+  function hzSetCourtName(vid, cid, val) {
+    const c = hzFindCourt(vid, cid); if (!c) return;
+    c.name = String(val).trim() || "Pista";
+    hzChanged("t");
+  }
+  function hzAddWin(vid, cid) {
+    const c = hzFindCourt(vid, cid); if (!c) return;
+    c.availability.push({ days: [1, 2, 3, 4, 5], start: "16:30", end: "23:00" });
+    hzChanged("s");
+  }
+  function hzDelWin(vid, cid, wi) {
+    const c = hzFindCourt(vid, cid); if (!c) return;
+    c.availability.splice(wi, 1);
+    hzChanged("st");
+  }
+  function hzToggleWinDay(vid, cid, wi, d) {
+    const c = hzFindCourt(vid, cid); if (!c || !c.availability[wi]) return;
+    const w = c.availability[wi];
+    const i = w.days.indexOf(d);
+    if (i >= 0) w.days.splice(i, 1); else { w.days.push(d); w.days.sort(); }
+    hzChanged("st");
+  }
+  function hzSetWinTime(vid, cid, wi, field, val) {
+    const c = hzFindCourt(vid, cid); if (!c || !c.availability[wi]) return;
+    const w = c.availability[wi];
+    w[field] = val;
+    if (hzT2M(w.end) <= hzT2M(w.start)) w.end = hzM2T(Math.min(hzT2M(w.start) + 60, HZ_MAX));
+    hzChanged("st");
+  }
+
+  // =====================================================================
+  //  SECCIÓN 2: ENTRENAMIENTOS POR EQUIPO
+  // =====================================================================
+  function hzRowIssues(key, tr, idx) {
+    const out = [];
+    const ci = hzCourtInfo(tr.courtId);
+    if (!ci) return [{ t: "w", m: "La pista asignada ya no existe." }];
+    const s = hzT2M(tr.start), e = hzT2M(tr.end);
+    const av = hzAvail(ci.court, tr.day);
+    if (!av.some(([a, b]) => s >= a && e <= b)) {
+      out.push({ t: "w", m: av.length
+        ? `Fuera de la disponibilidad de la pista (${av.map(x => hzM2T(x[0]) + "–" + hzM2T(x[1])).join(", ")}).`
+        : "La pista no está disponible ese día." });
+    }
+    (hz.trainings[key] || []).forEach((o, oi) => {
+      if (oi !== idx && o.day === tr.day && hzT2M(o.start) < e && hzT2M(o.end) > s) {
+        out.push({ t: "w", m: `El equipo ya tiene otro entrenamiento en ese horario (${o.start}–${o.end}).` });
+      }
+    });
+    const teamMap = hzTeamsMap();
+    Object.keys(hz.trainings).forEach(k => {
+      if (k === key || !teamMap[k]) return;
+      (hz.trainings[k] || []).forEach(o => {
+        if (o.day === tr.day && o.courtId === tr.courtId) {
+          const os = hzT2M(o.start), oe = hzT2M(o.end);
+          if (os < e && oe > s) {
+            out.push({ t: "i", m: `Solapa en la misma pista con ${teamMap[k].name} (${teamMap[k].category}) de ${hzM2T(Math.max(s, os))} a ${hzM2T(Math.min(e, oe))}.` });
+          }
+        }
+      });
+    });
+    return out;
+  }
+
+  function hzCourtOptions(sel) {
+    let h = `<option value="">Pabellón y pista…</option>`;
+    hz.venues.forEach(v => {
+      if (!v.courts.length) return;
+      h += `<optgroup label="${hzEsc(v.name)}">` +
+        v.courts.map(c => `<option value="${c.id}"${c.id === sel ? " selected" : ""}>${hzEsc(v.name)} · ${hzEsc(c.name)}</option>`).join("") +
+        `</optgroup>`;
+    });
+    return h;
+  }
+
+  function hzRowHtml(i, ti, tr, issues) {
+    const draft = ti < 0;
+    const dayOpts = `<option value="">Día…</option>` +
+      HZ_DAYS.map((n, di) => `<option value="${di + 1}"${Number(tr.day) === di + 1 ? " selected" : ""}>${n}</option>`).join("");
+    const startMin = hzT2M(tr.start);
+    const endFrom = isNaN(startMin) ? HZ_MIN + 15 : startMin + 15;
+    const hasAny = (tr.day !== "" && tr.day != null) || tr.courtId || tr.start || tr.end;
+    const issuesHtml = (issues || []).map(is => `<div class="${is.t === "w" ? "hz-warn" : "hz-info"}">${is.t === "w" ? "⚠️" : "ℹ️"} ${hzEsc(is.m)}</div>`).join("");
+    return `<div class="hz-train ${draft ? "draft" : ""}">
+      ${draft ? `<div class="hz-draft-title">➕ Nuevo entrenamiento</div>` : ""}
+      <div class="hz-train-r1">
+        <select class="app-select" onchange="hzTrainSet(${i},${ti},'day',this.value)">${dayOpts}</select>
+        <select class="app-select" onchange="hzTrainSet(${i},${ti},'courtId',this.value)">${hzCourtOptions(tr.courtId)}</select>
+      </div>
+      <div class="hz-train-r2">
+        <select class="app-select" onchange="hzTrainSet(${i},${ti},'start',this.value)">${hzTimeOpts(HZ_MIN, HZ_MAX - 15, tr.start, "Inicio")}</select>
+        <span>–</span>
+        <select class="app-select" onchange="hzTrainSet(${i},${ti},'end',this.value)">${hzTimeOpts(endFrom, HZ_MAX, tr.end, "Fin")}</select>
+        ${(!draft || hasAny) ? `<button class="btn-del" title="${draft ? "Vaciar fila" : "Eliminar entrenamiento"}" onclick="hzTrainDel(${i},${ti})">🗑</button>` : `<span></span>`}
+      </div>
+      ${issuesHtml}
+    </div>`;
+  }
+
+  function hzRenderTrainings() {
+    const box = hzEl("hzSec_trainings");
+    if (!box) return;
+    const teams = appData.teams || [];
+    if (!teams.length) {
+      box.innerHTML = `<div class="hz-hint">No hay equipos creados. Añádelos en ⚙️ Opciones → Equipos.</div>`;
+      return;
+    }
+    const hasCourts = hz.venues.some(v => v.courts.length);
+    let h = `<div class="hz-hint">Selecciona un equipo e introduce sus entrenamientos. Al completar día, pista, hora de inicio y hora de fin se abre una fila nueva.</div>`;
+    if (!hasCourts) h += `<div class="hz-warn" style="margin-bottom:8px;">⚠️ Primero añade pabellones y pistas en «1. Ajustes».</div>`;
+
+    teams.forEach((t, i) => {
+      const key = getTeamKey(t);
+      const open = hzUI.teamOpen === key;
+      const list = hz.trainings[key] || [];
+      h += `<button class="hz-team-btn ${open ? "open" : ""}" onclick="hzToggleTeam(${i})">
+          <span><span class="hz-dot" style="background:${hzEsc(hz.teamColors[key] || "#ddd")}"></span>${hzEsc(t.name)} (${hzEsc(t.category)})
+          <small class="badge">${list.length}</small></span><span>${open ? "🔻" : "➤"}</span></button>`;
+      if (open) {
+        h += `<div class="hz-sub-panel">`;
+        list.forEach((tr, ti) => { h += hzRowHtml(i, ti, tr, hzRowIssues(key, tr, ti)); });
+        const d = hzDraft[key] || { day: "", courtId: "", start: "", end: "" };
+        h += hzRowHtml(i, -1, d, []);
+        h += `</div>`;
+      }
+    });
+    box.innerHTML = h;
+  }
+
+  function hzTrainSet(i, ti, field, val) {
+    const t = (appData.teams || [])[i]; if (!t) return;
+    const key = getTeamKey(t);
+    let tr;
+    if (ti < 0) {
+      if (!hzDraft[key]) hzDraft[key] = { day: "", courtId: "", start: "", end: "" };
+      tr = hzDraft[key];
+    } else {
+      tr = (hz.trainings[key] || [])[ti];
+    }
+    if (!tr) return;
+    tr[field] = (field === "day") ? (val === "" ? "" : Number(val)) : val;
+    if (field === "start" && val && tr.end && hzT2M(tr.end) <= hzT2M(val)) {
+      tr.end = ti < 0 ? "" : hzM2T(Math.min(hzT2M(val) + 90, HZ_MAX));
+    }
+    if (ti < 0) {
+      if (tr.day !== "" && tr.courtId && tr.start && tr.end) {
+        if (!hz.trainings[key]) hz.trainings[key] = [];
+        hz.trainings[key].push({ id: hzUid("t"), day: tr.day, courtId: tr.courtId, start: tr.start, end: tr.end });
+        delete hzDraft[key];
+        hzChanged("t");   // se repinta y aparece una fila nueva vacía
+      } else {
+        hzRenderTrainings();
+      }
+    } else {
+      hzChanged("t");
+    }
+  }
+
+  function hzTrainDel(i, ti) {
+    const t = (appData.teams || [])[i]; if (!t) return;
+    const key = getTeamKey(t);
+    if (ti < 0) { delete hzDraft[key]; hzRenderTrainings(); return; }
+    (hz.trainings[key] || []).splice(ti, 1);
+    hzChanged("t");
+  }
+
+  // =====================================================================
+  //  SECCIÓN 3: HORARIO SEMANAL (canvas A4 apaisado)
+  // =====================================================================
+  function hzBuildModel() {
+    const teamMap = hzTeamsMap();
+    const sessions = [];
+    Object.keys(hz.trainings).forEach(key => {
+      const team = teamMap[key];
+      if (!team) return;
+      (hz.trainings[key] || []).forEach(tr => {
+        if (!hzCourtInfo(tr.courtId)) return;
+        const s = hzT2M(tr.start), e = hzT2M(tr.end), day = Number(tr.day);
+        if (!(e > s) || day < 1 || day > 5) return;
+        sessions.push({ key, team, day, courtId: tr.courtId, s, e });
+      });
+    });
+    const days = [];
+    for (let d = 1; d <= 5; d++) {
+      const cols = [];
+      hz.venues.forEach(v => v.courts.forEach(c => {
+        const avail = hzAvail(c, d);
+        const own = sessions.filter(x => x.day === d && x.courtId === c.id);
+        if (avail.length || own.length) cols.push({ venue: v, court: c, avail, sessions: own });
+      }));
+      days.push({ day: d, cols });
+    }
+    let minS = Infinity, maxE = -Infinity;
+    sessions.forEach(x => { minS = Math.min(minS, x.s); maxE = Math.max(maxE, x.e); });
+    if (!sessions.length) {
+      days.forEach(d => d.cols.forEach(c => c.avail.forEach(([a, b]) => { minS = Math.min(minS, a); maxE = Math.max(maxE, b); })));
+    }
+    if (!isFinite(minS)) { minS = 16 * 60; maxE = 22 * 60; }
+    const rangeStart = Math.floor(minS / 30) * 30;
+    const rangeEnd = Math.max(Math.ceil(maxE / 30) * 30, rangeStart + 60);
+    return { days, sessions, rangeStart, rangeEnd };
+  }
+
+  // Geometría de cada sesión de una columna: si hay solape con otra sesión de la
+  // misma pista, el espacio solapado se divide con una diagonal entre ambos equipos.
+  function hzSessionPolys(list) {
+    const L = list.slice().sort((a, b) => a.s - b.s || a.e - b.e);
+    return L.map((x, i) => {
+      let trEnd = x.s, blStart = x.e;
+      for (let j = 0; j < i; j++) {
+        const o = L[j];
+        if (o.e > x.s) trEnd = Math.max(trEnd, Math.min(o.e, x.e));
+      }
+      for (let k = i + 1; k < L.length; k++) {
+        const o = L[k];
+        if (o.s < x.e && o.e >= x.e) blStart = Math.min(blStart, o.s);
+      }
+      return { x, trEnd, blStart };
+    });
+  }
+
+  function hzWrap(ctx, text, maxW) {
+    const words = String(text).split(/\s+/).filter(Boolean);
+    const lines = [];
+    let cur = "";
+    words.forEach(w => {
+      const test = cur ? cur + " " + w : w;
+      if (!cur || ctx.measureText(test).width <= maxW) cur = test; else { lines.push(cur); cur = w; }
+    });
+    if (cur) lines.push(cur);
+    return lines;
+  }
+
+  function hzFitText(ctx, parts, boxW, boxH, maxFs, minFs) {
+    const compute = fs => {
+      const lines = []; let ok = true, total = 0;
+      parts.forEach(p => {
+        const size = fs * p.mult;
+        ctx.font = `${p.weight} ${size}px ${HZ_FONT}`;
+        hzWrap(ctx, p.text, boxW).forEach(l => {
+          if (ctx.measureText(l).width > boxW + 0.5) ok = false;
+          lines.push({ t: l, size, weight: p.weight });
+          total += size * 1.2;
+        });
+      });
+      return { lines, total, ok };
+    };
+    for (let fs = maxFs; fs > minFs; fs -= 1) {
+      const r = compute(fs);
+      if (r.ok && r.total <= boxH) return r;
+    }
+    return compute(minFs);
+  }
+
+  function hzDrawLines(ctx, fit, cx, top, h) {
+    let y = top + (h - fit.total) / 2;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = "#000";
+    fit.lines.forEach(l => {
+      ctx.font = `${l.weight} ${l.size}px ${HZ_FONT}`;
+      ctx.fillText(l.t, cx, y + l.size * 0.6);
+      y += l.size * 1.2;
+    });
+  }
+
+  function hzDrawSpaced(ctx, text, cx, y, spacing) {
+    const chars = Array.from(text);
+    const widths = chars.map(c => ctx.measureText(c).width);
+    const total = widths.reduce((a, b) => a + b, 0) + spacing * (chars.length - 1);
+    let x = cx - total / 2;
+    ctx.textAlign = "left";
+    chars.forEach((c, i) => { ctx.fillText(c, x, y); x += widths[i] + spacing; });
+  }
+
+  function hzHatch(ctx, x, y, w, h) {
+    ctx.save();
+    ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+    ctx.fillStyle = "#d9d9d9"; ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = "#9b9b9b"; ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let k = -h; k < w + h; k += 24) { ctx.moveTo(x + k, y + h); ctx.lineTo(x + k + h, y); }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function hzDrawSchedule(canvas) {
+    const W = 2970, H = 2100, M = 70;   // A4 apaisado (297x210 mm) a 10 px/mm
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext("2d");
+    const model = hzBuildModel();
+
+    // Fondo: gradiente de azules
+    const bg = ctx.createLinearGradient(0, 0, W, H);
+    bg.addColorStop(0, "#061a5c"); bg.addColorStop(0.35, "#0d47b8");
+    bg.addColorStop(0.7, "#2e8bf0"); bg.addColorStop(1, "#9fd6ff");
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+    // Geometría
+    const timeW = 130, hDay = 76, hVen = 56, hCrt = 56, headH = hDay + hVen + hCrt;
+    const colsPerDay = model.days.map(d => Math.max(1, d.cols.length));
+    const totalCols = colsPerDay.reduce((a, b) => a + b, 0);
+    const tableX = M, tableW = W - 2 * M;
+    const colW = (tableW - timeW) / totalCols;
+    const nRows = (model.rangeEnd - model.rangeStart) / 30;
+    const titleBlock = 250;
+    const rowH = Math.min(150, (H - 2 * M - titleBlock - headH) / nRows);
+    const tableH = headH + rowH * nRows;
+    const top0 = Math.max(M * 0.7, (H - (titleBlock + tableH)) / 2);
+    const tableY = top0 + titleBlock, bodyY = tableY + headH;
+    const yOf = m => bodyY + (m - model.rangeStart) / 30 * rowH;
+    const xOfCol = k => tableX + timeW + k * colW;
+
+    // Título
+    ctx.save();
+    ctx.textBaseline = "middle"; ctx.fillStyle = "#ffffff";
+    ctx.shadowColor = "rgba(0,20,80,0.7)"; ctx.shadowBlur = 14; ctx.shadowOffsetY = 4;
+    ctx.font = `800 104px ${HZ_FONT}`;
+    hzDrawSpaced(ctx, "Horarios Nou Volei Alzira", W / 2, top0 + 95, 8);
+    ctx.font = `700 64px ${HZ_FONT}`;
+    hzDrawSpaced(ctx, "Temporada " + hz.season, W / 2, top0 + 190, 4);
+    ctx.restore();
+
+    // Interior blanco del horario
+    ctx.fillStyle = "#ffffff"; ctx.fillRect(tableX, tableY, tableW, tableH);
+
+    const cell = (x, y, w, h, fill) => {
+      ctx.fillStyle = fill; ctx.fillRect(x, y, w, h);
+      ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.strokeRect(x, y, w, h);
+    };
+    const cellText = (txt, x, y, w, h, maxFs, weight) => {
+      const fit = hzFitText(ctx, [{ text: txt, mult: 1, weight: weight || 800 }], w - 16, h - 8, maxFs, 12);
+      hzDrawLines(ctx, fit, x + w / 2, y + 4, h - 8);
+    };
+
+    // Cabeceras
+    cell(tableX, tableY, timeW, headH, "#a6a6a6");
+    cellText("Hora", tableX, tableY + headH - hCrt - 10, timeW, hCrt + 10, 34, 800);
+
+    let ci = 0;
+    model.days.forEach((d, di) => {
+      const n = colsPerDay[di], x0 = xOfCol(ci), w = n * colW;
+      cell(x0, tableY, w, hDay, "#a6a6a6");
+      cellText(HZ_DAYS[di].toUpperCase(), x0, tableY, w, hDay, 46, 800);
+      if (!d.cols.length) {
+        cell(x0, tableY + hDay, w, hVen + hCrt, "#cfcfcf");
+        cellText("SIN PISTA", x0, tableY + hDay, w, hVen + hCrt, 26, 700);
+        hzHatch(ctx, x0, bodyY, w, tableH - headH);
+      } else {
+        let k = 0;
+        while (k < d.cols.length) {
+          let j = k;
+          while (j + 1 < d.cols.length && d.cols[j + 1].venue.id === d.cols[k].venue.id) j++;
+          const gx = x0 + k * colW, gw = (j - k + 1) * colW, venue = d.cols[k].venue;
+          if (venue.courts.length === 1) {
+            cell(gx, tableY + hDay, gw, hVen + hCrt, "#c6c6c6");
+            cellText(venue.name.toUpperCase(), gx, tableY + hDay, gw, hVen + hCrt, 34, 800);
+          } else {
+            cell(gx, tableY + hDay, gw, hVen, "#c6c6c6");
+            cellText(venue.name.toUpperCase(), gx, tableY + hDay, gw, hVen, 32, 800);
+            for (let q = k; q <= j; q++) {
+              cell(x0 + q * colW, tableY + hDay + hVen, colW, hCrt, "#dedede");
+              cellText(d.cols[q].court.name.toUpperCase(), x0 + q * colW, tableY + hDay + hVen, colW, hCrt, 28, 700);
+            }
+          }
+          k = j + 1;
+        }
+      }
+      ci += n;
+    });
+
+    // Franjas sin disponibilidad de pista (sombreado gris rayado)
+    ci = 0;
+    model.days.forEach((d, di) => {
+      d.cols.forEach((c, q) => {
+        const x = xOfCol(ci + q);
+        let cursor = model.rangeStart;
+        const gray = (a, b) => {
+          const from = Math.max(a, model.rangeStart), to = Math.min(b, model.rangeEnd);
+          if (to > from) hzHatch(ctx, x, yOf(from), colW, yOf(to) - yOf(from));
+        };
+        c.avail.forEach(([a, b]) => { if (a > cursor) gray(cursor, a); cursor = Math.max(cursor, b); });
+        if (cursor < model.rangeEnd) gray(cursor, model.rangeEnd);
+      });
+      ci += colsPerDay[di];
+    });
+
+    // Rejilla
+    ctx.strokeStyle = "#000"; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let r = 0; r <= nRows; r++) { const y = bodyY + r * rowH; ctx.moveTo(tableX, y); ctx.lineTo(tableX + tableW, y); }
+    for (let k = 0; k <= totalCols; k++) { const x = xOfCol(k); ctx.moveTo(x, bodyY); ctx.lineTo(x, tableY + tableH); }
+    ctx.stroke();
+    ctx.lineWidth = 4; ctx.beginPath();
+    ci = 0;
+    ctx.moveTo(tableX + timeW, tableY); ctx.lineTo(tableX + timeW, tableY + tableH);
+    colsPerDay.forEach(n => { ci += n; const x = xOfCol(ci); ctx.moveTo(x, tableY); ctx.lineTo(x, tableY + tableH); });
+    ctx.stroke();
+
+    // Sesiones (con diagonal en los solapes)
+    ci = 0;
+    model.days.forEach((d, di) => {
+      d.cols.forEach((c, q) => {
+        const x0 = xOfCol(ci + q), x1 = x0 + colW;
+        hzSessionPolys(c.sessions).forEach(p => {
+          const x = p.x;
+          const yTL = yOf(x.s), yTR = yOf(p.trEnd), yBR = yOf(x.e), yBL = yOf(p.blStart);
+          ctx.beginPath();
+          ctx.moveTo(x0, yTL); ctx.lineTo(x1, yTR); ctx.lineTo(x1, yBR); ctx.lineTo(x0, yBL);
+          ctx.closePath();
+          ctx.fillStyle = hz.teamColors[x.key] || "#dddddd"; ctx.fill();
+          ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.stroke();
+
+          // Texto: zona libre (sin la diagonal); si es muy pequeña, centro del polígono
+          let bTop = Math.max(yTL, yTR), bBot = Math.min(yBR, yBL), bW = colW - 16;
+          if (bBot - bTop < rowH * 0.6) {
+            const cy = (yTL + yTR + yBR + yBL) / 4;
+            bTop = cy - rowH * 0.5; bBot = cy + rowH * 0.5; bW = colW * 0.7;
+          }
+          const lp = hzLabelParts(x.team, x.key);
+          const parts = [];
+          if (lp.cat) parts.push({ text: lp.cat, mult: 1, weight: 800 });
+          if (lp.suf) parts.push({ text: lp.suf, mult: 1.45, weight: 800 });
+          parts.push({ text: `(${hzM2T(x.s)}-${hzM2T(x.e)})`, mult: 0.72, weight: 700 });
+          const fit = hzFitText(ctx, parts, bW, bBot - bTop - 6, 46, 11);
+          hzDrawLines(ctx, fit, (x0 + x1) / 2, bTop + 3, bBot - bTop - 6);
+        });
+      });
+      ci += colsPerDay[di];
+    });
+
+    // Etiquetas de hora (columna izquierda)
+    ctx.fillStyle = "#000";
+    for (let r = 0; r <= nRows; r++) {
+      const y = bodyY + r * rowH, label = hzM2T(model.rangeStart + r * 30);
+      ctx.font = `800 34px ${HZ_FONT}`; ctx.textAlign = "center";
+      if (r === 0) { ctx.textBaseline = "top"; ctx.fillText(label, tableX + timeW / 2, y + 8); }
+      else if (r === nRows) { ctx.textBaseline = "bottom"; ctx.fillText(label, tableX + timeW / 2, y - 8); }
+      else {
+        ctx.fillStyle = "#fff"; ctx.fillRect(tableX + 8, y - 22, timeW - 16, 44);
+        ctx.fillStyle = "#000"; ctx.textBaseline = "middle"; ctx.fillText(label, tableX + timeW / 2, y + 2);
+      }
+    }
+
+    // Borde exterior
+    ctx.strokeStyle = "#000"; ctx.lineWidth = 5; ctx.strokeRect(tableX, tableY, tableW, tableH);
+    return { sessions: model.sessions.length };
+  }
+
+  function hzRenderSchedule() {
+    const canvas = hzEl("hzCanvas");
+    if (!canvas) return;
+    const info = hzDrawSchedule(canvas);
+    const note = hzEl("hzSchedNote");
+    if (note) {
+      note.textContent = info.sessions
+        ? `${info.sessions} entrenamiento(s) · Formato A4 apaisado, de lunes a viernes. Las franjas sin uso se eliminan y las horas sin disponibilidad de pista se sombrean en gris.`
+        : "Todavía no hay entrenamientos. Añádelos en «2. Entrenamientos por equipo».";
+    }
+  }
+
+  // ---------- exportación ----------
+  function hzFileBase() {
+    return "Horarios_Nou_Volei_Alzira_" + String(hz.season).replace(/[^a-zA-Z0-9]+/g, "-");
+  }
+  function hzRenderOffscreen() {
+    const c = document.createElement("canvas");
+    hzDrawSchedule(c);   // siempre se dibuja completo (lunes a viernes), independientemente de lo visible en pantalla
+    return c;
+  }
+  function hzTick() { return new Promise(r => setTimeout(r, 60)); }
+
+  async function hzDownloadPNG() {
+    await hzTick();
+    const c = hzRenderOffscreen();
+    const blob = await new Promise(res => c.toBlob(res, "image/png"));
+    if (!blob) { alert("No se pudo generar la imagen."); return; }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = hzFileBase() + ".png";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
+
+  async function hzDownloadPDF() {
+    await hzTick();
+    if (!window.jspdf) { alert("La librería de PDF no está disponible (sin conexión). Inténtalo de nuevo con conexión."); return; }
+    const c = hzRenderOffscreen();
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    pdf.addImage(c.toDataURL("image/png"), "PNG", 0, 0, 297, 210, undefined, "FAST");
+    pdf.save(hzFileBase() + ".pdf");
+  }
+
+  function hzOpenZoom() {
+    const c = hzRenderOffscreen();
+    hzEl("hzZoomImg").src = c.toDataURL("image/png");
+    hzEl("modalHzZoom").classList.add("active");
+  }
+  function hzCloseZoom() {
+    hzEl("modalHzZoom").classList.remove("active");
+    hzEl("hzZoomImg").removeAttribute("src");
+  }
+
+  // =====================================================================
+  //  GITHUB: Horarios.json
+  // =====================================================================
+  async function fetchHorariosFromGitHub() {
+    if (!ghSettings.user || !ghSettings.repo || !navigator.onLine) return false;
+    // No pisar cambios locales pendientes de guardar/enviar
+    if (hzDirty || offlineQueue.some(op => op.fileName === HZ_FILE)) return false;
+    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${HZ_FILE}`;
+    const headers = {};
+    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
+    try {
+      const res = await fetch(url, { headers, cache: "no-store" });
+      if (res.ok) {
+        const json = await res.json();
+        hz = hzNormalize(JSON.parse(b64_to_utf8(json.content)));
+        hzEnsureColors();
+        hzPersistLocal();
+        return true;
+      }
+    } catch (e) { console.error(`Error al cargar ${HZ_FILE}:`, e); }
+    return false;
+  }
+
+  async function saveHorarios() {
+    hzEnsureColors();
+    hz.updated = new Date().toISOString();
+    hzPersistLocal();
+    const ok = await writeGitHubFile(HZ_FILE, hz, "Actualizar horarios de entrenamiento");
+    // Si no hubo conexión, writeGitHubFile lo deja en la cola offline y se enviará al reconectar.
+    hzSetDirty(false);
+    alert(ok ? "¡Horarios guardados y sincronizados en GitHub (Horarios.json)!"
+             : "Guardado localmente. Se sincronizará con GitHub cuando recupere la conexión.");
+  }
+
+  async function refreshHorarios() {
+    if (!ghSettings.user || !ghSettings.repo) {
+      alert("Configura primero la conexión con GitHub para poder refrescar los Horarios.");
+      return;
+    }
+    if (!navigator.onLine) { alert("Sin conexión: no se pueden refrescar los Horarios ahora mismo."); return; }
+    if (hzDirty && !confirm("Tienes cambios sin guardar. Si refrescas se perderán y se cargará la versión de GitHub. ¿Continuar?")) return;
+    if (hzDirty) hzSetDirty(false);
+    if (offlineQueue.length > 0) await processOfflineQueue();
+    const ok = await fetchHorariosFromGitHub();
+    hzRenderAll();
+    if (!ok) alert("No se encontró Horarios.json en GitHub o no se pudo leer.");
+  }
 </script>
 
 </body>
