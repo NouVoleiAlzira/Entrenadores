@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Nou Volei Alzira - Registro de Entrenamiento</title>
+
+  <!-- Conexiones anticipadas: acelera la primera petición a cada dominio
+       (DNS + TLS ya resueltos cuando realmente se necesiten). -->
+  <link rel="preconnect" href="https://api.github.com">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+
+  <!-- CSS en fichero aparte: el navegador lo cachea por separado del HTML,
+       así que en visitas posteriores solo se descarga si cambia. -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Las librerías de PDF/gráficos (html2canvas, jsPDF, Chart.js) ya NO se
+       cargan aquí: pesan ~700 KB y antes se descargaban en cada visita
+       aunque no se fuera a generar ningún PDF. Ahora app.js las carga bajo
+       demanda la primera vez que hacen falta (ver ensureExportLibs). -->
+</head>
+<body>
+
+<div class="app-container">
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-message" id="loadingMessage">Procesando datos...</div>
+  </div>
+  <!-- ENCABEZADO -->
+  <header>
+    <button class="btn-header-icon btn-back" id="btnBack" onclick="withLoading(goBack, 'Sincronizando datos...')" style="display: none; visibility: visible; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; gap: 4px; padding: 12px 10px; min-height: 50px;">
+      <span>↺</span>
+    </button>  
+    <div class="header-title-container">
+      <h1>NOU VOLEI ALZIRA</h1>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; margin-left: auto;">
+      <button class="btn-header-icon" title="Opciones (Propietario)" style="font-size: 1.2rem;" onclick="promptOwnerPassword()">⚙️</button>
+      <span id="netStatusBadge" class="network-badge network-online">Online</span>
+    </div>
+  </header>
+
+  <!-- PANTALLA 1: SELECCIÓN UNIFICADA -->
+  <div class="screen active" id="screenCoachTeam">
+    <div id="pdfModeBanner" class="pdf-mode-banner" style="display: none;">
+      <span>📌 Modo PDF Activo: Selecciona Entrenador y Equipo</span>
+      <button onclick="togglePdfMode()" style="background:none; border:none; color:white; font-weight:700; cursor:pointer;">✕ Cancelar</button>
+    </div>
+
+    <div class="section-title">🔗 Entrenamientos y Partidos</div>
+    <div id="coachTeamList"></div>
+    
+    <div style="display:flex; gap:8px; margin-top:10px;">
+      <button class="btn-pdf-mode" id="btnPdfMode" onclick="togglePdfMode()" style="flex:1; min-width:0; margin-bottom:0;">📊 PDF ENTRENAMIENTOS</button>
+      <button class="btn-pdf-mode" id="btnPdfResultados" onclick="openResultsRangeModal()" style="flex:1; min-width:0; margin-bottom:0;">🏆 PDF RESULTADOS</button>
+    </div>
+
+    <div class="section-title" style="margin-top:20px;">📝 Tablón de Consultas</div>
+    <textarea id="tablonTextarea" class="comment-input-long" placeholder="Escribe aquí las noticias del club..." oninput="autoResizeTablon(this)" onchange="updateTablon(this.value)"></textarea>
+    <div style="display:flex; gap:8px;">
+      <button class="btn-save-session" style="flex:1;" onclick="withLoading(saveTablon, 'Guardando Tablón en GitHub...')">💾 Guardar Tablón</button>
+      <button class="btn-save-session" style="flex:0 0 auto; width:auto; white-space:nowrap; background: var(--btn-fondoVerde);" onclick="withLoading(refreshTablon, 'Refrescando Tablón...')">🔄 Refrescar</button>
+      <button class="btn-save-session" style="flex:1; background: var(--btn-fondoAmarillo);" onclick="openOtros()">🗃️ OTROS</button>
+    </div>
+
+    <div class="section-title" style="margin-top:20px;">💼 Dirección NVA</div>
+    <button class="coach-btn" id="btnDireccionNVA" onclick="toggleDireccionNVA()">
+      <span>🔔 Gestión y Avisos Individuales</span> <span id="iconDireccionNVA">➤</span>
+    </button>
+    <div id="direccionTeamsContainer" class="teams-container" style="display: none;"></div>
+
+    <div style="display:flex; gap:8px; margin-top:10px;">
+      <button class="btn-pdf-mode2" style="flex:1; min-width:0; margin-bottom:0;" onclick="openCreateQueryModal()">📨 Nueva CONSULTA</button>
+      <button class="btn-pdf-mode" style="flex:1; min-width:0; margin-bottom:0;" onclick="openSelectQueryPdfModal()">📝 PDF CONSULTA</button>
+    </div>
+
+    <div class="section-title" style="margin-top:20px;">🖼️ Carteles</div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn-pdf-mode2" style="flex:1; min-width:0; margin-bottom:20;" onclick="window.open('Partidos.html', '_blank', 'noopener')">📅 Partidos de la semana</button>
+      <button class="btn-pdf-mode2" style="flex:1; min-width:0; margin-bottom:20;" onclick="window.open('Resultados.html', '_blank', 'noopener')">🏆 Resultados de la semana</button>
+    </div>
+
+    <div class="section-title" style="margin-top:20px;">🗓️ Horarios de entrenamiento</div>
+    <button class="btn-pdf-mode2" style="margin-bottom:20px;" onclick="openHorarios()">🗓️ Horarios</button>
+  </div>
+
+  <!-- PANTALLA OTROS: botones de información e instrucciones -->
+  <div class="screen" id="screenOtros">
+    <div class="section-title">Otros · Información e Instrucciones</div>
+    <div id="otrosList"></div>
+    <input type="file" id="fichaFileInput" accept="application/pdf,.pdf" style="display:none;">
+  </div>
+
+  <!-- PANTALLA: HORARIOS DE ENTRENAMIENTO -->
+  <div class="screen" id="screenHorarios">
+    <div class="section-title">🗓️ Horarios de Entrenamiento</div>
+    <div id="hzStatus" class="hz-status"></div>
+
+    <!-- 1. AJUSTES -->
+    <button class="coach-btn" id="hzBtn_settings" onclick="hzToggleSection('settings')">
+      <span>⚙️ 1. Ajustes (colores, pabellones y pistas)</span> <span class="hz-arrow">➤</span>
+    </button>
+    <div class="hz-panel" id="hzSec_settings" style="display:none;"></div>
+
+    <!-- 2. ENTRENAMIENTOS POR EQUIPO -->
+    <button class="coach-btn" id="hzBtn_trainings" onclick="hzToggleSection('trainings')">
+      <span>🏐 2. Entrenamientos por equipo</span> <span class="hz-arrow">➤</span>
+    </button>
+    <div class="hz-panel" id="hzSec_trainings" style="display:none;"></div>
+
+    <!-- 3. HORARIO SEMANAL -->
+    <button class="coach-btn" id="hzBtn_schedule" onclick="hzToggleSection('schedule')">
+      <span>🖼️ 3. Horario semanal (imagen / PDF)</span> <span class="hz-arrow">➤</span>
+    </button>
+    <div class="hz-panel" id="hzSec_schedule" style="display:none;">
+      <canvas id="hzCanvas" class="hz-canvas" width="2970" height="2100"></canvas>
+      <div id="hzSchedNote" class="hz-hint" style="margin-top:8px;"></div>
+      <div class="hz-actions">
+        <button class="btn-pdf-mode2" onclick="hzOpenZoom()">🔍 Ampliar</button>
+        <button class="btn-pdf-mode" onclick="withLoading(hzDownloadPNG, 'Generando imagen...')">🖼️ Imagen</button>
+        <button class="btn-pdf-mode" onclick="withLoading(hzDownloadPDF, 'Generando PDF...')">📄 PDF</button>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:8px;">
+      <button class="btn-save-session" style="flex:1; padding:12px; font-size:0.9rem;" onclick="withLoading(saveHorarios, 'Guardando Horarios.json en GitHub...')">💾 Guardar Horarios.json en GitHub</button>
+      <button class="btn-save-session" style="flex:0 0 auto; width:auto; white-space:nowrap; padding:12px; font-size:0.9rem; background: var(--btn-fondoVerde);" onclick="withLoading(refreshHorarios, 'Refrescando Horarios...')">🔄 Refrescar</button>
+    </div>
+  </div>
+
+  <!-- MODAL: HORARIOS AMPLIADO -->
+  <div class="modal-backdrop" id="modalHzZoom">
+    <div class="modal-box" style="max-width: 98vw; width: 98vw; max-height: 94vh;">
+      <div class="modal-header">
+        <div class="modal-title">Horarios · vista ampliada</div>
+        <button class="btn-close-modal" onclick="hzCloseZoom()">✕</button>
+      </div>
+      <div style="overflow: auto; -webkit-overflow-scrolling: touch; flex: 1; background:#1e3c72; border-radius:8px;">
+        <img id="hzZoomImg" alt="Horarios Nou Volei Alzira" style="width: 1500px; max-width: none; display: block;">
+      </div>
+    </div>
+  </div>
+
+  <!-- PANTALLA 2: REGISTRO DE ENTRENAMIENTO -->
+  <div class="screen" id="screenAttendance">
+    <div class="section-title" id="sessionTitle" style="margin-bottom: 4px;">Registro de Entrenamiento</div>
+    
+    <div class="controls-bar">
+      <div class="date-container">
+        <label for="sessionDatePicker">📅 Fecha:</label>
+        <input type="date" id="sessionDatePicker" class="date-input">
+      </div>
+      <button class="btn-history" onclick="goToMatchScreen()">🏐 Partido</button>
+      <button class="btn-history" onclick="withLoading(openHistoryModal, 'Cargando historial...')">📜 Historial</button>
+    </div>
+
+    <div id="playersContainer"></div>
+    <button class="btn-save-session" style="padding:12px; font-size:0.9rem;" onclick="withLoading(saveSession, 'Guardando entrenamiento en GitHub...')">💾 Guardar Entrenamiento en GitHub</button>
+  </div>
+
+  <!-- PANTALLA: REGISTRO DE PARTIDO -->
+  <div class="screen" id="screenMatch">
+    <div class="section-title" id="matchTitle" style="margin-bottom: 4px;">Registro de Partido</div>
+
+    <div class="controls-bar">
+      <div class="date-container">
+        <label for="matchDatePicker">📅 Fecha:</label>
+        <input type="date" id="matchDatePicker" class="date-input">
+      </div>
+      <button class="btn-history" onclick="goToTrainingScreen()">🏋️ Entrenamiento</button>
+      <button class="btn-history" onclick="withLoading(openMatchHistoryModal, 'Cargando historial de partidos...')">📜 Historial</button>
+    </div>
+
+    <div id="matchScoreboard" class="match-scoreboard"></div>
+
+    <div id="matchPlayersContainer"></div>
+    <button class="btn-save-session" style="padding:12px; font-size:0.9rem;" onclick="withLoading(saveMatch, 'Guardando partido en GitHub...')">💾 Guardar Partido en GitHub</button>
+  </div>
+
+  <!-- PANTALLA 3: GESTIÓN DE WARNINGS POR EQUIPO -->
+  <div class="screen" id="screenWarnings">
+    <div class="section-title" id="warningTeamTitle">Dirección NVA - Equipo</div>
+    <div id="warningPlayersContainer"></div>
+    <button class="btn-save-session" style="padding:12px; font-size:0.9rem;" onclick="withLoading(saveWarningsToGitHub, 'Guardando amonestaciones en GitHub...')">💾 Guardar Warning en GitHub</button> 
+  </div>
+
+  <!-- MODALES DE LA APLICACIÓN -->
+  <div class="modal-backdrop" id="modalWarning">
+    <div class="modal-box" style="max-width: 360px;">
+      <div class="modal-header">
+        <div class="modal-title">Motivo del Aviso</div>
+        <button class="btn-close-modal" onclick="closeWarningModal()">✕</button>
+      </div>
+      <input type="text" id="warningReasonInput" class="app-input" value="NO PAGADO" style="margin-bottom: 8px; font-weight:bold; color:#ef4444;">
+      
+      <div style="font-size:0.75rem; color:#64748b; text-align:center; font-weight:600;">Selecciona un color de aviso:</div>
+      <div class="color-picker-container" id="warningColorPicker">
+        <div class="color-circle selected" data-color="#ef4444" style="background:#ef4444;" title="Rojo"></div>
+        <div class="color-circle" data-color="#0284c7" style="background:#0284c7;" title="Azul"></div>
+        <div class="color-circle" data-color="#22c55e" style="background:#22c55e;" title="Verde"></div>
+        <div class="color-circle" data-color="#eab308" style="background:#eab308;" title="Amarillo"></div>
+      </div>
+
+      <button class="btn-save-session" onclick="confirmWarningReason()">💾 Guardar Motivo</button>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modalOtrosEditor">
+    <div class="modal-box" style="max-width: 420px;">
+      <div class="modal-header">
+        <div class="modal-title" id="otrosEditorTitle">➕ Nuevo botón</div>
+        <button class="btn-close-modal" onclick="closeOtrosEditor()">✕</button>
+      </div>
+      <label style="font-size:0.75rem; color:#64748b; font-weight:600; display:block; margin-bottom:4px;">Nombre del botón:</label>
+      <input type="text" id="otrosEditorName" class="app-input" maxlength="60" placeholder="Ej: Horarios de pabellón" style="margin-bottom:10px;">
+      <label style="font-size:0.75rem; color:#64748b; font-weight:600; display:block; margin-bottom:4px;">Información:</label>
+      <div class="rte-toolbar">
+        <button type="button" title="Negrita" onmousedown="event.preventDefault()" onclick="otrosFormat('bold')"><b>N</b></button>
+        <button type="button" title="Cursiva" onmousedown="event.preventDefault()" onclick="otrosFormat('italic')"><i>K</i></button>
+        <button type="button" title="Subrayado" onmousedown="event.preventDefault()" onclick="otrosFormat('underline')"><u>S</u></button>
+        <button type="button" title="Título" onmousedown="event.preventDefault()" onclick="otrosFormat('title')">T</button>
+        <button type="button" title="Lista con viñetas" onmousedown="event.preventDefault()" onclick="otrosFormat('insertUnorderedList')">• Lista</button>
+        <button type="button" title="Lista numerada" onmousedown="event.preventDefault()" onclick="otrosFormat('insertOrderedList')">1. Lista</button>
+        <button type="button" title="Quitar formato" onmousedown="event.preventDefault()" onclick="otrosFormat('removeFormat')">✖ Formato</button>
+      </div>
+      <div id="otrosEditorBody" class="rte-editor" contenteditable="true" data-placeholder="Escribe aquí la información..."></div>
+      <button class="btn-save-session" onclick="saveOtrosEditor()">Aceptar</button>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modalCreateQuery">
+    <div class="modal-box" style="max-width: 380px;">
+      <div class="modal-header">
+        <div class="modal-title">❓ Crear Consulta</div>
+        <button class="btn-close-modal" onclick="closeCreateQueryModal()">✕</button>
+      </div>
+      <textarea id="createQueryText" class="comment-input-long" style="min-height:70px; margin-bottom:10px;" placeholder="Escribe aquí la consulta o pregunta..."></textarea>
+      
+      <div style="margin-bottom: 10px;">
+        <label style="font-size:0.75rem; color:#64748b; font-weight:600; display:block; margin-bottom:4px;">Tipo de Consulta:</label>
+        <select id="createQueryType" class="app-select" onchange="toggleQueryTypeOptions()">
+          <option value="sino">Si / No</option>
+          <option value="custom">Personalizada</option>
+        </select>
+      </div>
+
+      <div id="customOptionsContainer" style="display: none; margin-bottom: 10px;">
+        <label style="font-size:0.75rem; color:#64748b; font-weight:600; display:block; margin-bottom:4px;">Opciones de respuesta (separadas por comas):</label>
+        <input type="text" id="createQueryOptions" class="app-input" placeholder="Ej: Opción 1, Opción 2, Opción 3">
+      </div>
+
+      <div style="font-size:0.75rem; color:#64748b; text-align:center; font-weight:600;">Color distintivo de la consulta:</div>
+      <div class="color-picker-container" id="queryColorPicker">
+        <div class="color-circle selected" data-color="#0284c7" style="background:#0284c7;" title="Azul"></div>
+        <div class="color-circle" data-color="#7e22ce" style="background:#7e22ce;" title="Morado"></div>
+        <div class="color-circle" data-color="#f97316" style="background:#f97316;" title="Naranja"></div>
+      </div>
+
+      <button class="btn-save-session" onclick="openQueryTeamsSelection()">Siguiente: Seleccionar Equipos</button>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modalQueryTeams">
+    <div class="modal-box" style="max-width: 380px;">
+      <div class="modal-header">
+        <div class="modal-title">Seleccionar Equipos Destino</div>
+        <button class="btn-close-modal" onclick="closeQueryTeamsModal()">✕</button>
+      </div>
+      <div id="queryTeamsCheckboxes" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; max-height: 200px; overflow-y: auto;"></div>
+      <button class="btn-save-session" onclick="withLoading(confirmSaveQuery, 'Publicando consulta en el Tablón...')">Publicar Consulta en Tablón</button>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modalSelectQueryPdf">
+    <div class="modal-box" style="max-width: 380px;">
+      <div class="modal-header">
+        <div class="modal-title">📄 Seleccionar Consulta PDF</div>
+        <button class="btn-close-modal" onclick="closeSelectQueryPdfModal()">✕</button>
+      </div>
+      <div id="queryListPdfContainer" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; max-height: 240px; overflow-y: auto;"></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modalDateRange">
+    <div class="modal-box" style="max-width: 380px;">
+      <div class="modal-header">
+        <div class="modal-title" id="pdfModalTitle">🗓️ Seleccionar Período</div>
+        <button class="btn-close-modal" onclick="closeDateRangeModal()">✕</button>
+      </div>
+      <p style="font-size: 0.75rem; color: #64748b; margin-bottom: 8px;">Selecciona la fecha inicial y final del informe:</p>
+
+      <div class="calendar-header">
+        <button class="calendar-nav-btn" onclick="prevMonth()">◄</button>
+        <span id="calendarMonthLabel"></span>
+        <button class="calendar-nav-btn" onclick="nextMonth()">►</button>
+      </div>
+
+      <div class="calendar-weekdays">
+        <div>Lu</div><div>Ma</div><div>Mi</div><div>Ju</div><div>Vi</div><div>Sá</div><div>Do</div>
+      </div>
+
+      <div class="calendar-days-grid" id="calendarDaysGrid"></div>
+
+      <div style="margin-top: 12px; font-size: 0.78rem; color: var(--azul-dark); font-weight: 600;" id="dateSelectionSummary">
+        Selecciona fecha de inicio...
+      </div>
+
+      <button class="btn-save-session" id="btnConfirmPdf" onclick="processPdfGeneration()" disabled style="opacity: 0.5;">Generar Informe PDF</button>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modalHistory">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title">📜 Registros Anteriores</div>
+        <button class="btn-close-modal" onclick="closeHistoryModal()">✕</button>
+      </div>
+      <p style="font-size:0.75rem; color:#64748b; margin-bottom:10px;">Entrenamientos guardados para este equipo:</p>
+      <div id="historyListContainer" style="overflow-y:auto; flex:1;"></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modalMatchHistory">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title">📜 Partidos Anteriores</div>
+        <button class="btn-close-modal" onclick="closeMatchHistoryModal()">✕</button>
+      </div>
+      <p style="font-size:0.75rem; color:#64748b; margin-bottom:10px;">Partidos guardados para este equipo:</p>
+      <div id="matchHistoryListContainer" style="overflow-y:auto; flex:1;"></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modalResultsMatches">
+    <div class="modal-box" style="max-width: 420px;">
+      <div class="modal-header">
+        <div class="modal-title">🏆 Partidos del período</div>
+        <button class="btn-close-modal" onclick="closeResultsMatchesModal()">✕</button>
+      </div>
+      <p id="resultsMatchesPeriod" style="font-size:0.75rem; color:#64748b; margin-bottom:8px;"></p>
+      <div style="display:flex; gap:10px; align-items:center; margin-bottom:8px;">
+        <button type="button" id="btnResultsToggleAll" class="btn-history" style="margin-left:0;" onclick="toggleAllResultsMatches()">☐ Marcar ninguno</button>
+        <span id="resultsMatchesCount" style="font-size:0.78rem; color:var(--azul-dark); font-weight:600;"></span>
+      </div>
+      <div id="resultsMatchesList" style="display:flex; flex-direction:column; gap:6px; overflow-y:auto; min-height:0; max-height:50vh;"></div>
+      <button class="btn-save-session" id="btnResultsGenerate" onclick="confirmResultsSelection()">Generar PDF de Resultados</button>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modalLeagueTeams">
+    <div class="modal-box" style="max-width: 380px;">
+      <div class="modal-header">
+        <div class="modal-title" id="leagueModalTitle">Equipos de la liga</div>
+        <button class="btn-close-modal" onclick="closeLeagueTeamsModal()">✕</button>
+      </div>
+      <button type="button" class="app-input" style="text-align:left; cursor:pointer; margin-bottom:8px; font-weight:700; color:#b91c1c; border-color:#fca5a5; background:#fef2f2;" onclick="resetLeagueTeams()">↩ Cancelar selección (volver a HOME / VISIT)</button>
+      <div id="leagueTeamsContainer" style="display:flex; flex-direction:column; gap:6px; overflow-y:auto; max-height:60vh;"></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modalAbsence">
+    <div class="modal-box" style="max-width: 380px;">
+      <div class="modal-header">
+        <div class="modal-title" id="modalPlayerName">Motivo de la Falta</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px;">
+        <button class="app-input" style="text-align: left; cursor: pointer;" onclick="selectReason('Enfermedad / Lesión')">Enfermedad / Lesión</button>
+        <button class="app-input" style="text-align: left; cursor: pointer;" onclick="selectReason('Estudios / Exámenes')">Estudios / Exámenes</button>
+        <button class="app-input" style="text-align: left; cursor: pointer;" onclick="selectReason('Motivos Familiares')">Motivos Familiares</button>
+        <button class="app-input" style="text-align: left; cursor: pointer;" onclick="selectReason('Falta Injustificada')">Falta Injustificada</button>
+      </div>
+      <input type="text" id="customReason" class="app-input" placeholder="Otro motivo..." style="margin-bottom: 10px;">
+      <button class="btn-save-session" onclick="confirmAbsence()">Aceptar Motivo</button>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modalPassword">
+    <div class="modal-box" style="max-width: 360px;">
+      <div class="modal-header">
+        <div class="modal-title">🔐 Acceso Propietario</div>
+        <button class="btn-close-modal" onclick="closePasswordModal()">✕</button>
+      </div>
+      <div style="margin-bottom: 10px;">
+        <label style="font-size: 0.8rem; color: #64748b; display: block; margin-bottom: 4px;">Contraseña para modificar configuración:</label>
+        <input type="password" id="ownerPasswordInput" class="app-input" placeholder="Contraseña...">
+      </div>
+      <button class="btn-save-session" onclick="withLoading(verifyOwnerPassword, 'Verificando y sincronizando...')">Entrar a Opciones</button>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modalOptions">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title">⚙️ Configuración del Club</div>
+        <button class="btn-close-modal" onclick="closeOptionsModal()">✕</button>
+      </div>
+
+      <div class="tabs-nav">
+        <button class="tab-btn active" onclick="switchTab(1)">Entrenadores/Equipos</button>
+        <button class="tab-btn" onclick="switchTab(2)">Jugadores/as</button>
+        <button class="tab-btn" onclick="switchTab(3)">Ligas</button>
+        <button class="tab-btn" onclick="switchTab(4)">Conexión GitHub</button>
+      </div>
+
+      <div class="tab-content active" id="tabContent1">
+        <div class="config-section">
+          <div class="config-subtitle">Entrenadores <span class="badge" id="coachCountBadge">0</span></div>
+          <div class="input-group">
+            <input type="text" id="newCoachName" class="app-input" placeholder="Nombre Entrenador/a">
+            <button class="btn-add" onclick="addCoach()">+</button>
+          </div>
+          <div class="item-list" id="configCoachesList"></div>
+        </div>
+
+        <div class="config-section">
+          <div class="config-subtitle">Equipos <span class="badge" id="teamCountBadge">0</span></div>
+          <div class="input-group">
+            <input type="text" id="newTeamName" class="app-input" placeholder="Nombre Equipo">
+            <select id="newTeamCategory" class="app-select" style="width: 100px;">
+              <option value="Alevín">Alevín</option>
+              <option value="Infantil">Infantil</option>
+              <option value="Cadete">Cadete</option>
+              <option value="Juvenil">Juvenil</option>
+              <option value="Junior">Junior</option>
+              <option value="Senior Femenino">Senior Femenino</option>
+              <option value="Senior Masculino">Senior Masculino</option>
+              <option value="Mixto">Mixto</option>
+            </select>
+            <button class="btn-add" onclick="addTeam()">+</button>
+          </div>
+          <div class="item-list" id="configTeamsList"></div>
+        </div>
+
+        <div class="config-section">
+          <div class="config-subtitle">Asignar Equipos a Entrenador</div>
+          <select id="selectCoachAssign" class="app-select" style="margin-bottom: 6px;" onchange="renderCoachAssignments()"></select>
+          <div id="coachTeamsCheckboxes" style="display: flex; flex-direction: column; gap: 4px; background: white; padding: 8px; border-radius: 6px; border: 1px solid var(--gray-border);"></div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tabContent2">
+        <div class="config-section">
+          <div class="config-subtitle">Selecciona Equipo</div>
+          <select id="selectTeamPlayers" class="app-select" onchange="renderPlayerManagement()"></select>
+        </div>
+
+        <div class="config-section">
+          <div class="config-subtitle">Plantilla <span class="badge" id="playerCountBadge">0</span></div>
+          <div class="input-group">
+            <input type="text" id="newPlayerName" class="app-input" placeholder="Nombre Jugador/a">
+            <button class="btn-add" onclick="addPlayer()">+</button>
+          </div>
+          <div id="draggablePlayerList"></div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tabContent3">
+        <div class="config-section">
+          <div class="config-subtitle">Selecciona Equipo</div>
+          <select id="selectTeamLeagues" class="app-select" onchange="withLoading(loadLeagueEditList, 'Cargando equipos de la liga...')"></select>
+        </div>
+
+        <div class="config-section">
+          <div class="config-subtitle">Equipos de la liga <span class="badge" id="leagueCountBadge">0</span></div>
+          <div class="input-group">
+            <input type="text" id="newLeagueTeamName" class="app-input" placeholder="Nombre Equipo de la liga">
+            <button class="btn-add" onclick="addLeagueTeam()">+</button>
+          </div>
+          <div id="draggableLeagueList"></div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tabContent4">
+        <div class="config-section">
+          <div class="config-subtitle">Repositorio de GitHub</div>
+          <label style="font-size:0.72rem; color:#64748b;">Usuario / Organización:</label>
+          <input type="text" id="ghUser" class="app-input" placeholder="ej: nouvoleialzira" style="margin-bottom: 6px;">
+          
+          <label style="font-size:0.72rem; color:#64748b;">Nombre del Repositorio:</label>
+          <input type="text" id="ghRepo" class="app-input" placeholder="ej: app-entrenamientos" style="margin-bottom: 6px;">
+          
+          <label style="font-size:0.72rem; color:#64748b;">Token de Acceso Personal (PAT):</label>
+          <input type="password" id="ghToken" class="app-input" placeholder="ghp_xxxxxxxxxxxx" style="margin-bottom: 6px;">
+
+          <button class="btn-save-session" style="padding:8px;" onclick="withLoading(saveGitHubSettings, 'Guardando ajustes de GitHub...')">💾 Guardar Ajustes GitHub</button>
+        </div>
+
+        <div class="config-section">
+          <div class="config-subtitle">Sincronización y Mantenimiento</div>
+          <button class="btn-save-session" style="background: var(--azul-primary); padding:8px; margin-top:4px;" onclick="withLoading(syncConfigFromGitHub, 'Sincronizando desde GitHub...')">Sincronizar Desde GitHub Ahora</button>
+          
+          <button class="btn-danger-action" style="padding:8px; margin-top:12px;" onclick="clearAllLocalStorageData()">🗑️ Borrar Todos los Datos Locales (Storage)</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- CONTENEDOR OCULTO PARA EXPORTACIÓN A PDF ENTRENAMIENTO -->
+<div id="pdfReportExportArea">
+  <img src="LOGO NVA.png" alt="Marca de Agua" class="pdf-watermark">
+
+  <div class="pdf-content-wrapper">
+    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #0052d4; padding-bottom: 12px; margin-bottom: 18px;">
+      <img src="LOGO NVA.png" alt="Logo" style="height: 65px; width: auto;" id="pdfLogoImg">
+      <h1 style="font-size: 24px; color: #0052d4; flex: 1; text-align: center; font-weight: 800; margin: 0 10px; letter-spacing: 0.5px;">Club Nou Vòlei Alzira</h1>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 20px;">
+      <h2 id="pdfReportTeamTitle" style="font-size: 24px; color: #0f172a; margin-bottom: 8px; font-weight: 800;">Informe de Entrenamiento</h2>
+      <p id="pdfReportDateRange" style="font-size: 16px; color: #334155; margin: 0; font-weight: 700;">Período: -</p>
+    </div>
+
+    <table class="pdf-table">
+      <thead>
+        <tr>
+          <th>Jugadora</th>
+          <th style="text-align: center;">Asistencia</th>
+          <th style="text-align: center;">Calidad Media</th>
+          <th style="text-align: center;">Strikes Totales</th>
+        </tr>
+      </thead>
+      <tbody id="pdfReportTableBody"></tbody>
+    </table>
+
+    <div class="pdf-charts-row">
+      <div class="pdf-chart-box">
+        <h4>Asistencia de Jugadoras por Día</h4>
+        <div style="height: 200px; position: relative;">
+          <canvas id="chartAttendanceCanvas"></canvas>
+        </div>
+      </div>
+      <div class="pdf-chart-box">
+        <h4>Tendencia de Calidad de Entrenamientos</h4>
+        <div style="height: 200px; position: relative;">
+          <canvas id="chartQualityCanvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTENEDOR OCULTO PARA EXPORTACIÓN A PDF RESULTADOS DE PARTIDOS -->
+<div id="pdfResultsExportArea"></div>
+
+<!-- CONTENEDOR OCULTO PARA EXPORTACIÓN A PDF CONSULTAS -->
+<div id="pdfQueryExportArea">
+  <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #7e22ce; padding-bottom: 12px; margin-bottom: 18px;">
+    <img src="LOGO NVA.png" alt="Logo" style="height: 65px; width: auto;">
+    <h1 style="font-size: 24px; color: #7e22ce; flex: 1; text-align: center; font-weight: 800; margin: 0 10px;">Club Nou Vòlei Alzira</h1>
+  </div>
+
+  <div style="text-align: center; margin-bottom: 20px; background: #f8fafc; padding: 14px; border-radius: 10px; border: 1px solid #cbd5e1;">
+    <h3 style="font-size: 16px; color: #64748b; margin-bottom: 4px; font-weight: 700;">Consulta / Petición de Dirección</h3>
+    <h2 id="pdfQueryTextHeader" style="font-size: 20px; color: #0f172a; font-weight: 800;">-</h2>
+  </div>
+
+  <div id="pdfQueryTeamsContent"></div>
+</div>
+
+
+<!-- JS en fichero aparte con "defer": se descarga en paralelo mientras el
+     navegador sigue interpretando el HTML, y se ejecuta justo después de
+     terminar de parsear la página (mismo momento que antes, cuando el
+     script iba embebido al final del body, pero sin bloquear la descarga). -->
+<script src="app.js" defer></script>
+</body>
+</html>
