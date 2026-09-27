@@ -491,15 +491,24 @@
 
         /* EFECTOS GLOW RESULTADOS */
         .glow-winner {
-            text-shadow: 0.2vw 0.2vw 0.5vw rgba(0,0,0,0.9), 0 0 2.5vw rgba(0, 255, 0, 0.9), 0 0 1vw rgba(0, 255, 0, 1) !important;
+            text-shadow: 0.2vw 0.2vw 0.5vw rgba(0,0,0,0.9), 0 0 0.2em rgba(0, 255, 0, 0.9), 0 0 0.1em rgba(0, 255, 0, 1) !important;
             transition: text-shadow 0.3s ease;
         }
 
         .glow-loser {
-            text-shadow: 0.2vw 0.2vw 0.5vw rgba(0,0,0,0.9), 0 0 2.5vw rgba(255, 0, 0, 0.9), 0 0 1vw rgba(255, 0, 0, 1) !important;
+            text-shadow: 0.2vw 0.2vw 0.5vw rgba(0,0,0,0.9), 0 0 0.2em rgba(255, 0, 0, 0.9), 0 0 0.1em rgba(255, 0, 0, 1) !important;
             transition: text-shadow 0.3s ease;
         }
 
+        .glow-winner-Tanteo {
+            text-shadow: 0.2vw 0.2vw 0.5vw  rgba(0,0,0,0.9), 0 0 0.5em rgba(0, 255, 0, 0.9), 0 0 0.25em rgba(0, 255, 0, 1) !important;
+            transition: text-shadow 0.3s ease;
+        }
+
+        .glow-loser-Tanteo {
+            text-shadow: 0.2vw 0.2vw 0.5vw rgba(0,0,0,0.9), 0 0 0.5em rgba(255, 0, 0, 0.9), 0 0 0.25em rgba(255, 0, 0, 1) !important;
+            transition: text-shadow 0.3s ease;
+        }
         .glow-winner-img {
             filter: drop-shadow(0 0 0.4vw rgba(0, 255, 0, 1)) drop-shadow(0 0 0.8vw rgba(0, 255, 0, 0.7)) !important;
             transition: filter 0.3s ease;
@@ -1520,7 +1529,7 @@
             const scoreAway = parseInt(scoreAwaySpan.textContent) || 0;
 
             [scoreHomeSpan, scoreAwaySpan, teamHomeSpan, teamAwaySpan].forEach(el => { 
-                if (el) el.classList.remove('glow-winner', 'glow-loser'); 
+                if (el) el.classList.remove('glow-winner', 'glow-winner-Tanteo', 'glow-loser', 'glow-loser-Tanteo'); 
             });
             [logoHomeEl, logoAwayEl].forEach(el => { 
                 if (el) el.classList.remove('glow-winner-img', 'glow-loser-img'); 
@@ -1528,19 +1537,19 @@
 
             if (scoreHome > scoreAway) {
                 scoreHomeSpan.classList.add('glow-winner'); 
-                teamHomeSpan.classList.add('glow-winner');
+                teamHomeSpan.classList.add('glow-winner-Tanteo');
                 if (logoHomeEl) logoHomeEl.classList.add('glow-winner-img');
 
                 scoreAwaySpan.classList.add('glow-loser'); 
-                teamAwaySpan.classList.add('glow-loser');
+                teamAwaySpan.classList.add('glow-loser-Tanteo');
                 if (logoAwayEl) logoAwayEl.classList.add('glow-loser-img');
             } else if (scoreAway > scoreHome) {
                 scoreAwaySpan.classList.add('glow-winner'); 
-                teamAwaySpan.classList.add('glow-winner');
+                teamAwaySpan.classList.add('glow-winner-Tanteo');
                 if (logoAwayEl) logoAwayEl.classList.add('glow-winner-img');
 
                 scoreHomeSpan.classList.add('glow-loser'); 
-                teamHomeSpan.classList.add('glow-loser');
+                teamHomeSpan.classList.add('glow-loser-Tanteo');
                 if (logoHomeEl) logoHomeEl.classList.add('glow-loser-img');
             }
         }
