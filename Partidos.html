@@ -3259,10 +3259,13 @@
          * GUARDAR / CARGAR PARTIDOS EN GITHUB (carpeta configurable)
          * ================================================================
          * Cada vez que se pulsa "Guardar histórico" se sube un archivo de
-         * texto nuevo con el nombre Partidos[yyyy-mm-dd].txt al repositorio
-         * de GitHub configurado por el usuario. El botón "Cargar partidos"
-         * permite elegir uno de los 6 archivos más recientes y recupera las
-         * tarjetas y la fecha de cabecera a partir de su contenido.
+         * texto nuevo con el nombre Partido[texto de fecha de la cabecera].txt
+         * al repositorio de GitHub configurado por el usuario. Si ya existe
+         * un archivo con ese mismo nombre, se añade " (1)", " (2)"... hasta
+         * encontrar un nombre libre, sin sobrescribir el anterior. El botón
+         * "Cargar partidos" permite elegir uno de los 6 archivos más
+         * recientes y recupera las tarjetas y la fecha de cabecera a partir
+         * de su contenido.
          *
          * Los datos de conexión (usuario, repositorio, carpeta y token) NO
          * están escritos en este archivo: cada usuario los introduce desde
@@ -3356,37 +3359,66 @@
             return decodeURIComponent(escape(atob((base64 || '').replace(/\n/g, ''))));
         }
 
-        function obtenerNombreArchivoPartidosHoy() {
-            const fecha = new Date();
-            const yyyy = fecha.getFullYear();
-            const mm = String(fecha.getMonth() + 1).padStart(2, '0');
-            const dd = String(fecha.getDate()).padStart(2, '0');
-            return `Partidos${yyyy}-${mm}-${dd}.txt`;
+        // Construye el nombre base del archivo (sin extensión ni sufijo de
+        // duplicado) a partir del texto de fecha mostrado en la cabecera,
+        // con el formato Partido[texto de fecha de la cabecera].
+        function obtenerNombreBaseArchivoPartidos() {
+            let textoFecha = histObtenerTextoFechaGeneral();
+
+            if (!textoFecha) {
+                // Si no hay texto en la cabecera, se usa la fecha actual como respaldo.
+                const fecha = new Date();
+                const yyyy = fecha.getFullYear();
+                const mm = String(fecha.getMonth() + 1).padStart(2, '0');
+                const dd = String(fecha.getDate()).padStart(2, '0');
+                textoFecha = `${yyyy}-${mm}-${dd}`;
+            }
+
+            // Se eliminan/sustituyen caracteres no válidos en nombres de archivo.
+            const textoLimpio = textoFecha
+                .replace(/[\\/:*?"<>|]/g, '-')
+                .replace(/\s+/g, ' ')
+                .trim();
+
+            return `Partido${textoLimpio}`;
+        }
+
+        // Comprueba en GitHub si ya existe un archivo con esa ruta exacta.
+        async function existeArchivoEnGitHub(config, rutaArchivo) {
+            const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${rutaArchivo}`;
+            try {
+                const resp = await fetch(url, { headers: githubHeaders(config) });
+                return resp.ok;
+            } catch (err) {
+                // Si la comprobación falla, se asume que no existe para no bloquear el guardado.
+                return false;
+            }
+        }
+
+        // A partir de un nombre base (p. ej. "Partido4 de octubre de 2026"),
+        // busca el primer nombre libre añadiendo " (1)", " (2)"... si hiciera falta.
+        async function obtenerNombreArchivoDisponible(config, nombreBase) {
+            let intento = 0;
+            while (true) {
+                const sufijo = intento === 0 ? '' : ` (${intento})`;
+                const nombreArchivo = `${nombreBase}${sufijo}.txt`;
+                const rutaArchivo = `${config.carpeta}/${nombreArchivo}`;
+                const yaExiste = await existeArchivoEnGitHub(config, rutaArchivo);
+                if (!yaExiste) return nombreArchivo;
+                intento++;
+            }
         }
 
         async function guardarHistoricoEnGitHub(config, bloqueNuevo) {
-            const nombreArchivo = obtenerNombreArchivoPartidosHoy();
+            const nombreBase = obtenerNombreBaseArchivoPartidos();
+            const nombreArchivo = await obtenerNombreArchivoDisponible(config, nombreBase);
             const rutaArchivo = `${config.carpeta}/${nombreArchivo}`;
             const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${rutaArchivo}`;
-
-            // Si ya existe un archivo con el mismo nombre (p. ej. se guarda más
-            // de una vez el mismo día), se necesita su "sha" para actualizarlo.
-            let shaExistente = null;
-            try {
-                const respGet = await fetch(url, { headers: githubHeaders(config) });
-                if (respGet.ok) {
-                    const datosExistente = await respGet.json();
-                    shaExistente = datosExistente.sha || null;
-                }
-            } catch (err) {
-                // Si la comprobación falla, se intenta crear el archivo igualmente.
-            }
 
             const cuerpo = {
                 message: `Guardar partidos ${nombreArchivo}`,
                 content: utf8ToBase64(bloqueNuevo)
             };
-            if (shaExistente) cuerpo.sha = shaExistente;
 
             const respPut = await fetch(url, {
                 method: 'PUT',
