@@ -605,183 +605,89 @@
             visibility: hidden !important;
         }
 
+        /*
+         * Botones de acciones de la cabecera: círculo con solo icono que,
+         * al pasar el ratón o el dedo por encima, se despliega hacia la
+         * izquierda (el borde derecho queda fijo) para mostrar su texto.
+         * Se apilan verticalmente debajo del botón de configuración,
+         * todos dentro del espacio de la cabecera (fijos arriba a la derecha).
+         */
+        .btn-accion-cabecera {
+            position: fixed;
+            right: calc(12px + env(safe-area-inset-right));
+            z-index: 550;
+            width: 42px;
+            height: 42px;
+            max-width: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            overflow: hidden;
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            border-radius: 21px;
+            padding: 0;
+            font-family: inherit;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+            touch-action: manipulation;
+            transition: max-width 0.25s ease, background-color 0.2s, transform 0.15s, opacity 0.2s;
+        }
+        .btn-accion-cabecera .icono-btn {
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-accion-cabecera .texto-btn {
+            white-space: nowrap;
+            font-size: 0.85em;
+            font-weight: 700;
+            opacity: 0;
+            padding-right: 6px;
+            transition: opacity 0.15s ease;
+        }
+        .btn-accion-cabecera:hover,
+        .btn-accion-cabecera:focus-visible,
+        .btn-accion-cabecera.expandido {
+            max-width: 260px;
+        }
+        .btn-accion-cabecera:hover .texto-btn,
+        .btn-accion-cabecera:focus-visible .texto-btn,
+        .btn-accion-cabecera.expandido .texto-btn {
+            opacity: 1;
+        }
+        .btn-accion-cabecera:active {
+            transform: scale(0.96);
+        }
+        .btn-accion-cabecera:disabled {
+            opacity: 0.6;
+            cursor: default;
+            transform: none;
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .btn-accion-cabecera:hover {
+                filter: brightness(1.15);
+            }
+        }
+
         .btn-captura-pagina {
-            position: fixed;
-            right: calc(16px + env(safe-area-inset-right));
-            bottom: calc(16px + env(safe-area-inset-bottom));
-            z-index: 500;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background-color: #00b0f0;
-            color: #06202c;
-            border: none;
-            padding: 12px 18px;
-            border-radius: 30px;
-            font-size: 0.95em;
-            font-weight: 700;
-            font-family: inherit;
-            cursor: pointer;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
-            touch-action: manipulation;
-            transition: background-color 0.2s, transform 0.15s, opacity 0.2s;
+            top: calc(12px + env(safe-area-inset-top) + 50px);
+            background-color: #9C34B3;
         }
-        .btn-captura-pagina svg {
-            flex-shrink: 0;
-        }
-        .btn-captura-pagina:active {
-            transform: scale(0.96);
-        }
-        .btn-captura-pagina:disabled {
-            opacity: 0.6;
-            cursor: default;
-            transform: none;
-        }
-        @media (hover: hover) and (pointer: fine) {
-            .btn-captura-pagina:hover {
-                background-color: #33c2ff;
-            }
-        }
-        @media (max-width: 480px) {
-            .btn-captura-pagina {
-                padding: 10px 14px;
-                font-size: 0.8em;
-            }
-        }
-
         .btn-guardar-historico {
-            position: fixed;
-            right: calc(16px + env(safe-area-inset-right));
-            bottom: calc(16px + env(safe-area-inset-bottom) + 62px);
-            z-index: 500;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background-color: #28a745;
-            color: #ffffff;
-            border: none;
-            padding: 12px 18px;
-            border-radius: 30px;
-            font-size: 0.95em;
-            font-weight: 700;
-            font-family: inherit;
-            cursor: pointer;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
-            touch-action: manipulation;
-            transition: background-color 0.2s, transform 0.15s, opacity 0.2s;
+            top: calc(12px + env(safe-area-inset-top) + 100px);
+            background-color: #E38410;
         }
-        .btn-guardar-historico svg {
-            flex-shrink: 0;
-        }
-        .btn-guardar-historico:active {
-            transform: scale(0.96);
-        }
-        .btn-guardar-historico:disabled {
-            opacity: 0.6;
-            cursor: default;
-            transform: none;
-        }
-        @media (hover: hover) and (pointer: fine) {
-            .btn-guardar-historico:hover {
-                background-color: #34c759;
-            }
-        }
-        @media (max-width: 480px) {
-            .btn-guardar-historico {
-                padding: 10px 14px;
-                font-size: 0.8em;
-                bottom: calc(16px + env(safe-area-inset-bottom) + 54px);
-            }
-        }
-
         .btn-cargar-jornada {
-            position: fixed;
-            right: calc(16px + env(safe-area-inset-right));
-            bottom: calc(16px + env(safe-area-inset-bottom) + 124px);
-            z-index: 500;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background-color: #dc3545;
-            color: #ffffff;
-            border: none;
-            padding: 12px 18px;
-            border-radius: 30px;
-            font-size: 0.95em;
-            font-weight: 700;
-            font-family: inherit;
-            cursor: pointer;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
-            touch-action: manipulation;
-            transition: background-color 0.2s, transform 0.15s, opacity 0.2s;
+            top: calc(12px + env(safe-area-inset-top) + 150px);
+            background-color: #3C993C;
         }
-        .btn-cargar-jornada svg {
-            flex-shrink: 0;
-        }
-        .btn-cargar-jornada:active {
-            transform: scale(0.96);
-        }
-        .btn-cargar-jornada:disabled {
-            opacity: 0.6;
-            cursor: default;
-            transform: none;
-        }
-        @media (hover: hover) and (pointer: fine) {
-            .btn-cargar-jornada:hover {
-                background-color: #e4606d;
-            }
-        }
-        @media (max-width: 480px) {
-            .btn-cargar-jornada {
-                padding: 10px 14px;
-                font-size: 0.8em;
-                bottom: calc(16px + env(safe-area-inset-bottom) + 108px);
-            }
-        }
-
         .btn-cargar-partidos {
-            position: fixed;
-            right: calc(16px + env(safe-area-inset-right));
-            bottom: calc(16px + env(safe-area-inset-bottom) + 186px);
-            z-index: 500;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background-color: #6f42c1;
-            color: #ffffff;
-            border: none;
-            padding: 12px 18px;
-            border-radius: 30px;
-            font-size: 0.95em;
-            font-weight: 700;
-            font-family: inherit;
-            cursor: pointer;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
-            touch-action: manipulation;
-            transition: background-color 0.2s, transform 0.15s, opacity 0.2s;
-        }
-        .btn-cargar-partidos svg {
-            flex-shrink: 0;
-        }
-        .btn-cargar-partidos:active {
-            transform: scale(0.96);
-        }
-        .btn-cargar-partidos:disabled {
-            opacity: 0.6;
-            cursor: default;
-            transform: none;
-        }
-        @media (hover: hover) and (pointer: fine) {
-            .btn-cargar-partidos:hover {
-                background-color: #8a63d2;
-            }
-        }
-        @media (max-width: 480px) {
-            .btn-cargar-partidos {
-                padding: 10px 14px;
-                font-size: 0.8em;
-                bottom: calc(16px + env(safe-area-inset-bottom) + 162px);
-            }
+            top: calc(12px + env(safe-area-inset-top) + 200px);
+            background-color: #DB1D50;
         }
 
         .item-archivo-partidos {
@@ -1116,35 +1022,43 @@
     </div>
 
     <!-- Botón flotante -->
-    <button type="button" id="btnCapturarPagina" class="btn-captura-pagina no-captura" onclick="capturarPaginaComoJPG()" aria-label="Descargar imagen de los partidos">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
-            <path d="M9 3l-1.83 2H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2h-3.17L15 3H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-        </svg>
-        <span id="btnCapturarTexto">Descargar imagen</span>
+    <button type="button" id="btnCapturarPagina" class="btn-accion-cabecera btn-captura-pagina no-captura" onclick="capturarPaginaComoJPG()" aria-label="Descargar imagen de los partidos">
+        <span class="texto-btn" id="btnCapturarTexto">Descargar imagen</span>
+        <span class="icono-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+                <path d="M9 3l-1.83 2H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2h-3.17L15 3H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+            </svg>
+        </span>
     </button>
 
     <!-- Botón flotante: Guardar histórico -->
-    <button type="button" id="btnGuardarHistorico" class="btn-guardar-historico no-captura" onclick="guardarHistorico()" aria-label="Guardar datos en el histórico">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
-            <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
-        </svg>
-        <span id="btnGuardarHistoricoTexto">Guardar histórico</span>
+    <button type="button" id="btnGuardarHistorico" class="btn-accion-cabecera btn-guardar-historico no-captura" onclick="guardarHistorico()" aria-label="Guardar datos en el histórico">
+        <span class="texto-btn" id="btnGuardarHistoricoTexto">Guardar Partidos en WEB</span>
+        <span class="icono-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+                <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
+            </svg>
+        </span>
     </button>
 
     <input type="file" id="inputCargarJornada" accept=".xls,.xlsx" style="display:none" onchange="manejarArchivoJornada(event)">
-    <button type="button" id="btnCargarJornada" class="btn-cargar-jornada no-captura" onclick="document.getElementById('inputCargarJornada').click()" aria-label="Cargar datos de la federación desde archivo Excel">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
-            <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16h-3v3h-2v-3H8v-2h3v-3h2v3h3v2zM13 9V3.5L18.5 9H13z"/>
-        </svg>
-        <span id="btnCargarJornadaTexto">Cargar datos Federacion</span>
+    <button type="button" id="btnCargarJornada" class="btn-accion-cabecera btn-cargar-jornada no-captura" onclick="document.getElementById('inputCargarJornada').click()" aria-label="Cargar datos de la federación desde archivo Excel">
+        <span class="texto-btn" id="btnCargarPartidosTexto">Cargar partidos de WEB</span>
+        <span class="icono-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+                <path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6a7 7 0 1 1 7 7 7 7 0 0 1-4.95-2.05l-1.44 1.44A9 9 0 1 0 13 3zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/>
+            </svg>
+        </span>
     </button>
 
     <!-- Botón flotante: Cargar partidos (histórico guardado en GitHub) -->
-    <button type="button" id="btnCargarPartidos" class="btn-cargar-partidos no-captura" onclick="abrirModalCargarPartidos()" aria-label="Cargar partidos guardados anteriormente">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
-            <path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6a7 7 0 1 1 7 7 7 7 0 0 1-4.95-2.05l-1.44 1.44A9 9 0 1 0 13 3zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/>
-        </svg>
-        <span id="btnCargarPartidosTexto">Cargar partidos</span>
+    <button type="button" id="btnCargarPartidos" class="btn-accion-cabecera btn-cargar-partidos no-captura" onclick="abrirModalCargarPartidos()" aria-label="Cargar partidos guardados anteriormente">
+        <span class="texto-btn" id="btnCargarJornadaTexto">Cargar datos Federacion</span>
+        <span class="icono-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16h-3v3h-2v-3H8v-2h3v-3h2v3h3v2zM13 9V3.5L18.5 9H13z"/>
+            </svg>
+        </span>
     </button>
 
     <!-- Botón flotante: Ajustes de conexión con GitHub -->
@@ -3489,6 +3403,27 @@
             }
             mostrarAviso(mensaje, equiposNoEncontrados.length > 0 || tarjetasCreadas === 0);
         }
+
+        /*
+         * Botones de acciones de la cabecera: en pantallas táctiles no existe
+         * un "hover" real, así que al tocar el botón se despliega el texto
+         * (clase "expandido") y se mantiene visible un instante tras soltar,
+         * sin interferir con el onclick normal del botón.
+         */
+        document.querySelectorAll('.btn-accion-cabecera').forEach(function (boton) {
+            let temporizadorColapso = null;
+            const expandir = () => {
+                clearTimeout(temporizadorColapso);
+                boton.classList.add('expandido');
+            };
+            const colapsarConRetardo = () => {
+                clearTimeout(temporizadorColapso);
+                temporizadorColapso = setTimeout(() => boton.classList.remove('expandido'), 600);
+            };
+            boton.addEventListener('touchstart', expandir, { passive: true });
+            boton.addEventListener('touchend', colapsarConRetardo);
+            boton.addEventListener('touchcancel', colapsarConRetardo);
+        });
     </script>
 </body>
 </html>
