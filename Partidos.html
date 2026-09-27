@@ -702,7 +702,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            background-color: #0d6efd;
+            background-color: #dc3545;
             color: #ffffff;
             border: none;
             padding: 12px 18px;
@@ -728,7 +728,7 @@
         }
         @media (hover: hover) and (pointer: fine) {
             .btn-cargar-jornada:hover {
-                background-color: #3d8bfd;
+                background-color: #e4606d;
             }
         }
         @media (max-width: 480px) {
@@ -736,6 +736,109 @@
                 padding: 10px 14px;
                 font-size: 0.8em;
                 bottom: calc(16px + env(safe-area-inset-bottom) + 108px);
+            }
+        }
+
+        .btn-cargar-partidos {
+            position: fixed;
+            right: calc(16px + env(safe-area-inset-right));
+            bottom: calc(16px + env(safe-area-inset-bottom) + 186px);
+            z-index: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #6f42c1;
+            color: #ffffff;
+            border: none;
+            padding: 12px 18px;
+            border-radius: 30px;
+            font-size: 0.95em;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+            touch-action: manipulation;
+            transition: background-color 0.2s, transform 0.15s, opacity 0.2s;
+        }
+        .btn-cargar-partidos svg {
+            flex-shrink: 0;
+        }
+        .btn-cargar-partidos:active {
+            transform: scale(0.96);
+        }
+        .btn-cargar-partidos:disabled {
+            opacity: 0.6;
+            cursor: default;
+            transform: none;
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .btn-cargar-partidos:hover {
+                background-color: #8a63d2;
+            }
+        }
+        @media (max-width: 480px) {
+            .btn-cargar-partidos {
+                padding: 10px 14px;
+                font-size: 0.8em;
+                bottom: calc(16px + env(safe-area-inset-bottom) + 162px);
+            }
+        }
+
+        .item-archivo-partidos {
+            display: block;
+            width: 100%;
+            text-align: left;
+            background-color: #242424;
+            color: #ffffff;
+            border: 1px solid #3a3a3a;
+            border-radius: 6px;
+            padding: 12px 16px;
+            font-size: 1em;
+            font-family: inherit;
+            cursor: pointer;
+            margin-bottom: 8px;
+            transition: background-color 0.2s;
+        }
+        .item-archivo-partidos:disabled {
+            opacity: 0.5;
+            cursor: default;
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .item-archivo-partidos:hover:not(:disabled) {
+                background-color: #333333;
+                border-color: #6f42c1;
+            }
+        }
+
+        .btn-config-github {
+            position: fixed;
+            top: calc(12px + env(safe-area-inset-top));
+            right: calc(12px + env(safe-area-inset-right));
+            z-index: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            background-color: rgba(0, 0, 0, 0.55);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            border-radius: 50%;
+            padding: 0;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+            touch-action: manipulation;
+            transition: background-color 0.2s, transform 0.15s;
+        }
+        .btn-config-github svg {
+            flex-shrink: 0;
+        }
+        .btn-config-github:active {
+            transform: scale(0.92);
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .btn-config-github:hover {
+                background-color: rgba(0, 0, 0, 0.8);
             }
         }
 
@@ -1029,12 +1132,76 @@
     </button>
 
     <input type="file" id="inputCargarJornada" accept=".xls,.xlsx" style="display:none" onchange="manejarArchivoJornada(event)">
-    <button type="button" id="btnCargarJornada" class="btn-cargar-jornada no-captura" onclick="document.getElementById('inputCargarJornada').click()" aria-label="Cargar jornada desde archivo Excel de la federación">
+    <button type="button" id="btnCargarJornada" class="btn-cargar-jornada no-captura" onclick="document.getElementById('inputCargarJornada').click()" aria-label="Cargar datos de la federación desde archivo Excel">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
             <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16h-3v3h-2v-3H8v-2h3v-3h2v3h3v2zM13 9V3.5L18.5 9H13z"/>
         </svg>
-        <span id="btnCargarJornadaTexto">Cargar Jornada</span>
+        <span id="btnCargarJornadaTexto">Cargar datos Federacion</span>
     </button>
+
+    <!-- Botón flotante: Cargar partidos (histórico guardado en GitHub) -->
+    <button type="button" id="btnCargarPartidos" class="btn-cargar-partidos no-captura" onclick="abrirModalCargarPartidos()" aria-label="Cargar partidos guardados anteriormente">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+            <path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6a7 7 0 1 1 7 7 7 7 0 0 1-4.95-2.05l-1.44 1.44A9 9 0 1 0 13 3zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/>
+        </svg>
+        <span id="btnCargarPartidosTexto">Cargar partidos</span>
+    </button>
+
+    <!-- Botón flotante: Ajustes de conexión con GitHub -->
+    <button type="button" id="btnConfigGitHub" class="btn-config-github no-captura" onclick="abrirModalConfigGitHub()" aria-label="Configurar conexión con GitHub">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true">
+            <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
+        </svg>
+    </button>
+
+    <!-- Modal Configuración GitHub -->
+    <div class="modal-overlay" id="modalConfigGitHub">
+        <div class="modal-content" style="max-width: 480px;">
+            <div class="modal-header">
+                <h2>Configuración de GitHub</h2>
+                <button class="btn-reset" style="background-color:#555;" onclick="cerrarModalConfigGitHub()">CERRAR</button>
+            </div>
+            <div class="modal-body">
+                <p style="color:#bbb; font-size:0.9em; margin-top:0;">
+                    Estos datos se guardan solo en este dispositivo (en el navegador) y se usan para guardar y cargar los partidos en tu repositorio de GitHub.
+                </p>
+                <div style="margin-bottom:14px;">
+                    <label style="display:block; color:#ccc; font-size:0.85em; margin-bottom:4px;">Usuario / organización de GitHub</label>
+                    <input type="text" id="inputConfigGithubOwner" class="input-modal-texto" placeholder="Ej: NouVoleiAlzira" autocomplete="off" />
+                </div>
+                <div style="margin-bottom:14px;">
+                    <label style="display:block; color:#ccc; font-size:0.85em; margin-bottom:4px;">Repositorio</label>
+                    <input type="text" id="inputConfigGithubRepo" class="input-modal-texto" placeholder="Ej: NVA_Storage" autocomplete="off" />
+                </div>
+                <div style="margin-bottom:14px;">
+                    <label style="display:block; color:#ccc; font-size:0.85em; margin-bottom:4px;">Carpeta</label>
+                    <input type="text" id="inputConfigGithubCarpeta" class="input-modal-texto" placeholder="Ej: Partidos" autocomplete="off" />
+                </div>
+                <div style="margin-bottom:6px;">
+                    <label style="display:block; color:#ccc; font-size:0.85em; margin-bottom:4px;">Token de acceso personal (PAT)</label>
+                    <input type="password" id="inputConfigGithubToken" class="input-modal-texto" placeholder="github_pat_..." autocomplete="off" />
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+                    <button class="btn-reset" style="background-color:#555;" onclick="borrarConfigGitHub()">BORRAR DATOS</button>
+                    <button class="btn-aceptar" onclick="guardarConfigGitHubDesdeModal()">GUARDAR</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Cargar Partidos (histórico guardado en GitHub) -->
+    <div class="modal-overlay" id="modalCargarPartidos">
+        <div class="modal-content" style="max-width: 480px;">
+            <div class="modal-header">
+                <h2>Cargar partidos guardados</h2>
+                <button class="btn-reset" style="background-color:#555;" onclick="cerrarModalCargarPartidos()">CERRAR</button>
+            </div>
+            <div class="modal-body">
+                <div id="avisoCargarPartidos" style="color:#bbb; font-size:0.9em; margin-bottom:12px;">Cargando lista de archivos...</div>
+                <div id="listaArchivosPartidos"></div>
+            </div>
+        </div>
+    </div>
 
     <script>
         /*
@@ -2888,7 +3055,7 @@
 
             const boton = document.getElementById('btnCargarJornada');
             const textoBoton = document.getElementById('btnCargarJornadaTexto');
-            const textoOriginal = textoBoton ? textoBoton.textContent : 'Cargar Jornada';
+            const textoOriginal = textoBoton ? textoBoton.textContent : 'Cargar datos Federacion';
             if (boton) boton.disabled = true;
             if (textoBoton) textoBoton.textContent = 'Procesando...';
 
@@ -2994,33 +3161,333 @@
             const textoBoton = document.getElementById('btnGuardarHistoricoTexto');
             if (!boton || boton.disabled) return;
 
+            const config = obtenerConfigGitHub();
+            if (!config) {
+                alert('Antes de guardar, configura la conexión con GitHub pulsando el icono de ajustes (arriba a la derecha).');
+                abrirModalConfigGitHub();
+                return;
+            }
+
             const textoOriginal = textoBoton ? textoBoton.textContent : 'Guardar histórico';
             boton.disabled = true;
             if (textoBoton) textoBoton.textContent = 'Guardando...';
 
             try {
                 const bloqueNuevo = histConstruirBloqueDatos();
-
-                if ('showSaveFilePicker' in window) {
-                    try {
-                        await histGuardarConFileSystemAPI(bloqueNuevo);
-                    } catch (err) {
-                        if (err && err.name === 'AbortError') {
-                            return;
-                        }
-                        console.warn('No se pudo guardar directamente en el archivo, se usará la descarga.', err);
-                        histDescargarFallback(bloqueNuevo);
-                    }
-                } else {
-                    histDescargarFallback(bloqueNuevo);
-                }
+                const nombreArchivo = await guardarHistoricoEnGitHub(config, bloqueNuevo);
+                mostrarAviso(`✅ Partidos guardados en GitHub como "${nombreArchivo}".`, false);
             } catch (err) {
-                console.error('Error al guardar el histórico:', err);
-                alert('No se ha podido guardar el histórico. Inténtalo de nuevo.');
+                console.error('Error al guardar el histórico en GitHub:', err);
+                alert('No se ha podido guardar el histórico en GitHub. Comprueba la configuración y la conexión a internet.\n\n' + (err && err.message ? err.message : ''));
             } finally {
                 boton.disabled = false;
                 if (textoBoton) textoBoton.textContent = textoOriginal;
             }
+        }
+
+        /*
+         * ================================================================
+         * GUARDAR / CARGAR PARTIDOS EN GITHUB (carpeta configurable)
+         * ================================================================
+         * Cada vez que se pulsa "Guardar histórico" se sube un archivo de
+         * texto nuevo con el nombre Partidos[yyyy-mm-dd].txt al repositorio
+         * de GitHub configurado por el usuario. El botón "Cargar partidos"
+         * permite elegir uno de los 6 archivos más recientes y recupera las
+         * tarjetas y la fecha de cabecera a partir de su contenido.
+         *
+         * Los datos de conexión (usuario, repositorio, carpeta y token) NO
+         * están escritos en este archivo: cada usuario los introduce desde
+         * el icono de ajustes (arriba a la derecha) y se guardan solo en el
+         * localStorage de su propio dispositivo/navegador.
+         */
+        const GITHUB_CONFIG_KEY = 'nvaGithubConfig';
+
+        function obtenerConfigGitHub() {
+            try {
+                const raw = localStorage.getItem(GITHUB_CONFIG_KEY);
+                if (!raw) return null;
+                const config = JSON.parse(raw);
+                if (!config || !config.owner || !config.repo || !config.token) return null;
+                if (!config.carpeta) config.carpeta = 'Partidos';
+                return config;
+            } catch (err) {
+                return null;
+            }
+        }
+
+        function guardarConfigGitHubEnDispositivo(config) {
+            try {
+                localStorage.setItem(GITHUB_CONFIG_KEY, JSON.stringify(config));
+                return true;
+            } catch (err) {
+                console.warn('No se pudo guardar la configuración de GitHub en este dispositivo.', err);
+                return false;
+            }
+        }
+
+        function abrirModalConfigGitHub() {
+            const config = obtenerConfigGitHub() || {};
+            document.getElementById('inputConfigGithubOwner').value = config.owner || '';
+            document.getElementById('inputConfigGithubRepo').value = config.repo || '';
+            document.getElementById('inputConfigGithubCarpeta').value = config.carpeta || 'Partidos';
+            document.getElementById('inputConfigGithubToken').value = config.token || '';
+            document.getElementById('modalConfigGitHub').style.display = 'flex';
+            document.body.classList.add('modal-abierto');
+        }
+
+        function cerrarModalConfigGitHub() {
+            document.getElementById('modalConfigGitHub').style.display = 'none';
+            alCerrarModal();
+        }
+
+        function guardarConfigGitHubDesdeModal() {
+            const owner = document.getElementById('inputConfigGithubOwner').value.trim();
+            const repo = document.getElementById('inputConfigGithubRepo').value.trim();
+            let carpeta = document.getElementById('inputConfigGithubCarpeta').value.trim();
+            const token = document.getElementById('inputConfigGithubToken').value.trim();
+
+            if (!owner || !repo || !token) {
+                alert('Por favor, rellena al menos el usuario/organización, el repositorio y el token de acceso.');
+                return;
+            }
+            if (!carpeta) carpeta = 'Partidos';
+
+            const guardado = guardarConfigGitHubEnDispositivo({ owner, repo, carpeta, token });
+            if (guardado) {
+                cerrarModalConfigGitHub();
+                mostrarAviso('✅ Configuración de GitHub guardada en este dispositivo.', false);
+            } else {
+                alert('No se ha podido guardar la configuración en este dispositivo.');
+            }
+        }
+
+        function borrarConfigGitHub() {
+            try {
+                localStorage.removeItem(GITHUB_CONFIG_KEY);
+            } catch (err) { /* ignorar */ }
+            document.getElementById('inputConfigGithubOwner').value = '';
+            document.getElementById('inputConfigGithubRepo').value = '';
+            document.getElementById('inputConfigGithubCarpeta').value = 'Partidos';
+            document.getElementById('inputConfigGithubToken').value = '';
+            mostrarAviso('🗑️ Se ha borrado la configuración de GitHub de este dispositivo.', true);
+        }
+
+        function githubHeaders(config) {
+            return {
+                'Authorization': `token ${config.token}`,
+                'Accept': 'application/vnd.github+json'
+            };
+        }
+
+        function utf8ToBase64(texto) {
+            return btoa(unescape(encodeURIComponent(texto)));
+        }
+
+        function base64ToUtf8(base64) {
+            return decodeURIComponent(escape(atob((base64 || '').replace(/\n/g, ''))));
+        }
+
+        function obtenerNombreArchivoPartidosHoy() {
+            const fecha = new Date();
+            const yyyy = fecha.getFullYear();
+            const mm = String(fecha.getMonth() + 1).padStart(2, '0');
+            const dd = String(fecha.getDate()).padStart(2, '0');
+            return `Partidos${yyyy}-${mm}-${dd}.txt`;
+        }
+
+        async function guardarHistoricoEnGitHub(config, bloqueNuevo) {
+            const nombreArchivo = obtenerNombreArchivoPartidosHoy();
+            const rutaArchivo = `${config.carpeta}/${nombreArchivo}`;
+            const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${rutaArchivo}`;
+
+            // Si ya existe un archivo con el mismo nombre (p. ej. se guarda más
+            // de una vez el mismo día), se necesita su "sha" para actualizarlo.
+            let shaExistente = null;
+            try {
+                const respGet = await fetch(url, { headers: githubHeaders(config) });
+                if (respGet.ok) {
+                    const datosExistente = await respGet.json();
+                    shaExistente = datosExistente.sha || null;
+                }
+            } catch (err) {
+                // Si la comprobación falla, se intenta crear el archivo igualmente.
+            }
+
+            const cuerpo = {
+                message: `Guardar partidos ${nombreArchivo}`,
+                content: utf8ToBase64(bloqueNuevo)
+            };
+            if (shaExistente) cuerpo.sha = shaExistente;
+
+            const respPut = await fetch(url, {
+                method: 'PUT',
+                headers: { ...githubHeaders(config), 'Content-Type': 'application/json' },
+                body: JSON.stringify(cuerpo)
+            });
+
+            if (!respPut.ok) {
+                let detalle = '';
+                try { detalle = (await respPut.json()).message || ''; } catch (err) { /* ignorar */ }
+                throw new Error(`GitHub respondió con error ${respPut.status}${detalle ? ': ' + detalle : ''}`);
+            }
+
+            return nombreArchivo;
+        }
+
+        async function abrirModalCargarPartidos() {
+            const config = obtenerConfigGitHub();
+            if (!config) {
+                alert('Antes de cargar partidos, configura la conexión con GitHub pulsando el icono de ajustes (arriba a la derecha).');
+                abrirModalConfigGitHub();
+                return;
+            }
+
+            const modal = document.getElementById('modalCargarPartidos');
+            const aviso = document.getElementById('avisoCargarPartidos');
+            const lista = document.getElementById('listaArchivosPartidos');
+            lista.innerHTML = '';
+            aviso.style.display = 'block';
+            aviso.textContent = 'Cargando lista de archivos...';
+            modal.style.display = 'flex';
+            document.body.classList.add('modal-abierto');
+
+            try {
+                const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${config.carpeta}`;
+                const resp = await fetch(url, { headers: githubHeaders(config) });
+                if (!resp.ok) throw new Error(`GitHub respondió con error ${resp.status}`);
+                const archivos = await resp.json();
+
+                const archivosTxt = (Array.isArray(archivos) ? archivos : [])
+                    .filter(a => a.type === 'file' && /^Partidos.*\.txt$/i.test(a.name))
+                    .sort((a, b) => b.name.localeCompare(a.name))
+                    .slice(0, 6);
+
+                if (archivosTxt.length === 0) {
+                    aviso.textContent = 'No se ha encontrado ningún archivo de partidos guardado en GitHub.';
+                    return;
+                }
+
+                aviso.style.display = 'none';
+                archivosTxt.forEach(archivo => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'item-archivo-partidos';
+                    btn.textContent = archivo.name;
+                    btn.onclick = () => seleccionarArchivoPartidos(archivo, config);
+                    lista.appendChild(btn);
+                });
+            } catch (err) {
+                console.error('Error al listar los archivos de partidos guardados en GitHub:', err);
+                aviso.style.display = 'block';
+                aviso.textContent = 'No se ha podido obtener la lista de archivos guardados. Comprueba la configuración y la conexión a internet.';
+            }
+        }
+
+        function cerrarModalCargarPartidos() {
+            document.getElementById('modalCargarPartidos').style.display = 'none';
+            alCerrarModal();
+        }
+
+        async function seleccionarArchivoPartidos(archivo, config) {
+            const lista = document.getElementById('listaArchivosPartidos');
+            const aviso = document.getElementById('avisoCargarPartidos');
+            Array.from(lista.querySelectorAll('button')).forEach(b => b.disabled = true);
+            aviso.style.display = 'block';
+            aviso.textContent = `Cargando "${archivo.name}"...`;
+
+            try {
+                const resp = await fetch(archivo.url, { headers: githubHeaders(config) });
+                if (!resp.ok) throw new Error(`GitHub respondió con error ${resp.status}`);
+                const datos = await resp.json();
+                const contenido = base64ToUtf8(datos.content || '');
+                await cargarPartidosDesdeTexto(contenido);
+                cerrarModalCargarPartidos();
+            } catch (err) {
+                console.error('Error al cargar el archivo de partidos:', err);
+                aviso.textContent = 'No se ha podido cargar el archivo seleccionado. Inténtalo de nuevo.';
+                Array.from(lista.querySelectorAll('button')).forEach(b => b.disabled = false);
+            }
+        }
+
+        function parseFechaLargaPartes(fechaTxt) {
+            const texto = (fechaTxt || '').toString().trim();
+            const m = texto.match(/(\d{1,2})\s+de\s+([A-Za-zÀ-ÿ]+)\s+de\s+(\d{4})/i);
+            if (!m) return null;
+            const dia = parseInt(m[1], 10);
+            const nombreMesNorm = normalizarParaComparar(m[2]);
+            const idxMes = MESES_ES.findIndex(mes => normalizarParaComparar(mes) === nombreMesNorm);
+            if (idxMes === -1) return null;
+            return { dia, mes: idxMes + 1, anio: parseInt(m[3], 10) };
+        }
+
+        function obtenerOrdenFechaHoraDesdeTextoLargo(fechaTxt, horaTxt) {
+            const partes = parseFechaLargaPartes(fechaTxt);
+            if (!partes) return Number.MAX_SAFE_INTEGER;
+            let horas = 0, minutos = 0;
+            const m = (horaTxt || '').toString().match(/(\d{1,2})\s*[:hH.]\s*(\d{2})/);
+            if (m) { horas = parseInt(m[1], 10); minutos = parseInt(m[2], 10); }
+            return partes.anio * 100000000 + partes.mes * 1000000 + partes.dia * 10000 + horas * 100 + minutos;
+        }
+
+        async function cargarPartidosDesdeTexto(contenido) {
+            if (!datosCargados) {
+                await intentarCargarExcelOUsarRespaldo();
+            }
+
+            const lineas = (contenido || '').split(/\r?\n/).map(l => l.trim()).filter(l => l !== '');
+            if (lineas.length === 0) {
+                mostrarAviso('⚠️ El archivo seleccionado está vacío.', true);
+                return;
+            }
+
+            const textoFechaCabecera = lineas[0];
+            const lineasPartidos = lineas.slice(1);
+
+            resetearSeleccion();
+
+            let tarjetasCreadas = 0;
+            const equiposNoEncontrados = [];
+
+            lineasPartidos.forEach(linea => {
+                const partes = linea.split('|').map(p => p.trim());
+                if (partes.length < 6) return;
+                const [equipoCasa, equipoVisitante, fechaTxt, horaTxt, campoTxt, categoriaTxt] = partes;
+                if (!equipoCasa || !equipoVisitante) return;
+
+                const { catRank, divRank } = obtenerRangoCategoriaJornada(categoriaTxt);
+                const ordenFecha = obtenerOrdenFechaHoraDesdeTextoLargo(fechaTxt, horaTxt);
+
+                if (esEquipoDelClub(equipoCasa)) {
+                    const idx = rellenarTarjetaDesdeJornada(equipoCasa, 'casa', equipoVisitante, fechaTxt, horaTxt, campoTxt, categoriaTxt, catRank, divRank, ordenFecha);
+                    if (idx !== -1) tarjetasCreadas++; else equiposNoEncontrados.push(equipoCasa);
+                } else if (esEquipoDelClub(equipoVisitante)) {
+                    const idx = rellenarTarjetaDesdeJornada(equipoVisitante, 'fuera', equipoCasa, fechaTxt, horaTxt, campoTxt, categoriaTxt, catRank, divRank, ordenFecha);
+                    if (idx !== -1) tarjetasCreadas++; else equiposNoEncontrados.push(equipoVisitante);
+                }
+            });
+
+            if (textoFechaCabecera) {
+                const elContenedor = document.getElementById('headerTextoFecha');
+                if (elContenedor) {
+                    elContenedor.innerHTML = `<span>${textoFechaCabecera}</span>`;
+                    autoAjustarTextoCabecera();
+                }
+            }
+
+            if (tarjetasCreadas > 0) {
+                generarRecuadros();
+                reordenarRecuadrosPorCategoria();
+                const cont = document.getElementById('contenedorRecuadros');
+                if (cont && cont.children.length > 0) {
+                    cont.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+
+            let mensaje = `✅ Se han cargado ${tarjetasCreadas} partido(s) del archivo seleccionado.`;
+            if (equiposNoEncontrados.length > 0) {
+                mensaje += ` No se encontró en la lista de equipos: ${[...new Set(equiposNoEncontrados)].join(', ')}.`;
+            }
+            mostrarAviso(mensaje, equiposNoEncontrados.length > 0 || tarjetasCreadas === 0);
         }
     </script>
 </body>
