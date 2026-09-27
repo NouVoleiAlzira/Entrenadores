@@ -2937,23 +2937,16 @@
                     return;
                 }
 
-                // ---- Guardar el .txt con el mismo formato que Historico.txt ----
-                const lineasPartidos = partidosClub.map(p =>
-                    `${p.localNombre} | ${p.visitanteNombre} | ${p.fechaTxt} | ${p.horaTxt} | ${p.campoTxt} | ${p.categoriaTxt}`
-                );
-                const encabezado = construirEncabezadoRango(fechasPartes);
-                const bloqueNuevo = encabezado ? [encabezado, ...lineasPartidos].join('\n') : lineasPartidos.join('\n');
-
-                if ('showSaveFilePicker' in window) {
-                    try {
-                        await histGuardarConFileSystemAPI(bloqueNuevo);
-                    } catch (err) {
-                        if (err && err.name === 'AbortError') { return; }
-                        console.warn('No se pudo guardar directamente en el archivo, se usará la descarga.', err);
-                        histDescargarFallback(bloqueNuevo);
-                    }
-                } else {
-                    histDescargarFallback(bloqueNuevo);
+                // ---- Rellenar el rango de fechas de la cabecera con la menor y mayor fecha encontrada ----
+                if (fechasPartes.length > 0) {
+                    const fechasOrdenadas = [...fechasPartes].sort((a, b) => (a.anio - b.anio) || (a.mes - b.mes) || (a.dia - b.dia));
+                    const primero = fechasOrdenadas[0];
+                    const ultimo = fechasOrdenadas[fechasOrdenadas.length - 1];
+                    const fechaInicioObj = new Date(primero.anio, primero.mes - 1, primero.dia);
+                    const fechaFinObj = new Date(ultimo.anio, ultimo.mes - 1, ultimo.dia);
+                    calFechaInicioEfectiva = fechaInicioObj;
+                    calFechaFinEfectiva = fechaFinObj;
+                    escribirTextoFechaEnCabecera(fechaInicioObj, fechaFinObj);
                 }
 
                 // ---- Crear una tarjeta de partido por cada equipo del club encontrado ----
@@ -2980,7 +2973,7 @@
                     }
                 }
 
-                let mensaje = `✅ Se han añadido ${lineasPartidos.length} partido(s) al histórico`;
+                let mensaje = `✅ Se han encontrado ${partidosClub.length} partido(s) de nuestros equipos`;
                 mensaje += tarjetasCreadas > 0 ? (tarjetasCreadas === 1 ? ' y se ha creado 1 tarjeta.' : ` y se han creado ${tarjetasCreadas} tarjetas.`) : '.';
                 if (equiposNoEncontrados.length > 0) {
                     mensaje += ` No se encontró en la lista de equipos: ${[...new Set(equiposNoEncontrados)].join(', ')}.`;
