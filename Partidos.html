@@ -694,6 +694,51 @@
             }
         }
 
+        .btn-cargar-jornada {
+            position: fixed;
+            right: calc(16px + env(safe-area-inset-right));
+            bottom: calc(16px + env(safe-area-inset-bottom) + 124px);
+            z-index: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #0d6efd;
+            color: #ffffff;
+            border: none;
+            padding: 12px 18px;
+            border-radius: 30px;
+            font-size: 0.95em;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+            touch-action: manipulation;
+            transition: background-color 0.2s, transform 0.15s, opacity 0.2s;
+        }
+        .btn-cargar-jornada svg {
+            flex-shrink: 0;
+        }
+        .btn-cargar-jornada:active {
+            transform: scale(0.96);
+        }
+        .btn-cargar-jornada:disabled {
+            opacity: 0.6;
+            cursor: default;
+            transform: none;
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .btn-cargar-jornada:hover {
+                background-color: #3d8bfd;
+            }
+        }
+        @media (max-width: 480px) {
+            .btn-cargar-jornada {
+                padding: 10px 14px;
+                font-size: 0.8em;
+                bottom: calc(16px + env(safe-area-inset-bottom) + 108px);
+            }
+        }
+
         .selector-hora-wrap {
             display: flex;
             gap: 20px;
@@ -981,6 +1026,14 @@
             <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
         </svg>
         <span id="btnGuardarHistoricoTexto">Guardar histórico</span>
+    </button>
+
+    <input type="file" id="inputCargarJornada" accept=".xls,.xlsx" style="display:none" onchange="manejarArchivoJornada(event)">
+    <button type="button" id="btnCargarJornada" class="btn-cargar-jornada no-captura" onclick="document.getElementById('inputCargarJornada').click()" aria-label="Cargar jornada desde archivo Excel de la federación">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+            <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16h-3v3h-2v-3H8v-2h3v-3h2v3h3v2zM13 9V3.5L18.5 9H13z"/>
+        </svg>
+        <span id="btnCargarJornadaTexto">Cargar Jornada</span>
     </button>
 
     <script>
@@ -2601,6 +2654,278 @@
 
             const blob = new Blob([nuevoContenido], { type: 'text/plain;charset=utf-8' });
             descargarBlobComoArchivo(blob, 'Historico.txt');
+        }
+
+        /*
+         * ================================================================
+         * CARGAR JORNADA DESDE EXCEL DE LA FEDERACIÓN (.xls / .xlsx)
+         * ================================================================
+         * Lee el archivo de calendario de la federación (columnas Fecha,
+         * Hora, CAT, Local, Visitante, Campo...), se queda solo con los
+         * partidos donde interviene algún equipo del club (nombre que
+         * contiene "NVA" o "Nou Volei Alzira") y:
+         *   1) genera líneas con el mismo formato que Historico.txt,
+         *      añadiéndolas al histórico;
+         *   2) crea/rellena automáticamente una tarjeta de partido (CASA
+         *      o FUERA) por cada equipo del club encontrado.
+         */
+
+        const MESES_ES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+            'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+        function normalizarParaComparar(texto) {
+            return (texto || '').toString()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .toUpperCase();
+        }
+
+        function esEquipoDelClub(nombre) {
+            const n = normalizarParaComparar(nombre);
+            return n.includes('NVA') || n.includes('NOU VOLEI ALZIRA') || n.includes('NOU VOLEY ALZIRA');
+        }
+
+        // El excel de la federación a veces trae el nombre completo del club
+        // ("... NOU VOLEI ALZIRA", con o sin acentos/variantes); lo dejamos
+        // como "NVA" para que coincida con los nombres ya guardados en
+        // DATOS.xls / listaEquiposGlobal.
+        function normalizarNombreClub(nombre) {
+            return (nombre || '').toString()
+                .replace(/nou\s+v[oò]le[iy]\s+alzira/gi, 'NVA')
+                .replace(/NVA\s+alzira/gi, 'NVA')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        // Corrige comas que en el Excel de origen sustituyen, por error, a
+        // apóstrofos en nombres como "L'ILLA" o "D'ESPORTS".
+        function corregirApostrofes(texto) {
+            return (texto || '').toString().replace(/([A-Za-zÀ-ÿ]),(?=[A-Za-zÀ-ÿ])/g, "$1'");
+        }
+
+        function obtenerCategoriaDesdeCAT(catRaw) {
+            const cat = (catRaw || '').toString().trim().toUpperCase();
+            if (cat.length < 3) return cat;
+            const division = cat.charAt(0);
+            const letraCategoria = cat.charAt(1);
+            const nombresCategoria = { 'I': 'INFANTIL', 'C': 'CADETE', 'J': 'JUVENIL', 'S': 'SENIOR' };
+            const nombre = nombresCategoria[letraCategoria];
+            if (!nombre || !/^[0-9]$/.test(division)) return cat;
+            return `${nombre} ${division}ª DIVISION`;
+        }
+
+        function encontrarIndiceEquipoClub(nombreClub, categoriaTxt) {
+            const nombreNorm = normalizarParaComparar(nombreClub);
+            const catNorm = normalizarParaComparar(categoriaTxt || '');
+
+            // 1) Coincidencia exacta de nombre + categoría (un mismo equipo,
+            //    p.ej. "ENOVA NVA", puede repetirse en varias categorías).
+            let idx = listaEquiposGlobal.findIndex(f =>
+                normalizarParaComparar(obtenerNombreEquipo(f)) === nombreNorm &&
+                normalizarParaComparar(obtenerCategoria(f)) === catNorm
+            );
+            if (idx !== -1) return idx;
+
+            // 2) Si no hay coincidencia exacta, se prueba solo por categoría
+            //    (asumiendo una única entrada por categoría).
+            if (catNorm) {
+                idx = listaEquiposGlobal.findIndex(f => normalizarParaComparar(obtenerCategoria(f)) === catNorm);
+                if (idx !== -1) return idx;
+            }
+
+            // 3) Por último, solo por nombre, y únicamente si es inequívoco.
+            const coincidenciasNombre = listaEquiposGlobal
+                .map((f, i) => i)
+                .filter(i => normalizarParaComparar(obtenerNombreEquipo(listaEquiposGlobal[i])) === nombreNorm);
+            if (coincidenciasNombre.length === 1) return coincidenciasNombre[0];
+
+            return -1;
+        }
+
+        // Marca la fila del equipo como CASA/FUERA en la tabla y rellena
+        // mapaDatosPartidos con rival, fecha, hora y lugar, igual que hace
+        // la selección manual (ver generarRecuadros / crearRecuadro).
+        function rellenarTarjetaDesdeJornada(nombreClub, tipo, rivalNombre, fechaTxt, horaTxt, campoTxt, categoriaTxt) {
+            const idx = encontrarIndiceEquipoClub(nombreClub, categoriaTxt);
+            if (idx === -1) return false;
+
+            const tr = document.getElementById(`fila-${idx}`);
+            if (tr) {
+                tr.classList.remove('selected-casa', 'selected-fuera');
+                tr.classList.add(tipo === 'casa' ? 'selected-casa' : 'selected-fuera');
+            }
+
+            const filaRival = listaOtrosEquiposGlobal.find(
+                f => normalizarParaComparar(obtenerNombreEquipo(f)) === normalizarParaComparar(rivalNombre)
+            );
+            const rivalLogo = filaRival ? obtenerRutaLogo(filaRival) : '';
+
+            mapaDatosPartidos[idx] = {
+                tipo: tipo,
+                rivalNombre: rivalNombre,
+                rivalLogo: rivalLogo,
+                fecha: fechaTxt,
+                hora: horaTxt,
+                lugar: campoTxt
+            };
+            return true;
+        }
+
+        function parseFechaPartes(valor) {
+            if (valor instanceof Date && !isNaN(valor)) {
+                return { dia: valor.getDate(), mes: valor.getMonth() + 1, anio: valor.getFullYear() };
+            }
+            const texto = (valor || '').toString().trim();
+            const m = texto.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
+            if (!m) return null;
+            let anio = parseInt(m[3], 10);
+            if (anio < 100) anio += 2000;
+            return { dia: parseInt(m[1], 10), mes: parseInt(m[2], 10), anio };
+        }
+
+        function fechaLargaDesdePartes(partes) {
+            if (!partes) return '';
+            return `${partes.dia} de ${MESES_ES[partes.mes - 1]} de ${partes.anio}`;
+        }
+
+        function formatearHora(valor) {
+            let horas, minutos;
+            if (valor instanceof Date && !isNaN(valor)) {
+                horas = valor.getHours();
+                minutos = valor.getMinutes();
+            } else {
+                const texto = (valor || '').toString().trim();
+                const m = texto.match(/(\d{1,2})[:hH.](\d{2})/);
+                if (!m) return texto;
+                horas = parseInt(m[1], 10);
+                minutos = parseInt(m[2], 10);
+            }
+            const hh = horas.toString().padStart(2, '0');
+            const mm = minutos.toString().padStart(2, '0');
+            return `${hh} : ${mm} H`;
+        }
+
+        function construirEncabezadoRango(fechasPartes) {
+            if (fechasPartes.length === 0) return '';
+            const orden = [...fechasPartes].sort((a, b) => (a.anio - b.anio) || (a.mes - b.mes) || (a.dia - b.dia));
+            const primero = orden[0];
+            const ultimo = orden[orden.length - 1];
+            if (primero.anio === ultimo.anio && primero.mes === ultimo.mes) {
+                return `del ${primero.dia} al ${ultimo.dia} de ${MESES_ES[primero.mes - 1]} del ${primero.anio}`;
+            } else if (primero.anio === ultimo.anio) {
+                return `del ${primero.dia} de ${MESES_ES[primero.mes - 1]} al ${ultimo.dia} de ${MESES_ES[ultimo.mes - 1]} del ${primero.anio}`;
+            }
+            return `del ${primero.dia} de ${MESES_ES[primero.mes - 1]} del ${primero.anio} al ${ultimo.dia} de ${MESES_ES[ultimo.mes - 1]} del ${ultimo.anio}`;
+        }
+
+        async function manejarArchivoJornada(event) {
+            const input = event.target;
+            const archivo = input.files && input.files[0];
+            if (!archivo) return;
+
+            const boton = document.getElementById('btnCargarJornada');
+            const textoBoton = document.getElementById('btnCargarJornadaTexto');
+            const textoOriginal = textoBoton ? textoBoton.textContent : 'Cargar Jornada';
+            if (boton) boton.disabled = true;
+            if (textoBoton) textoBoton.textContent = 'Procesando...';
+
+            try {
+                if (!datosCargados) {
+                    await intentarCargarExcelOUsarRespaldo();
+                }
+
+                const arrayBuffer = await archivo.arrayBuffer();
+                const datos = new Uint8Array(arrayBuffer);
+                const wbJornada = XLSX.read(datos, { type: 'array' });
+                const nombreHoja = wbJornada.SheetNames[0];
+                const hoja = wbJornada.Sheets[nombreHoja];
+                const filas = XLSX.utils.sheet_to_json(hoja, { defval: '', raw: false });
+
+                const partidosClub = [];
+                const fechasPartes = [];
+
+                filas.forEach(fila => {
+                    const localRaw = (fila['Local'] || '').toString().trim();
+                    const visitanteRaw = (fila['Visitante'] || '').toString().trim();
+                    if (!localRaw || !visitanteRaw) return;
+
+                    const localEsClub = esEquipoDelClub(localRaw);
+                    const visitanteEsClub = esEquipoDelClub(visitanteRaw);
+                    if (!localEsClub && !visitanteEsClub) return;
+
+                    const localNombre = corregirApostrofes(normalizarNombreClub(localRaw));
+                    const visitanteNombre = corregirApostrofes(normalizarNombreClub(visitanteRaw));
+                    const campoTxt = corregirApostrofes((fila['Campo'] || '').toString().trim());
+                    const categoriaTxt = obtenerCategoriaDesdeCAT(fila['CAT']);
+
+                    const partes = parseFechaPartes(fila['Fecha']);
+                    const fechaTxt = partes ? fechaLargaDesdePartes(partes) : (fila['Fecha'] || '').toString().trim();
+                    const horaTxt = formatearHora(fila['Hora']);
+                    if (partes) fechasPartes.push(partes);
+
+                    partidosClub.push({ localNombre, visitanteNombre, fechaTxt, horaTxt, campoTxt, categoriaTxt, localEsClub, visitanteEsClub });
+                });
+
+                if (partidosClub.length === 0) {
+                    mostrarAviso('⚠️ No se ha encontrado ningún partido de nuestros equipos en ese archivo.', true);
+                    return;
+                }
+
+                // ---- Guardar el .txt con el mismo formato que Historico.txt ----
+                const lineasPartidos = partidosClub.map(p =>
+                    `${p.localNombre} | ${p.visitanteNombre} | ${p.fechaTxt} | ${p.horaTxt} | ${p.campoTxt} | ${p.categoriaTxt}`
+                );
+                const encabezado = construirEncabezadoRango(fechasPartes);
+                const bloqueNuevo = encabezado ? [encabezado, ...lineasPartidos].join('\n') : lineasPartidos.join('\n');
+
+                if ('showSaveFilePicker' in window) {
+                    try {
+                        await histGuardarConFileSystemAPI(bloqueNuevo);
+                    } catch (err) {
+                        if (err && err.name === 'AbortError') { return; }
+                        console.warn('No se pudo guardar directamente en el archivo, se usará la descarga.', err);
+                        histDescargarFallback(bloqueNuevo);
+                    }
+                } else {
+                    histDescargarFallback(bloqueNuevo);
+                }
+
+                // ---- Crear una tarjeta de partido por cada equipo del club encontrado ----
+                let tarjetasCreadas = 0;
+                const equiposNoEncontrados = [];
+
+                partidosClub.forEach(p => {
+                    if (p.localEsClub) {
+                        const ok = rellenarTarjetaDesdeJornada(p.localNombre, 'casa', p.visitanteNombre, p.fechaTxt, p.horaTxt, p.campoTxt, p.categoriaTxt);
+                        if (ok) tarjetasCreadas++; else equiposNoEncontrados.push(p.localNombre);
+                    }
+                    if (p.visitanteEsClub) {
+                        const ok = rellenarTarjetaDesdeJornada(p.visitanteNombre, 'fuera', p.localNombre, p.fechaTxt, p.horaTxt, p.campoTxt, p.categoriaTxt);
+                        if (ok) tarjetasCreadas++; else equiposNoEncontrados.push(p.visitanteNombre);
+                    }
+                });
+
+                if (tarjetasCreadas > 0) {
+                    generarRecuadros();
+                    const cont = document.getElementById('contenedorRecuadros');
+                    if (cont && cont.children.length > 0) {
+                        cont.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }
+
+                let mensaje = `✅ Se han añadido ${lineasPartidos.length} partido(s) al histórico`;
+                mensaje += tarjetasCreadas > 0 ? (tarjetasCreadas === 1 ? ' y se ha creado 1 tarjeta.' : ` y se han creado ${tarjetasCreadas} tarjetas.`) : '.';
+                if (equiposNoEncontrados.length > 0) {
+                    mensaje += ` No se encontró en la lista de equipos: ${[...new Set(equiposNoEncontrados)].join(', ')}.`;
+                }
+                mostrarAviso(mensaje, equiposNoEncontrados.length > 0);
+            } catch (err) {
+                console.error('Error al procesar el archivo de la jornada:', err);
+                alert('No se ha podido procesar el archivo. Comprueba que es un .xls/.xlsx con columnas Fecha, Hora, CAT, Local, Visitante y Campo.');
+            } finally {
+                if (boton) boton.disabled = false;
+                if (textoBoton) textoBoton.textContent = textoOriginal;
+                input.value = '';
+            }
         }
 
         async function guardarHistorico() {
