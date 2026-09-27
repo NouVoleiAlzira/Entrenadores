@@ -744,12 +744,12 @@
         .btn-cargar-jornada {
             position: fixed;
             right: calc(16px + env(safe-area-inset-right));
-            bottom: calc(16px + env(safe-area-inset-bottom) + 186px);
+            bottom: calc(16px + env(safe-area-inset-bottom) + 248px);
             z-index: 500;
             display: flex;
             align-items: center;
             gap: 8px;
-            background-color: #3C993C;
+            background-color: #DB1D50;
             color: #ffffff;
             border: none;
             padding: 12px 18px;
@@ -775,26 +775,26 @@
         }
         @media (hover: hover) and (pointer: fine) {
             .btn-cargar-jornada:hover {
-                background-color: #1DDB1D;
+                background-color: #8A171F;
             }
         }
         @media (max-width: 480px) {
             .btn-cargar-jornada {
                 padding: 10px 14px;
                 font-size: 0.8em;
-                bottom: calc(16px + env(safe-area-inset-bottom) + 162px);
+                bottom: calc(16px + env(safe-area-inset-bottom) + 216px);
             }
         }
 
         .btn-cargar-partidos {
             position: fixed;
             right: calc(16px + env(safe-area-inset-right));
-            bottom: calc(16px + env(safe-area-inset-bottom) + 248px);
+            bottom: calc(16px + env(safe-area-inset-bottom) + 186px);
             z-index: 500;
             display: flex;
             align-items: center;
             gap: 8px;
-            background-color: #DB1D50;
+            background-color: #3C993C;
             color: #ffffff;
             border: none;
             padding: 12px 18px;
@@ -820,14 +820,14 @@
         }
         @media (hover: hover) and (pointer: fine) {
             .btn-cargar-partidos:hover {
-                background-color: #8A171F;
+                background-color: #1DDB1D;
             }
         }
         @media (max-width: 480px) {
             .btn-cargar-partidos {
                 padding: 10px 14px;
                 font-size: 0.8em;
-                bottom: calc(16px + env(safe-area-inset-bottom) + 216px);
+                bottom: calc(16px + env(safe-area-inset-bottom) + 162px);
             }
         }
 
@@ -1186,18 +1186,19 @@
         <span id="btnGuardarHistoricoTexto">Guardar Partidos en WEB</span>
     </button>
 
-    <input type="file" id="inputCargarJornada" accept=".xls,.xlsx" style="display:none" onchange="manejarArchivoJornada(event)">
-    <button type="button" id="btnCargarJornada" class="btn-cargar-jornada boton-accion-menu oculto-menu no-captura" onclick="document.getElementById('inputCargarJornada').click()" aria-label="Cargar datos de la federación desde archivo Excel">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
-            <path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6a7 7 0 1 1 7 7 7 7 0 0 1-4.95-2.05l-1.44 1.44A9 9 0 1 0 13 3zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/>
-        </svg>
-        <span id="btnCargarPartidosTexto">Cargar partidos de WEB</span>
-    </button>
-
     <!-- Botón flotante: Cargar partidos (histórico guardado en GitHub) -->
     <button type="button" id="btnCargarPartidos" class="btn-cargar-partidos boton-accion-menu oculto-menu no-captura" onclick="abrirModalCargarPartidos()" aria-label="Cargar partidos guardados anteriormente">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
             <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16h-3v3h-2v-3H8v-2h3v-3h2v3h3v2zM13 9V3.5L18.5 9H13z"/>
+        </svg>
+        <span id="btnCargarPartidosTexto">Cargar partidos de WEB</span>
+    </button>
+
+
+    <input type="file" id="inputCargarJornada" accept=".xls,.xlsx" style="display:none" onchange="manejarArchivoJornada(event)">
+    <button type="button" id="btnCargarJornada" class="btn-cargar-jornada boton-accion-menu oculto-menu no-captura" onclick="document.getElementById('inputCargarJornada').click()" aria-label="Cargar datos de la federación desde archivo Excel">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+            <path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6a7 7 0 1 1 7 7 7 7 0 0 1-4.95-2.05l-1.44 1.44A9 9 0 1 0 13 3zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/>
         </svg>
         <span id="btnCargarJornadaTexto">Cargar datos Federacion</span>
     </button>
