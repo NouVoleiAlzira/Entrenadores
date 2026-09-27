@@ -2713,6 +2713,65 @@
             return `${nombre} ${division}ª DIVISION`;
         }
 
+        // ---- Orden de las tarjetas al importar una jornada ----
+        // 1) Categoría: Infantil < Cadete < Juvenil < Junior < Senior
+        // 2) Dentro de la categoría: 1ª división < 2ª < 3ª/Zonal, etc.
+        // 3) Si coinciden categoría y división: por fecha y hora del partido
+        const ORDEN_CATEGORIA_JORNADA = { 'INFANTIL': 1, 'CADETE': 2, 'JUVENIL': 3, 'JUNIOR': 4, 'SENIOR': 5 };
+
+        function obtenerRangoCategoriaJornada(categoriaTxt) {
+            const texto = (categoriaTxt || '').toString().trim().toUpperCase();
+            const m = texto.match(/^(\S+)\s+(\d+)\s*ª?\s*DIVISION/);
+            if (m) {
+                const catRank = (ORDEN_CATEGORIA_JORNADA[m[1]] !== undefined) ? ORDEN_CATEGORIA_JORNADA[m[1]] : 999;
+                return { catRank, divRank: parseInt(m[2], 10) };
+            }
+            for (const nombre in ORDEN_CATEGORIA_JORNADA) {
+                if (texto.indexOf(nombre) === 0) return { catRank: ORDEN_CATEGORIA_JORNADA[nombre], divRank: 999 };
+            }
+            return { catRank: 999, divRank: 999 };
+        }
+
+        function obtenerOrdenFechaHoraJornada(valorFecha, valorHora) {
+            const partes = parseFechaPartes(valorFecha);
+            if (!partes) return Number.MAX_SAFE_INTEGER;
+            let horas = 0, minutos = 0;
+            if (valorHora instanceof Date && !isNaN(valorHora)) {
+                horas = valorHora.getHours();
+                minutos = valorHora.getMinutes();
+            } else {
+                const texto = (valorHora || '').toString().trim();
+                const m = texto.match(/(\d{1,2})[:hH.](\d{2})/);
+                if (m) { horas = parseInt(m[1], 10); minutos = parseInt(m[2], 10); }
+            }
+            return partes.anio * 100000000 + partes.mes * 1000000 + partes.dia * 10000 + horas * 100 + minutos;
+        }
+
+        // Reordena las tarjetas ya creadas en #contenedorRecuadros siguiendo
+        // el criterio de categoría/división/fecha-hora guardado en cada
+        // tarjeta (recuadro.datosEstado). Las tarjetas seleccionadas a mano
+        // (sin esos datos) mantienen su orden relativo (sort estable) y
+        // quedan detrás de las importadas desde la jornada.
+        function reordenarRecuadrosPorCategoria() {
+            const cont = document.getElementById('contenedorRecuadros');
+            if (!cont) return;
+            const hijos = Array.from(cont.querySelectorAll('.recuadro-partido'));
+            hijos.sort((a, b) => {
+                const ea = a.datosEstado || {};
+                const eb = b.datosEstado || {};
+                const catA = (ea.catRank !== undefined) ? ea.catRank : 999;
+                const catB = (eb.catRank !== undefined) ? eb.catRank : 999;
+                if (catA !== catB) return catA - catB;
+                const divA = (ea.divRank !== undefined) ? ea.divRank : 999;
+                const divB = (eb.divRank !== undefined) ? eb.divRank : 999;
+                if (divA !== divB) return divA - divB;
+                const fA = (ea.ordenFecha !== undefined) ? ea.ordenFecha : Number.MAX_SAFE_INTEGER;
+                const fB = (eb.ordenFecha !== undefined) ? eb.ordenFecha : Number.MAX_SAFE_INTEGER;
+                return fA - fB;
+            });
+            hijos.forEach(h => cont.appendChild(h));
+        }
+
         function encontrarIndiceEquipoClub(nombreClub, categoriaTxt) {
             const nombreNorm = normalizarParaComparar(nombreClub);
             const catNorm = normalizarParaComparar(categoriaTxt || '');
@@ -2744,9 +2803,9 @@
         // Marca la fila del equipo como CASA/FUERA en la tabla y rellena
         // mapaDatosPartidos con rival, fecha, hora y lugar, igual que hace
         // la selección manual (ver generarRecuadros / crearRecuadro).
-        function rellenarTarjetaDesdeJornada(nombreClub, tipo, rivalNombre, fechaTxt, horaTxt, campoTxt, categoriaTxt) {
+        function rellenarTarjetaDesdeJornada(nombreClub, tipo, rivalNombre, fechaTxt, horaTxt, campoTxt, categoriaTxt, catRank, divRank, ordenFecha) {
             const idx = encontrarIndiceEquipoClub(nombreClub, categoriaTxt);
-            if (idx === -1) return false;
+            if (idx === -1) return -1;
 
             const tr = document.getElementById(`fila-${idx}`);
             if (tr) {
@@ -2765,9 +2824,14 @@
                 rivalLogo: rivalLogo,
                 fecha: fechaTxt,
                 hora: horaTxt,
-                lugar: campoTxt
+                lugar: campoTxt,
+                // Datos usados solo para ordenar las tarjetas tras la importación
+                categoriaTxt: categoriaTxt,
+                catRank: catRank,
+                divRank: divRank,
+                ordenFecha: ordenFecha
             };
-            return true;
+            return idx;
         }
 
         function parseFechaPartes(valor) {
@@ -2862,7 +2926,10 @@
                     const horaTxt = formatearHora(fila['Hora']);
                     if (partes) fechasPartes.push(partes);
 
-                    partidosClub.push({ localNombre, visitanteNombre, fechaTxt, horaTxt, campoTxt, categoriaTxt, localEsClub, visitanteEsClub });
+                    const { catRank, divRank } = obtenerRangoCategoriaJornada(categoriaTxt);
+                    const ordenFecha = obtenerOrdenFechaHoraJornada(fila['Fecha'], fila['Hora']);
+
+                    partidosClub.push({ localNombre, visitanteNombre, fechaTxt, horaTxt, campoTxt, categoriaTxt, localEsClub, visitanteEsClub, catRank, divRank, ordenFecha });
                 });
 
                 if (partidosClub.length === 0) {
@@ -2895,17 +2962,18 @@
 
                 partidosClub.forEach(p => {
                     if (p.localEsClub) {
-                        const ok = rellenarTarjetaDesdeJornada(p.localNombre, 'casa', p.visitanteNombre, p.fechaTxt, p.horaTxt, p.campoTxt, p.categoriaTxt);
-                        if (ok) tarjetasCreadas++; else equiposNoEncontrados.push(p.localNombre);
+                        const idx = rellenarTarjetaDesdeJornada(p.localNombre, 'casa', p.visitanteNombre, p.fechaTxt, p.horaTxt, p.campoTxt, p.categoriaTxt, p.catRank, p.divRank, p.ordenFecha);
+                        if (idx !== -1) tarjetasCreadas++; else equiposNoEncontrados.push(p.localNombre);
                     }
                     if (p.visitanteEsClub) {
-                        const ok = rellenarTarjetaDesdeJornada(p.visitanteNombre, 'fuera', p.localNombre, p.fechaTxt, p.horaTxt, p.campoTxt, p.categoriaTxt);
-                        if (ok) tarjetasCreadas++; else equiposNoEncontrados.push(p.visitanteNombre);
+                        const idx = rellenarTarjetaDesdeJornada(p.visitanteNombre, 'fuera', p.localNombre, p.fechaTxt, p.horaTxt, p.campoTxt, p.categoriaTxt, p.catRank, p.divRank, p.ordenFecha);
+                        if (idx !== -1) tarjetasCreadas++; else equiposNoEncontrados.push(p.visitanteNombre);
                     }
                 });
 
                 if (tarjetasCreadas > 0) {
                     generarRecuadros();
+                    reordenarRecuadrosPorCategoria();
                     const cont = document.getElementById('contenedorRecuadros');
                     if (cont && cont.children.length > 0) {
                         cont.scrollIntoView({ behavior: 'smooth', block: 'start' });
