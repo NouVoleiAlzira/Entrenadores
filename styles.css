@@ -1238,12 +1238,43 @@
     }
     .ms-mid { display: flex; flex-direction: column; gap: 4px; }
     .ms-sets-title {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
       text-align: center;
       font-size: 0.72rem;
       font-weight: 800;
       letter-spacing: 0.5px;
-      padding: 4px 0;
+      padding: 3px 0;
       margin-bottom: 2px;
+    }
+    .ms-voice-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      padding: 0;
+      border: 1.5px solid rgba(255,255,255,0.85);
+      border-radius: 50%;
+      background: transparent;
+      color: white;
+      cursor: pointer;
+      flex: none;
+    }
+    .ms-voice-btn.recording {
+      background: #ef4444;
+      border-color: #ef4444;
+      animation: msVoicePulse 1.2s ease-in-out infinite;
+    }
+    @keyframes msVoicePulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.6); }
+      50% { box-shadow: 0 0 0 5px rgba(239,68,68,0); }
+    }
+    .ms-set-input.voice-next { border-color: #ef4444; }
+    @media (prefers-reduced-motion: reduce) {
+      .ms-voice-btn.recording { animation: none; }
     }
     .ms-set-row { display: flex; align-items: center; gap: 3px; }
     .ms-set-row .ms-dash { color: white; font-weight: 800; width: 8px; text-align: center; flex: none; }

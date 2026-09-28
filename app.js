@@ -2534,9 +2534,138 @@
     updateMatchScoreDigits();
   }
 
+  // ---------------------------------------------------------------------
+  //  DICTADO POR VOZ DE LAS PUNTUACIONES
+  //  Orden de relleno: fila 1 local, fila 1 visitante, fila 2 local, ...
+  // ---------------------------------------------------------------------
+  const matchVoice = { active: false, recognition: null, slot: 0, wantListening: false };
+
+  const VOICE_UNITS = {
+    cero: 0, un: 1, uno: 1, una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7,
+    ocho: 8, nueve: 9, diez: 10, once: 11, doce: 12, trece: 13, catorce: 14, quince: 15,
+    dieciseis: 16, diecisiete: 17, dieciocho: 18, diecinueve: 19, veinte: 20, veintiuno: 21,
+    veintiun: 21, veintiuna: 21, veintidos: 22, veintitres: 23, veinticuatro: 24,
+    veinticinco: 25, veintiseis: 26, veintisiete: 27, veintiocho: 28, veintinueve: 29
+  };
+  const VOICE_TENS = { treinta: 30, cuarenta: 40, cincuenta: 50, sesenta: 60, setenta: 70, ochenta: 80, noventa: 90 };
+
+  // Convierte un texto dictado ("25 23", "veinticinco veintitrés", "treinta y uno") en una lista de números.
+  function parseSpokenNumbers(text) {
+    const tokens = String(text || "")
+      .toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9\s]/g, " ")
+      .split(/\s+/).filter(Boolean);
+    const out = [];
+    for (let i = 0; i < tokens.length; i++) {
+      const t = tokens[i];
+      if (/^\d+$/.test(t)) { out.push(parseInt(t, 10)); continue; }
+      if (t in VOICE_TENS) {
+        let n = VOICE_TENS[t];
+        if (tokens[i + 1] === "y" && tokens[i + 2] in VOICE_UNITS && VOICE_UNITS[tokens[i + 2]] < 10) {
+          n += VOICE_UNITS[tokens[i + 2]];
+          i += 2;
+        }
+        out.push(n);
+        continue;
+      }
+      if (t in VOICE_UNITS) out.push(VOICE_UNITS[t]);
+    }
+    return out;
+  }
+
+  function highlightNextVoiceSlot() {
+    document.querySelectorAll(".ms-set-input.voice-next").forEach(el => el.classList.remove("voice-next"));
+    if (!matchVoice.active) return;
+    const inputs = document.querySelectorAll("#matchScoreboard .ms-set-input");
+    if (inputs[matchVoice.slot]) inputs[matchVoice.slot].classList.add("voice-next");
+  }
+
+  function fillMatchSlotsFromNumbers(numbers) {
+    const inputs = document.querySelectorAll("#matchScoreboard .ms-set-input");
+    const total = MATCH_SETS_COUNT * 2;
+    numbers.forEach(n => {
+      if (matchVoice.slot >= total) return;
+      const value = String(Math.min(Math.max(n, 0), 99));
+      const row = Math.floor(matchVoice.slot / 2);
+      const side = matchVoice.slot % 2 === 0 ? "local" : "visitante";
+      matchScore.sets[row][side] = value;
+      if (inputs[matchVoice.slot]) inputs[matchVoice.slot].value = value;
+      matchVoice.slot++;
+    });
+    updateMatchScoreDigits();
+    if (matchVoice.slot >= total) stopMatchVoice();
+    else highlightNextVoiceSlot();
+  }
+
+  function setMatchVoiceUI(active) {
+    matchVoice.active = active;
+    const btn = document.getElementById("msVoiceBtn");
+    if (btn) btn.classList.toggle("recording", active);
+    highlightNextVoiceSlot();
+  }
+
+  function stopMatchVoice() {
+    matchVoice.wantListening = false;
+    const rec = matchVoice.recognition;
+    matchVoice.recognition = null;
+    if (rec) { try { rec.stop(); } catch (e) {} }
+    setMatchVoiceUI(false);
+  }
+
+  function startMatchVoice() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("El dictado por voz no está disponible en este navegador.");
+      return;
+    }
+    matchVoice.slot = 0;
+    matchVoice.wantListening = true;
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "es-ES";
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event) => {
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (!event.results[i].isFinal) continue;
+        fillMatchSlotsFromNumbers(parseSpokenNumbers(event.results[i][0].transcript));
+      }
+    };
+    recognition.onerror = (e) => {
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+        alert("No hay permiso para usar el micrófono.");
+        stopMatchVoice();
+      }
+    };
+    // El navegador corta el reconocimiento tras un silencio: se reinicia mientras siga activo.
+    recognition.onend = () => {
+      if (matchVoice.wantListening && matchVoice.recognition === recognition) {
+        try { recognition.start(); return; } catch (e) {}
+      }
+      if (matchVoice.recognition === recognition) stopMatchVoice();
+    };
+
+    matchVoice.recognition = recognition;
+    try {
+      recognition.start();
+      setMatchVoiceUI(true);
+    } catch (e) {
+      stopMatchVoice();
+    }
+  }
+
+  function toggleMatchVoice() {
+    if (matchVoice.active) stopMatchVoice();
+    else startMatchVoice();
+  }
+
   function renderMatchScoreboard() {
     const box = document.getElementById("matchScoreboard");
     if (!box) return;
+    if (matchVoice.active) stopMatchVoice();
     const t = computeMatchSets();
 
     const teamBtn = (side, name, placeholder) => `
@@ -2560,7 +2689,17 @@
         <div class="ms-box ms-score" id="msScoreLocal">${t.local}</div>
       </div>
       <div class="ms-mid">
-        <div class="ms-box ms-sets-title">SETS</div>
+        <div class="ms-box ms-sets-title">
+          <span>SETS</span>
+          <button type="button" id="msVoiceBtn" class="ms-voice-btn ${matchVoice.active ? 'recording' : ''}"
+                  onclick="toggleMatchVoice()" aria-label="Dictar puntuaciones por voz" title="Dictar puntuaciones por voz">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="9" y="2" width="6" height="12" rx="3"></rect>
+              <path d="M5 11a7 7 0 0 0 14 0"></path>
+              <line x1="12" y1="18" x2="12" y2="22"></line>
+            </svg>
+          </button>
+        </div>
         ${rows}
       </div>
       <div class="ms-side">
