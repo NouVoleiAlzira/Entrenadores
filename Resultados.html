@@ -384,8 +384,8 @@
         }
 
         .text-category {
-            top: 3.3%; left: 3.1%; width: 41%; height: 9%;
-            color: var(--nva-text); font-size: clamp(14px, 3.6vw, 72px);
+            top: 3.3%; left: 3.1%; width: 41%; height: 8%;
+            color: var(--nva-text); font-size: clamp(12px, 3.4vw, 68px);
             justify-content: flex-start; padding-left: 0.3vw;
             user-select: none; white-space: nowrap; text-shadow: none;
             transform-origin: left center;
@@ -400,10 +400,10 @@
 
         .badge-slot img { width: 100%; height: 100%; object-fit: contain; display: none; }
         .badge-home { left: 2.7%; }
-        .badge-away { left: 32.2%; }
+        .badge-away { left: 31.2%; }
 
         .text-score-home, .text-score-away {
-            position: absolute; top: 30%; width: 10%; height: 45%;
+            position: absolute; top: 30%; width: 10%; height: 40%;
             line-height: 1; 
             color: var(--nva-text);
             text-shadow: 4px 4px 10px rgba(0, 0, 0, 0.95); cursor: pointer;
@@ -425,7 +425,7 @@
         .text-score-away { left: 27.6%; }
 
         .text-score-divider {
-            position: absolute; top: 36%; left: 21.7%; width: 5%; height: 30%;
+            position: absolute; top: 32%; left: 21.7%; width: 5%; height: 30%;
             font-size: clamp(32px, 10vw, 240px); transform: scaleY(1.5);
             transform-origin: center center; color: var(--nva-text);
             display: flex; align-items: center; justify-content: center;
@@ -433,7 +433,7 @@
         }
 
         .team-container {
-            position: absolute; top: 68%; left: 26.2%; width: 23%; height: 27%; cursor: pointer; z-index: 5;
+            position: absolute; top: 69%; left: 26.2%; width: 23%; height: 25%; cursor: pointer; z-index: 5;
             background: transparent;
             border: none; outline: none; display: flex; align-items: center;
             justify-content: center; overflow: hidden; text-align: center;
@@ -755,7 +755,7 @@
 
     <script>
         // Configuración de áreas e interacciones
-        const CONFIG_AREA = { homeLeft: 3.2, homeWidth: 21, awayLeft: 24.8, awayWidth: 21, height: 27, bottomOffset: 2.2 };
+        const CONFIG_AREA = { homeLeft: 3.2, homeWidth: 21, awayLeft: 24.8, awayWidth: 21, height: 25, bottomOffset: 2 };
 
         let EQUIPOS_NVA_DATA = [
             { LOGO: null, EQUIPO: "ALEVIN", CATEGORIA: "ALEVIN", COLOR: "008de9" },
@@ -2107,19 +2107,6 @@
                 }, 150);
             });
         }
-
-        
-        const debugStyle = document.createElement('style');
-        debugStyle.id = 'debug-perimeters-style';
-        debugStyle.innerHTML = `
-            #capture-area, #main-content, .match-card-container { outline: 2px dashed #00ff00 !important; }
-            .card-photo-layer, .badge-slot, #header-banner { outline: 2px solid #00e5ff !important; }
-            #text-container, .text-overlay, .text-score-home, .text-score-away, .team-container { outline: 2px solid #ff9100 !important; background-color: rgba(255,145,0,0.1) !important; }
-            #date-text, .score-inner-text, .team-inner-text { outline: 1px dotted #ffd700 !important; }
-        `;
-        document.head.appendChild(debugStyle);
-
-
     </script>
 </body>
 </html>
