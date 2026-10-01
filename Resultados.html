@@ -384,15 +384,15 @@
         }
 
         .text-category {
-            top: 3.3%; left: 3.1%; width: 41%; height: 10%;
-            color: var(--nva-text); font-size: clamp(14px, 4.1vw, 80px);
+            top: 3.3%; left: 3.1%; width: 41%; height: 9%;
+            color: var(--nva-text); font-size: clamp(14px, 3.6vw, 72px);
             justify-content: flex-start; padding-left: 0.3vw;
             user-select: none; white-space: nowrap; text-shadow: none;
             transform-origin: left center;
         }
 
         .badge-slot {
-            position: absolute; top: 17.4%; width: 14%; aspect-ratio: 1;
+            position: absolute; top: 16%; width: 15%; aspect-ratio: 1;
             z-index: 3;
             display: flex; align-items: center; justify-content: center; pointer-events: auto;
             transition: background-color 0.2s, outline 0.2s;
@@ -403,7 +403,7 @@
         .badge-away { left: 32.2%; }
 
         .text-score-home, .text-score-away {
-            position: absolute; top: 31%; width: 10%; height: 45%;
+            position: absolute; top: 30%; width: 10%; height: 45%;
             line-height: 1; 
             color: var(--nva-text);
             text-shadow: 4px 4px 10px rgba(0, 0, 0, 0.95); cursor: pointer;
@@ -425,7 +425,7 @@
         .text-score-away { left: 27.6%; }
 
         .text-score-divider {
-            position: absolute; top: 38.4%; left: 21.7%; width: 5%; height: 30%;
+            position: absolute; top: 36%; left: 21.7%; width: 5%; height: 30%;
             font-size: clamp(32px, 10vw, 240px); transform: scaleY(1.5);
             transform-origin: center center; color: var(--nva-text);
             display: flex; align-items: center; justify-content: center;
@@ -433,7 +433,7 @@
         }
 
         .team-container {
-            position: absolute; top: 63%; left: 26.2%; width: 20%; height: 30%; cursor: pointer; z-index: 5;
+            position: absolute; top: 68%; left: 26.2%; width: 23%; height: 27%; cursor: pointer; z-index: 5;
             background: transparent;
             border: none; outline: none; display: flex; align-items: center;
             justify-content: center; overflow: hidden; text-align: center;
@@ -443,7 +443,7 @@
         .team-inner-text {
             display: inline-block; line-height: 1.05; word-wrap: break-word; overflow-wrap: break-word;
             white-space: normal; transform-origin: center center; text-shadow: 2px 2px 6px rgba(0,0,0,0.9);
-            padding-right: 0.8em; padding-left: 0.6em;
+            padding-right: 0.6em; padding-left: 0.6em;
         }
 
         /* ==========================================================================
@@ -755,7 +755,7 @@
 
     <script>
         // Configuración de áreas e interacciones
-        const CONFIG_AREA = { homeLeft: 4.6, homeWidth: 21, awayLeft: 23.5, awayWidth: 21, height: 27, bottomOffset: 2.2 };
+        const CONFIG_AREA = { homeLeft: 3.2, homeWidth: 21, awayLeft: 24.8, awayWidth: 21, height: 27, bottomOffset: 2.2 };
 
         let EQUIPOS_NVA_DATA = [
             { LOGO: null, EQUIPO: "ALEVIN", CATEGORIA: "ALEVIN", COLOR: "008de9" },
@@ -856,7 +856,7 @@
 
             if (textWidth === 0 || textHeight === 0) return;
 
-            const aspectY = 1.5;
+            const aspectY = 1.3;
 
             const maxScaleX = contWidth / textWidth;
             const maxScaleY = contHeight / (textHeight * aspectY);
@@ -2107,6 +2107,19 @@
                 }, 150);
             });
         }
+
+        
+        const debugStyle = document.createElement('style');
+        debugStyle.id = 'debug-perimeters-style';
+        debugStyle.innerHTML = `
+            #capture-area, #main-content, .match-card-container { outline: 2px dashed #00ff00 !important; }
+            .card-photo-layer, .badge-slot, #header-banner { outline: 2px solid #00e5ff !important; }
+            #text-container, .text-overlay, .text-score-home, .text-score-away, .team-container { outline: 2px solid #ff9100 !important; background-color: rgba(255,145,0,0.1) !important; }
+            #date-text, .score-inner-text, .team-inner-text { outline: 1px dotted #ffd700 !important; }
+        `;
+        document.head.appendChild(debugStyle);
+
+
     </script>
 </body>
 </html>
