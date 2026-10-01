@@ -253,11 +253,11 @@
 
         .card-photo-layer {
             position: absolute;
-            top: 2%;
-            right: 1.4%;
-            width: 46%;
-            height: 96%;
-            clip-path: polygon(12.7% 0%, 100% 0%, 100% 100%, 0% 100%);
+            /* Layout 1920x751: ventana de foto x 916-1880, y 33-728 */
+            top: 4.4%;
+            left: 47.7%;
+            width: 50.2%;
+            height: 92.5%;
             background-color: #0a0a0a;
             overflow: hidden;
             display: flex;
@@ -384,25 +384,26 @@
         }
 
         .text-category {
-            top: 4.2%; left: 3%; width: 33%; height: 7%;
-            color: var(--nva-text); font-size: clamp(12px, 2.6vw, 48px);
+            top: 3.3%; left: 3.1%; width: 41%; height: 10%;
+            color: var(--nva-text); font-size: clamp(14px, 4.1vw, 80px);
             justify-content: flex-start; padding-left: 0.3vw;
-            user-select: none; white-space: nowrap; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            user-select: none; white-space: nowrap; text-shadow: none;
+            transform-origin: left center;
         }
 
         .badge-slot {
-            position: absolute; top: 13.5%; width: 15%; aspect-ratio: 1;
+            position: absolute; top: 17.4%; width: 14%; aspect-ratio: 1;
             z-index: 3;
             display: flex; align-items: center; justify-content: center; pointer-events: auto;
             transition: background-color 0.2s, outline 0.2s;
         }
 
         .badge-slot img { width: 100%; height: 100%; object-fit: contain; display: none; }
-        .badge-home { left: 2.2%; }
-        .badge-away { right: 47.2%; }
+        .badge-home { left: 2.7%; }
+        .badge-away { left: 32.2%; }
 
         .text-score-home, .text-score-away {
-            position: absolute; top: 20%; width: 11%; height: 45%;
+            position: absolute; top: 31%; width: 10%; height: 45%;
             line-height: 1; 
             color: var(--nva-text);
             text-shadow: 4px 4px 10px rgba(0, 0, 0, 0.95); cursor: pointer;
@@ -420,11 +421,11 @@
             white-space: nowrap;
         }
 
-        .text-score-home { right: 75%; }
-        .text-score-away { left: 30%; }
+        .text-score-home { left: 11.4%; }
+        .text-score-away { left: 27.6%; }
 
         .text-score-divider {
-            position: absolute; top: 20%; left: 25%; width: 5%; height: 30%;
+            position: absolute; top: 38.4%; left: 21.7%; width: 5%; height: 30%;
             font-size: clamp(32px, 10vw, 240px); transform: scaleY(1.5);
             transform-origin: center center; color: var(--nva-text);
             display: flex; align-items: center; justify-content: center;
@@ -754,7 +755,7 @@
 
     <script>
         // Configuración de áreas e interacciones
-        const CONFIG_AREA = { homeLeft: 4, homeWidth: 21, awayLeft: 30, awayWidth: 21, height: 28, bottomOffset: 16 };
+        const CONFIG_AREA = { homeLeft: 4.6, homeWidth: 21, awayLeft: 23.5, awayWidth: 21, height: 27, bottomOffset: 2.2 };
 
         let EQUIPOS_NVA_DATA = [
             { LOGO: null, EQUIPO: "ALEVIN", CATEGORIA: "ALEVIN", COLOR: "008de9" },
@@ -1740,6 +1741,18 @@
             };
         }
 
+        function fitCategoryText(el) {
+            if (!el) return;
+            el.style.transform = 'none';
+            const inner = el.clientWidth - parseFloat(getComputedStyle(el).paddingLeft || 0);
+            if (!inner || !el.scrollWidth) return;
+            // medir el ancho real del texto
+            const range = document.createRange();
+            range.selectNodeContents(el);
+            const textW = range.getBoundingClientRect().width;
+            if (textW > inner) el.style.transform = `scaleX(${inner / textW})`;
+        }
+
         function autoFitTeamText(container, span) {
             span.style.transform = 'none';
             const contWidth = container.clientWidth;
@@ -1760,6 +1773,7 @@
 
         function refreshAllTeamTexts() {
             document.querySelectorAll('.match-card-container').forEach(card => {
+                fitCategoryText(card.querySelector('.text-category'));
                 const homeScoreBox = card.querySelector('.text-score-home');
                 const awayScoreBox = card.querySelector('.text-score-away');
 
@@ -1991,6 +2005,12 @@
                     isDraggingImg = false;
                 }
             });
+
+            const catElInit = clone.querySelector('.text-category');
+            if (catElInit) {
+                new MutationObserver(() => fitCategoryText(catElInit)).observe(catElInit, { childList: true, characterData: true, subtree: true });
+                requestAnimationFrame(() => fitCategoryText(catElInit));
+            }
 
             homeCont.style.left = `${CONFIG_AREA.homeLeft}%`; homeCont.style.width = `${CONFIG_AREA.homeWidth}%`; homeCont.style.height = `${CONFIG_AREA.height}%`; homeCont.style.bottom = `${CONFIG_AREA.bottomOffset}%`;
             awayCont.style.left = `${CONFIG_AREA.awayLeft}%`; awayCont.style.width = `${CONFIG_AREA.awayWidth}%`; awayCont.style.height = `${CONFIG_AREA.height}%`; awayCont.style.bottom = `${CONFIG_AREA.bottomOffset}%`;
