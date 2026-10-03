@@ -3053,6 +3053,202 @@
             return `del ${primero.dia} de ${MESES_ES[primero.mes - 1]} del ${primero.anio} al ${ultimo.dia} de ${MESES_ES[ultimo.mes - 1]} del ${ultimo.anio}`;
         }
 
+        // ---- Lector de respaldo de archivos .xls (BIFF8) ----
+        // Se usa solo si la librería SheetJS no está disponible o no consigue leer
+        // el archivo. Devuelve un array de filas como objetos {Cabecera: valor}.
+        function leerXlsBiffRespaldo(u8) {
+            const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+            const firma = [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1];
+            for (let i = 0; i < 8; i++) {
+                if (u8[i] !== firma[i]) throw new Error('El archivo no tiene formato .xls (BIFF).');
+            }
+            const S = 1 << dv.getUint16(30, true);
+            const nFat = dv.getUint32(44, true);
+            const dirStart = dv.getUint32(48, true);
+            const corte = dv.getUint32(56, true);
+            const difatStart = dv.getUint32(68, true);
+            const nDifat = dv.getUint32(72, true);
+            const FIN = 0xFFFFFFF0;
+            const offSector = s => 512 + s * S;
+
+            const sectoresFat = [];
+            for (let i = 0; i < 109 && sectoresFat.length < nFat; i++) sectoresFat.push(dv.getUint32(76 + 4 * i, true));
+            let dif = difatStart;
+            for (let k = 0; k < nDifat && dif < FIN; k++) {
+                const off = offSector(dif);
+                for (let i = 0; i < S / 4 - 1 && sectoresFat.length < nFat; i++) sectoresFat.push(dv.getUint32(off + 4 * i, true));
+                dif = dv.getUint32(off + S - 4, true);
+            }
+            const fat = [];
+            sectoresFat.forEach(s => {
+                const off = offSector(s);
+                for (let i = 0; i < S / 4; i++) fat.push(dv.getUint32(off + 4 * i, true));
+            });
+            function cadena(s) {
+                const out = [];
+                const vistos = new Set();
+                while (s < FIN && !vistos.has(s) && offSector(s) + S <= u8.length) {
+                    vistos.add(s);
+                    out.push(s);
+                    s = fat[s];
+                }
+                return out;
+            }
+            function flujo(start, size) {
+                const ch = cadena(start);
+                const buf = new Uint8Array(ch.length * S);
+                ch.forEach((s, i) => buf.set(u8.subarray(offSector(s), offSector(s) + S), i * S));
+                return size === undefined ? buf : buf.subarray(0, size);
+            }
+
+            const dir = flujo(dirStart);
+            const ddv = new DataView(dir.buffer, dir.byteOffset, dir.byteLength);
+            let wbInfo = null;
+            for (let i = 0; i < Math.floor(dir.length / 128); i++) {
+                const nl = ddv.getUint16(i * 128 + 64, true);
+                if (nl < 2) continue;
+                let nombre = '';
+                for (let k = 0; k < (nl - 2) / 2; k++) nombre += String.fromCharCode(ddv.getUint16(i * 128 + 2 * k, true));
+                if (nombre === 'Workbook' || nombre === 'Book') {
+                    wbInfo = { start: ddv.getUint32(i * 128 + 116, true), size: ddv.getUint32(i * 128 + 120, true) };
+                    break;
+                }
+            }
+            if (!wbInfo) throw new Error('No se encontró el libro de Excel dentro del archivo.');
+            if (wbInfo.size < corte) throw new Error('Libro de Excel demasiado pequeño para este lector.');
+
+            const wb = flujo(wbInfo.start, wbInfo.size);
+            const wdv = new DataView(wb.buffer, wb.byteOffset, wb.byteLength);
+            const regs = [];
+            for (let p = 0; p + 4 <= wb.length;) {
+                const t = wdv.getUint16(p, true);
+                const l = wdv.getUint16(p + 2, true);
+                regs.push({ t, o: p + 4, l });
+                p += 4 + l;
+            }
+
+            // Tabla de cadenas compartidas (SST), con registros CONTINUE
+            const cadenas = [];
+            const iSst = regs.findIndex(r => r.t === 0xFC);
+            if (iSst !== -1) {
+                const trozos = [{ o: regs[iSst].o, l: regs[iSst].l }];
+                for (let j = iSst + 1; j < regs.length && regs[j].t === 0x3C; j++) trozos.push({ o: regs[j].o, l: regs[j].l });
+                let ci = 0;
+                let pos = trozos[0].o + 8;
+                const finTrozo = () => trozos[ci].o + trozos[ci].l;
+                const alinear = () => { if (pos >= finTrozo() && ci < trozos.length - 1) { ci++; pos = trozos[ci].o; } };
+                const leer8 = () => { alinear(); return wb[pos++]; };
+                const leer16 = () => { const a = leer8(); const b = leer8(); return a | (b << 8); };
+                const leer32 = () => { const a = leer16(); const b = leer16(); return (a | (b << 16)) >>> 0; };
+                const saltar = (n) => {
+                    while (n > 0) {
+                        alinear();
+                        const t = Math.min(n, finTrozo() - pos);
+                        if (t <= 0) break;
+                        pos += t;
+                        n -= t;
+                    }
+                };
+                const unicos = wdv.getUint32(regs[iSst].o + 4, true);
+                for (let n = 0; n < unicos; n++) {
+                    const cch = leer16();
+                    const flags = leer8();
+                    let rico = 0, ext = 0;
+                    if (flags & 8) rico = leer16();
+                    if (flags & 4) ext = leer32();
+                    let utf16 = flags & 1;
+                    let restantes = cch;
+                    let s = '';
+                    while (restantes > 0) {
+                        if (pos >= finTrozo()) {
+                            if (ci >= trozos.length - 1) break;
+                            ci++;
+                            pos = trozos[ci].o;
+                            utf16 = wb[pos++] & 1;
+                        }
+                        const bpc = utf16 ? 2 : 1;
+                        const nch = Math.min(restantes, Math.floor((finTrozo() - pos) / bpc));
+                        if (nch <= 0) { pos = finTrozo(); continue; }
+                        for (let k = 0; k < nch; k++) {
+                            s += String.fromCharCode(utf16 ? (wb[pos] | (wb[pos + 1] << 8)) : wb[pos]);
+                            pos += bpc;
+                        }
+                        restantes -= nch;
+                    }
+                    saltar(rico * 4 + ext);
+                    cadenas.push(s);
+                }
+            }
+
+            const decodificarRK = (v) => {
+                let n;
+                if (v & 2) {
+                    n = (v | 0) >> 2;
+                } else {
+                    const b = new DataView(new ArrayBuffer(8));
+                    b.setUint32(4, (v & 0xFFFFFFFC) >>> 0, true);
+                    n = b.getFloat64(0, true);
+                }
+                return (v & 1) ? n / 100 : n;
+            };
+
+            // Hojas de cálculo: cada subflujo BOF (tipo 0x10) hasta su EOF
+            const hojas = [];
+            for (let i = 0; i < regs.length; i++) {
+                if (regs[i].t !== 0x809 || wdv.getUint16(regs[i].o + 2, true) !== 0x10) continue;
+                const celdas = new Map();
+                const poner = (r, c, v) => { if (!celdas.has(r)) celdas.set(r, new Map()); celdas.get(r).set(c, v); };
+                for (i = i + 1; i < regs.length && regs[i].t !== 0x0A; i++) {
+                    const { t, o, l } = regs[i];
+                    if (t === 0xFD) {
+                        poner(wdv.getUint16(o, true), wdv.getUint16(o + 2, true), cadenas[wdv.getUint32(o + 6, true)] || '');
+                    } else if (t === 0x203) {
+                        poner(wdv.getUint16(o, true), wdv.getUint16(o + 2, true), wdv.getFloat64(o + 6, true));
+                    } else if (t === 0x27E) {
+                        poner(wdv.getUint16(o, true), wdv.getUint16(o + 2, true), decodificarRK(wdv.getUint32(o + 6, true)));
+                    } else if (t === 0xBD) {
+                        const fila = wdv.getUint16(o, true);
+                        const c0 = wdv.getUint16(o + 2, true);
+                        const n = Math.floor((l - 6) / 6);
+                        for (let k = 0; k < n; k++) poner(fila, c0 + k, decodificarRK(wdv.getUint32(o + 4 + k * 6 + 2, true)));
+                    } else if (t === 0x204) {
+                        const cch = wdv.getUint16(o + 6, true);
+                        const utf16 = wb[o + 8] & 1;
+                        let s = '';
+                        for (let k = 0; k < cch; k++) s += String.fromCharCode(utf16 ? wdv.getUint16(o + 9 + 2 * k, true) : wb[o + 9 + k]);
+                        poner(wdv.getUint16(o, true), wdv.getUint16(o + 2, true), s);
+                    }
+                }
+                hojas.push(celdas);
+            }
+            if (hojas.length === 0) throw new Error('El archivo no contiene hojas de cálculo.');
+
+            const aFilas = (celdas) => {
+                const idxFilas = Array.from(celdas.keys()).sort((a, b) => a - b);
+                if (idxFilas.length === 0) return [];
+                const cab = celdas.get(idxFilas[0]);
+                const claves = [];
+                cab.forEach((v, c) => { claves[c] = (v === undefined ? '' : v).toString().trim(); });
+                const out = [];
+                idxFilas.slice(1).forEach(r => {
+                    const fila = celdas.get(r);
+                    const obj = {};
+                    let hayDatos = false;
+                    claves.forEach((k, c) => {
+                        if (!k) return;
+                        const v = fila.get(c);
+                        obj[k] = (v === undefined || v === null) ? '' : v.toString();
+                        if (obj[k] !== '') hayDatos = true;
+                    });
+                    if (hayDatos) out.push(obj);
+                });
+                return out;
+            };
+            const todas = hojas.map(aFilas);
+            const conPartidos = todas.find(f => f.length > 0 && 'Local' in f[0] && 'Visitante' in f[0]);
+            return conPartidos || todas.find(f => f.length > 0) || [];
+        }
+
         async function manejarArchivoJornada(event) {
             const input = event.target;
             const archivo = input.files && input.files[0];
@@ -3071,10 +3267,43 @@
 
                 const arrayBuffer = await archivo.arrayBuffer();
                 const datos = new Uint8Array(arrayBuffer);
-                const wbJornada = XLSX.read(datos, { type: 'array' });
-                const nombreHoja = wbJornada.SheetNames[0];
-                const hoja = wbJornada.Sheets[nombreHoja];
-                const filas = XLSX.utils.sheet_to_json(hoja, { defval: '', raw: false });
+                const sinEspaciosEnClaves = (arr) => arr.map(f => {
+                    const o = {};
+                    Object.keys(f).forEach(k => { o[k.toString().trim()] = f[k]; });
+                    return o;
+                });
+                const tieneColumnasPartidos = (arr) => arr.length > 0 && 'Local' in arr[0] && 'Visitante' in arr[0];
+
+                let filas = [];
+                let errorSheetJS = null;
+                try {
+                    if (typeof XLSX === 'undefined') {
+                        throw new Error('La librería para leer Excel (SheetJS) no se ha cargado. Comprueba la conexión a internet y vuelve a abrir la página.');
+                    }
+                    const wbJornada = XLSX.read(datos, { type: 'array' });
+                    for (const nombreHoja of wbJornada.SheetNames) {
+                        const candidatas = sinEspaciosEnClaves(
+                            XLSX.utils.sheet_to_json(wbJornada.Sheets[nombreHoja], { defval: '', raw: false })
+                        );
+                        if (tieneColumnasPartidos(candidatas)) { filas = candidatas; break; }
+                        if (filas.length === 0) filas = candidatas;
+                    }
+                } catch (e) {
+                    errorSheetJS = e;
+                    console.warn('SheetJS no ha podido leer el archivo, se usa el lector de respaldo:', e);
+                }
+
+                // Si SheetJS falló o no encontró las columnas, se prueba el lector de respaldo (.xls)
+                if (!tieneColumnasPartidos(filas)) {
+                    try {
+                        const alternativas = sinEspaciosEnClaves(leerXlsBiffRespaldo(datos));
+                        if (tieneColumnasPartidos(alternativas)) filas = alternativas;
+                    } catch (e2) {
+                        console.warn('El lector de respaldo tampoco ha podido leer el archivo:', e2);
+                        if (!errorSheetJS) errorSheetJS = e2;
+                    }
+                }
+                if (errorSheetJS && !tieneColumnasPartidos(filas)) throw errorSheetJS;
 
                 const partidosClub = [];
                 const fechasPartes = [];
@@ -3153,7 +3382,7 @@
                 mostrarAviso(mensaje, equiposNoEncontrados.length > 0);
             } catch (err) {
                 console.error('Error al procesar el archivo de la jornada:', err);
-                alert('No se ha podido procesar el archivo. Comprueba que es un .xls/.xlsx con columnas Fecha, Hora, CAT, Local, Visitante y Campo.');
+                alert('No se ha podido procesar el archivo. Comprueba que es un .xls/.xlsx con columnas Fecha, Hora, CAT, Local, Visitante y Campo.\n\nDetalle: ' + (err && err.message ? err.message : err));
             } finally {
                 if (boton) boton.disabled = false;
                 if (textoBoton) textoBoton.textContent = textoOriginal;
