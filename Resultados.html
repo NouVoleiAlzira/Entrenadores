@@ -56,96 +56,65 @@
         }
 
         /* ==========================================================================
-           BARRA FLOTANTE INFERIOR DERECHA (ACCIONES DE CARTEL)
+           MENU FLOTANTE INFERIOR DERECHA (ACCIONES DEL CARTEL, igual que en Partidos)
            ========================================================================== */
+        .oculto-menu { display: none !important; }
+
         #excel-loader-bar {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
+            right: calc(16px + env(safe-area-inset-right));
+            bottom: calc(16px + env(safe-area-inset-bottom));
             display: flex;
             flex-direction: column;
             align-items: flex-end;
             gap: 10px;
             font-family: Arial, sans-serif;
-            font-size: 13px;
             z-index: 1000;
-            /*background: rgba(26, 26, 26, 0.85);
-            padding: 10px 15px;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            backdrop-filter: blur(5px);*/
         }
 
-        .bar-actions {
+        .menu-acciones-lista {
             display: flex;
+            flex-direction: column;
+            align-items: flex-end;
             gap: 10px;
+        }
+
+        .btn-accion, .btn-menu-acciones {
+            display: flex;
             align-items: center;
-        }
-
-        #excel-loader-bar button, #jpg-button, #btn-add-first, #btn-reset, #btn-load-history {
-            color: var(--nva-text);
-            cursor: pointer;
-            /*background: var(--nva-primary);*/
-            padding: 8px 16px;
-            border-radius: 5px;
-            font-weight: bold;
-            /*border: 1px solid var(--nva-primary-hover);*/
-            transition: background 0.2s, transform 0.1s;
-            display: inline-block;
+            gap: 8px;
+            color: #ffffff;
+            border: none;
+            padding: 12px 18px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 700;
             font-family: Arial, sans-serif;
-            font-size: 13px;
-            flex-shrink: 0;
+            cursor: pointer;
             white-space: nowrap;
+            flex-shrink: 0;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+            touch-action: manipulation;
+            transition: filter 0.2s, transform 0.15s, opacity 0.2s;
+        }
+        .btn-accion:active, .btn-menu-acciones:active { transform: scale(0.96); }
+        .btn-accion:disabled { opacity: 0.6; cursor: default; transform: none; }
+        @media (hover: hover) and (pointer: fine) {
+            .btn-accion:hover:not(:disabled), .btn-menu-acciones:hover { filter: brightness(1.2); }
+        }
+        .btn-menu-acciones { background-color: #444444; }
+        .btn-menu-acciones svg { flex-shrink: 0; transition: transform 0.2s; }
+        .btn-menu-acciones.abierto svg { transform: rotate(90deg); }
+        @media (max-width: 480px) {
+            .btn-accion, .btn-menu-acciones { padding: 10px 14px; font-size: 12.5px; }
         }
 
-        #btn-load-history {
-            background: var(--nva-btn-green);
-            border-color: var(--nva-btn-green-hover);
-        }
-
-        #btn-load-history:hover {
-            background: var(--nva-btn-green-hover);
-            border-color: var(--nva-btn-green-hover);
-            transform: scale(1.05);
-            color: #000000;
-        }
-
-        #btn-reset {
-            background: var(--nva-warning);
-            border-color: var(--nva-warning-hover);
-            display: none;
-        }
-
-        #btn-reset:hover {
-            background: var(--nva-primary-hover);
-            border-color: var(--nva-primary-hover);
-            transform: scale(1.05);
-            color: #000000;
-        }
-
-        #jpg-button {
-            background: var(--nva-btn-purple);
-            border-color: var(--nva-btn-purple-hover);
-        }
-
-        #btn-add-first {
-            background: var(--nva-btn-green);
-            border-color: var(--nva-btn-green-hover);
-            display: none;
-        }
-
-        #jpg-button:hover {
-            background: var(--nva-btn-blue-hover);
-            border-color: var(--nva-btn-blue-hover);
-            transform: scale(1.05);
-            color: #000000;
-        }
-
-        #btn-add-first:hover {
-            background: var(--nva-btn-green-hover);
-            transform: scale(1.05);
-            color: #000000;
-        }
+        #btn-load-history { background-color: #3C993C; }
+        #btn-load-results { background-color: #1E78C8; }
+        #btn-save-results { background-color: #E38410; }
+        #btn-add-first    { background-color: #00897B; display: none; }
+        #btn-reset        { background-color: #C62828; display: none; }
+        #jpg-button       { background-color: #9C34B3; }
 
         /* ==========================================================================
            BANNER CABECERA Y CONTENEDOR PRINCIPAL
@@ -549,12 +518,20 @@
 
     <!-- Barra flotante de acciones en la esquina inferior derecha -->
     <div id="excel-loader-bar">
-        <button id="btn-load-history">📂 Cargar historial</button>
-        <div class="bar-actions">
-            <button id="btn-reset">🔄 RESET</button>
-            <button id="btn-add-first">➕ NUEVO RECUADRO</button>
-            <button id="jpg-button">📥 DESCARGAR JPG</button>
+        <div id="menuAccionesLista" class="menu-acciones-lista oculto-menu">
+            <button type="button" id="btn-load-history" class="btn-accion"><span>📂</span><span class="btn-accion-texto">Cargar Historial de Partidos</span></button>
+            <button type="button" id="btn-load-results" class="btn-accion"><span>🏆</span><span class="btn-accion-texto">Historial de Resultados</span></button>
+            <button type="button" id="btn-save-results" class="btn-accion"><span>💾</span><span class="btn-accion-texto">Guardar resultados</span></button>
+            <button type="button" id="btn-add-first" class="btn-accion"><span>➕</span><span class="btn-accion-texto">NUEVO RECUADRO</span></button>
+            <button type="button" id="btn-reset" class="btn-accion"><span>🔄</span><span class="btn-accion-texto">RESET</span></button>
+            <button type="button" id="jpg-button" class="btn-accion"><span>📥</span><span class="btn-accion-texto">DESCARGAR JPG</span></button>
         </div>
+        <button type="button" id="btnMenuAcciones" class="btn-menu-acciones" aria-label="Mostrar u ocultar botones de acciones" aria-expanded="false">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+                <path d="M12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm0 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/>
+            </svg>
+            <span>MENU</span>
+        </button>
     </div>
 
     <!-- Contenedor del área capturable -->
@@ -633,6 +610,16 @@
             <p style="font-size: 13px; color: #aaa; margin-bottom: 10px;">Selecciona uno de los últimos 6 partidos guardados en GitHub:</p>
             <div id="historyAviso" style="color:#bbb; font-size:0.9em; margin-bottom:10px;">Cargando lista de archivos...</div>
             <div class="history-dates-list" id="historyDatesContainer"></div>
+        </div>
+    </div>
+
+    <!-- Modal Historial de Resultados guardado en GitHub -->
+    <div id="resultsHistoryModal" class="modal">
+        <div class="modal-box">
+            <h3>Historial de Resultados</h3>
+            <p style="font-size: 13px; color: #aaa; margin-bottom: 10px;">Selecciona uno de los últimos 10 resultados guardados en GitHub:</p>
+            <div id="resultsHistoryAviso" style="color:#bbb; font-size:0.9em; margin-bottom:10px;">Cargando lista de archivos...</div>
+            <div class="history-dates-list" id="resultsHistoryContainer"></div>
         </div>
     </div>
 
@@ -818,6 +805,25 @@
             span.style.transform = `scale(${finalScaleX}, ${finalScaleY})`;
         }
 
+        // Datos de una tarjeta (sin la foto) en forma de objeto simple
+        function serializarTarjeta(card) {
+            return {
+                category: card.querySelector('.text-category').textContent,
+                homeTeam: card.querySelector('.team-home-container .team-inner-text').textContent,
+                awayTeam: card.querySelector('.team-away-container .team-inner-text').textContent,
+                homeScore: card.querySelector('.text-score-home .score-inner-text').textContent,
+                awayScore: card.querySelector('.text-score-away .score-inner-text').textContent,
+                homeLogo: card.querySelector('.badge-home img').getAttribute('src') || '',
+                awayLogo: card.querySelector('.badge-away img').getAttribute('src') || '',
+                homeLogoDisplay: card.querySelector('.badge-home img').style.display,
+                awayLogoDisplay: card.querySelector('.badge-away img').style.display,
+                colorCode: card.querySelector('.card-bg').dataset.appliedColor || '',
+                matchDate: card.dataset.matchDate || '',
+                matchTime: card.dataset.matchTime || '',
+                venue: card.dataset.venue || ''
+            };
+        }
+
         // === SISTEMA DE GUARDADO LOCAL (LOCALSTORAGE) ===
         function saveAppState() {
             const state = {
@@ -826,39 +832,14 @@
             };
 
             document.querySelectorAll('.match-card-container').forEach(card => {
-                state.cards.push({
-                    category: card.querySelector('.text-category').textContent,
-                    homeTeam: card.querySelector('.team-home-container .team-inner-text').textContent,
-                    awayTeam: card.querySelector('.team-away-container .team-inner-text').textContent,
-                    homeScore: card.querySelector('.text-score-home .score-inner-text').textContent,
-                    awayScore: card.querySelector('.text-score-away .score-inner-text').textContent,
-                    homeLogo: card.querySelector('.badge-home img').getAttribute('src') || '',
-                    awayLogo: card.querySelector('.badge-away img').getAttribute('src') || '',
-                    homeLogoDisplay: card.querySelector('.badge-home img').style.display,
-                    awayLogoDisplay: card.querySelector('.badge-away img').style.display,
-                    colorCode: card.querySelector('.card-bg').dataset.appliedColor || ''
-                });
+                state.cards.push(serializarTarjeta(card));
             });
 
             localStorage.setItem('nvaAppSavedState', JSON.stringify(state));
         }
 
-        function loadAppState() {
-            const saved = localStorage.getItem('nvaAppSavedState');
-            if (!saved) return false; 
-
-            const state = JSON.parse(saved);
-            mainContent.innerHTML = '';
-
-            if (state.dateText) {
-                document.getElementById('date-text').textContent = state.dateText;
-                fitCalendarText();
-            }
-
-            if (state.cards && state.cards.length > 0) {
-                state.cards.forEach(cardData => {
-                    createNewCard(); 
-                    const currentCard = mainContent.lastElementChild;
+        // Aplica a una tarjeta recién creada los datos guardados (equipos, tanteo, escudos, color...)
+        function applyCardState(currentCard, cardData) {
 
                     currentCard.querySelector('.text-category').textContent = cardData.category;
                     
@@ -897,7 +878,28 @@
                         applyColorFilter(cardBg, 'FFFFFF');
                     }
 
+                    currentCard.dataset.matchDate = cardData.matchDate || '';
+                    currentCard.dataset.matchTime = cardData.matchTime || '';
+                    currentCard.dataset.venue = cardData.venue || '';
                     updateMatchGlow(currentCard);
+        }
+
+        function loadAppState() {
+            const saved = localStorage.getItem('nvaAppSavedState');
+            if (!saved) return false; 
+
+            const state = JSON.parse(saved);
+            mainContent.innerHTML = '';
+
+            if (state.dateText) {
+                document.getElementById('date-text').textContent = state.dateText;
+                fitCalendarText();
+            }
+
+            if (state.cards && state.cards.length > 0) {
+                state.cards.forEach(cardData => {
+                    createNewCard();
+                    applyCardState(mainContent.lastElementChild, cardData);
                 });
             }
             
@@ -908,11 +910,11 @@
         function updateAddFirstButtonVisibility() {
             const cardCount = mainContent.querySelectorAll('.match-card-container').length;
             if (cardCount === 0) {
-                btnAddFirst.style.display = 'inline-block';
+                btnAddFirst.style.display = 'flex';
                 btnReset.style.display = 'none';
             } else {
                 btnAddFirst.style.display = 'none';
-                btnReset.style.display = 'inline-block';
+                btnReset.style.display = 'flex';
             }
         }
 
@@ -1326,6 +1328,9 @@
                 createNewCard();
                 const card = mainContent.lastElementChild;
                 applyMatchDataToCard(card, match.homeTeam, match.awayTeam, match.category);
+                card.dataset.matchDate = match.matchDate || '';
+                card.dataset.matchTime = match.matchTime || '';
+                card.dataset.venue = match.venue || '';
             });
 
             updateAddFirstButtonVisibility();
@@ -1943,6 +1948,12 @@
                 saveAppState(); 
             });
 
+            // Acceso externo al desplazamiento/zoom de la foto (para guardarlo y recuperarlo)
+            cardContainer.nvaPhoto = {
+                get: () => ({ scale: imgScale, tx: imgTranslateX, ty: imgTranslateY }),
+                set: (s, tx, ty) => { imgScale = s; imgTranslateX = tx; imgTranslateY = ty; updateImgTransform(); }
+            };
+
             photoLayer.addEventListener('click', (e) => { if (e.target === photoLayer || e.target === photoPlaceholder) photoInput.click(); });
             photoImg.addEventListener('dblclick', () => { photoInput.click(); });
 
@@ -1952,6 +1963,7 @@
                     const reader = new FileReader();
                     reader.onload = (event) => {
                         photoImg.src = event.target.result;
+                        delete photoImg.dataset.githubFile;
                         photoImg.style.display = 'block';
                         photoPlaceholder.style.display = 'none';
                         imgScale = 1; imgTranslateX = 0; imgTranslateY = 0; updateImgTransform();
@@ -1981,8 +1993,345 @@
             if (e.target === teamPickerModal) teamPickerModal.style.display = 'none';
             if (e.target === scoreModal) { scoreModal.style.display = 'none'; currentScoreContainer = null; }
             if (e.target === historyModal) historyModal.style.display = 'none';
+            if (e.target === resultsHistoryModal) resultsHistoryModal.style.display = 'none';
             if (e.target === jpgModeModal) jpgModeModal.style.display = 'none';
         });
+
+        // ==========================================================================
+        // MENU DE ACCIONES · GUARDAR RESULTADOS · HISTORIAL DE RESULTADOS (GitHub)
+        // ==========================================================================
+        // Todo se guarda en el mismo repositorio y carpeta (PartidosyResultados) que
+        // usa la página principal. Cada guardado crea:
+        //   - "Resultados <fecha de cabecera>.json": partidos, tanteos, escudos, color,
+        //     posición/zoom de la foto, etc.
+        //   - "Resultados <fecha de cabecera> foto <id>.jpg": una imagen por tarjeta con foto.
+        const btnMenuAcciones = document.getElementById('btnMenuAcciones');
+        const menuAccionesLista = document.getElementById('menuAccionesLista');
+        const btnLoadResults = document.getElementById('btn-load-results');
+        const btnSaveResults = document.getElementById('btn-save-results');
+        const resultsHistoryModal = document.getElementById('resultsHistoryModal');
+        const resultsHistoryContainer = document.getElementById('resultsHistoryContainer');
+        const resultsHistoryAviso = document.getElementById('resultsHistoryAviso');
+
+        btnMenuAcciones.addEventListener('click', () => {
+            const abrir = menuAccionesLista.classList.contains('oculto-menu');
+            menuAccionesLista.classList.toggle('oculto-menu', !abrir);
+            btnMenuAcciones.classList.toggle('abierto', abrir);
+            btnMenuAcciones.setAttribute('aria-expanded', abrir ? 'true' : 'false');
+        });
+
+        // ---------- Utilidades de GitHub ----------
+        function ghContentsUrl(config, nombre) {
+            const base = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${encodeURIComponent(config.carpeta)}`;
+            return nombre ? `${base}/${encodeURIComponent(nombre)}` : base;
+        }
+
+        function utf8ToBase64Resultados(texto) {
+            return btoa(unescape(encodeURIComponent(texto)));
+        }
+
+        async function ghErrorDetalle(resp) {
+            let detalle = '';
+            try { detalle = (await resp.json()).message || ''; } catch (e) { /* ignorar */ }
+            return `GitHub respondió con error ${resp.status}${detalle ? ': ' + detalle : ''}`;
+        }
+
+        async function ghObtenerSha(config, nombre) {
+            const resp = await fetch(ghContentsUrl(config, nombre), { headers: githubHeaders(config), cache: 'no-store' });
+            if (resp.status === 404) return null;
+            if (!resp.ok) throw new Error(await ghErrorDetalle(resp));
+            const datos = await resp.json();
+            return datos.sha || null;
+        }
+
+        // Crea el archivo o lo actualiza si ya existe
+        async function ghSubirArchivo(config, nombre, base64, mensaje) {
+            const sha = await ghObtenerSha(config, nombre);
+            const cuerpo = { message: mensaje, content: base64 };
+            if (sha) cuerpo.sha = sha;
+            const resp = await fetch(ghContentsUrl(config, nombre), {
+                method: 'PUT',
+                headers: { ...githubHeaders(config), 'Content-Type': 'application/json' },
+                body: JSON.stringify(cuerpo)
+            });
+            if (!resp.ok) throw new Error(await ghErrorDetalle(resp));
+        }
+
+        async function ghBorrarArchivo(config, nombre) {
+            const sha = await ghObtenerSha(config, nombre);
+            if (!sha) return;
+            await fetch(ghContentsUrl(config, nombre), {
+                method: 'DELETE',
+                headers: { ...githubHeaders(config), 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: `Borrar ${nombre}`, sha })
+            });
+        }
+
+        // Descarga el contenido "en bruto" (sirve también para archivos de más de 1 MB)
+        async function ghDescargarArchivo(config, nombre, comoBlob) {
+            const resp = await fetch(ghContentsUrl(config, nombre), {
+                headers: { ...githubHeaders(config), 'Accept': 'application/vnd.github.raw+json' },
+                cache: 'no-store'
+            });
+            if (!resp.ok) throw new Error(await ghErrorDetalle(resp));
+            return comoBlob ? resp.blob() : resp.text();
+        }
+
+        function blobADataUrl(blob) {
+            return new Promise((resolve, reject) => {
+                const lector = new FileReader();
+                lector.onload = () => resolve(lector.result);
+                lector.onerror = () => reject(lector.error);
+                lector.readAsDataURL(blob);
+            });
+        }
+
+        // Reduce la foto (máx. 1600 px por el lado largo, JPEG) para que ocupe poco en GitHub
+        function comprimirFoto(dataUrl, maxLado = 1600, calidad = 0.85) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    const k = Math.min(1, maxLado / Math.max(img.naturalWidth, img.naturalHeight));
+                    const w = Math.max(1, Math.round(img.naturalWidth * k));
+                    const h = Math.max(1, Math.round(img.naturalHeight * k));
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#000000';
+                    ctx.fillRect(0, 0, w, h);
+                    ctx.drawImage(img, 0, 0, w, h);
+                    resolve(canvas.toDataURL('image/jpeg', calidad));
+                };
+                img.onerror = () => reject(new Error('No se ha podido procesar una de las fotos.'));
+                img.src = dataUrl;
+            });
+        }
+
+        function tarjetaTieneFoto(card) {
+            const img = card.querySelector('.photo-img');
+            return !!(img && img.style.display === 'block' && img.getAttribute('src'));
+        }
+
+        function nombreBaseResultados() {
+            let texto = (document.getElementById('date-text').textContent || '').replace(/\s+/g, ' ').trim();
+            if (!texto) {
+                const f = new Date();
+                texto = `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, '0')}-${String(f.getDate()).padStart(2, '0')}`;
+            }
+            texto = texto.replace(/[\\/:*?"<>|]/g, '-').trim();
+            return `Resultados ${texto}`;
+        }
+
+        // ---------- GUARDAR RESULTADOS ----------
+        async function guardarResultados() {
+            if (btnSaveResults.disabled) return;
+            const config = obtenerConfigGitHub();
+            if (!config) {
+                showToast('Antes de guardar, configura la conexión con GitHub en la página principal (ajustes de GitHub) y vuelve aquí.', true);
+                return;
+            }
+            const tarjetas = Array.from(mainContent.querySelectorAll('.match-card-container'));
+            if (tarjetas.length === 0) {
+                showToast('No hay recuadros que guardar.', true);
+                return;
+            }
+
+            const etiqueta = btnSaveResults.querySelector('.btn-accion-texto');
+            const textoOriginal = etiqueta.textContent;
+            btnSaveResults.disabled = true;
+            etiqueta.textContent = 'Guardando...';
+
+            try {
+                const base = nombreBaseResultados();
+                const nombreJson = `${base}.json`;
+                const prefijoFotos = `${base} foto `;
+
+                // Fotos que tenía el guardado anterior de esta misma fecha (para borrar las que ya no se usen)
+                let fotosAnteriores = [];
+                try {
+                    const previo = JSON.parse(await ghDescargarArchivo(config, nombreJson, false));
+                    fotosAnteriores = (previo.cards || []).map(c => c.photo && c.photo.file).filter(Boolean);
+                } catch (e) { /* no existía guardado anterior */ }
+
+                const datos = {
+                    version: 1,
+                    tipo: 'resultados',
+                    guardado: new Date().toISOString(),
+                    dateText: document.getElementById('date-text').textContent || '',
+                    cards: []
+                };
+
+                const porSubir = tarjetas.filter(c => tarjetaTieneFoto(c) && !c.querySelector('.photo-img').dataset.githubFile).length;
+                let subidas = 0;
+                const fotosUsadas = new Set();
+
+                for (const card of tarjetas) {
+                    const d = serializarTarjeta(card);
+                    d.photo = null;
+
+                    if (tarjetaTieneFoto(card)) {
+                        const img = card.querySelector('.photo-img');
+                        let archivo = img.dataset.githubFile || '';
+                        if (!archivo) {
+                            subidas++;
+                            etiqueta.textContent = `Subiendo foto ${subidas}/${porSubir}...`;
+                            const comprimida = await comprimirFoto(img.getAttribute('src'));
+                            archivo = `${prefijoFotos}${Date.now().toString(36)}${subidas}.jpg`;
+                            await ghSubirArchivo(config, archivo, comprimida.split(',')[1], `Guardar foto ${archivo}`);
+                            img.dataset.githubFile = archivo;
+                        }
+                        const t = card.nvaPhoto ? card.nvaPhoto.get() : { scale: 1, tx: 0, ty: 0 };
+                        const ancho = card.querySelector('.card-photo-layer').clientWidth || 1;
+                        // El desplazamiento se guarda relativo al ancho de la ventana de la foto
+                        d.photo = { file: archivo, scale: t.scale, tx: t.tx / ancho, ty: t.ty / ancho };
+                        fotosUsadas.add(archivo);
+                    }
+                    datos.cards.push(d);
+                }
+
+                etiqueta.textContent = 'Guardando datos...';
+                await ghSubirArchivo(config, nombreJson, utf8ToBase64Resultados(JSON.stringify(datos, null, 1)), `Guardar resultados ${nombreJson}`);
+
+                // Limpieza: fotos propias de este guardado que ya no se usan
+                for (const f of fotosAnteriores) {
+                    if (f.startsWith(prefijoFotos) && !fotosUsadas.has(f)) {
+                        try { await ghBorrarArchivo(config, f); } catch (e) { /* no es crítico */ }
+                    }
+                }
+
+                const nFotos = fotosUsadas.size;
+                showToast(`Resultados guardados en GitHub (${tarjetas.length} partido(s)${nFotos ? ', ' + nFotos + ' foto(s)' : ''}).`);
+            } catch (err) {
+                console.error('Error al guardar los resultados en GitHub:', err);
+                showToast('No se han podido guardar los resultados: ' + (err && err.message ? err.message : err), true);
+            } finally {
+                btnSaveResults.disabled = false;
+                etiqueta.textContent = textoOriginal;
+            }
+        }
+        btnSaveResults.addEventListener('click', guardarResultados);
+
+        // ---------- HISTORIAL DE RESULTADOS ----------
+        btnLoadResults.addEventListener('click', () => { abrirModalHistorialResultados(); });
+
+        async function abrirModalHistorialResultados() {
+            const config = obtenerConfigGitHub();
+            if (!config) {
+                showToast('Antes de cargar resultados, configura la conexión con GitHub en la página principal (ajustes de GitHub) y vuelve aquí.', true);
+                return;
+            }
+
+            resultsHistoryContainer.innerHTML = '';
+            resultsHistoryAviso.style.display = 'block';
+            resultsHistoryAviso.textContent = 'Cargando lista de archivos...';
+            resultsHistoryModal.style.display = 'flex';
+
+            try {
+                const resp = await fetch(ghContentsUrl(config), { headers: githubHeaders(config), cache: 'no-store' });
+                if (resp.status === 404) {
+                    resultsHistoryAviso.textContent = 'No se ha encontrado ningún resultado guardado en GitHub.';
+                    return;
+                }
+                if (!resp.ok) throw new Error(`GitHub respondió con error ${resp.status}`);
+                const archivos = await resp.json();
+
+                const lista = (Array.isArray(archivos) ? archivos : [])
+                    .filter(a => a.type === 'file' && /^Resultados.*\.json$/i.test(a.name))
+                    .sort((a, b) => b.name.localeCompare(a.name))
+                    .slice(0, 10);
+
+                if (lista.length === 0) {
+                    resultsHistoryAviso.textContent = 'No se ha encontrado ningún resultado guardado en GitHub.';
+                    return;
+                }
+
+                resultsHistoryAviso.style.display = 'none';
+                lista.forEach(archivo => {
+                    const nombreVisible = archivo.name.replace(/^Resultados\s*/i, '').replace(/\.json$/i, '');
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'history-date-btn';
+                    const span = document.createElement('span');
+                    span.textContent = `🏆 ${nombreVisible}`;
+                    btn.appendChild(span);
+                    btn.onclick = () => cargarResultadosDesdeGitHub(archivo.name, config);
+                    resultsHistoryContainer.appendChild(btn);
+                });
+            } catch (err) {
+                console.error('Error al listar los resultados guardados en GitHub:', err);
+                resultsHistoryAviso.style.display = 'block';
+                resultsHistoryAviso.textContent = 'No se ha podido obtener la lista de resultados guardados. Comprueba la configuración y la conexión a internet.';
+            }
+        }
+
+        function aplicarFotoATarjeta(card, foto, dataUrl) {
+            const img = card.querySelector('.photo-img');
+            const placeholder = card.querySelector('.photo-placeholder');
+            img.src = dataUrl;
+            img.dataset.githubFile = foto.file;
+            img.style.display = 'block';
+            if (placeholder) placeholder.style.display = 'none';
+            const ancho = card.querySelector('.card-photo-layer').clientWidth || 0;
+            if (card.nvaPhoto) card.nvaPhoto.set(foto.scale || 1, (foto.tx || 0) * ancho, (foto.ty || 0) * ancho);
+        }
+
+        async function cargarResultadosDesdeGitHub(nombreArchivo, config) {
+            const botones = () => Array.from(resultsHistoryContainer.querySelectorAll('button'));
+            botones().forEach(b => b.disabled = true);
+            resultsHistoryAviso.style.display = 'block';
+            resultsHistoryAviso.textContent = `Cargando "${nombreArchivo}"...`;
+
+            try {
+                const datos = JSON.parse(await ghDescargarArchivo(config, nombreArchivo, false));
+                if (!datos || !Array.isArray(datos.cards) || datos.cards.length === 0) {
+                    resultsHistoryAviso.textContent = 'El archivo seleccionado no contiene resultados válidos.';
+                    botones().forEach(b => b.disabled = false);
+                    return;
+                }
+
+                // Descarga de las fotos
+                const archivosFoto = [...new Set(datos.cards.map(c => c.photo && c.photo.file).filter(Boolean))];
+                const fotos = {};
+                let fallidas = 0;
+                for (let i = 0; i < archivosFoto.length; i++) {
+                    resultsHistoryAviso.textContent = `Cargando foto ${i + 1}/${archivosFoto.length}...`;
+                    try {
+                        let blob = await ghDescargarArchivo(config, archivosFoto[i], true);
+                        if (!/^image\//.test(blob.type)) blob = new Blob([blob], { type: 'image/jpeg' });
+                        fotos[archivosFoto[i]] = await blobADataUrl(blob);
+                    } catch (e) {
+                        console.warn('No se ha podido descargar la foto', archivosFoto[i], e);
+                        fallidas++;
+                    }
+                }
+
+                // Reconstrucción del cartel
+                mainContent.innerHTML = '';
+                if (datos.dateText) {
+                    document.getElementById('date-text').textContent = datos.dateText;
+                    fitCalendarText();
+                }
+                datos.cards.forEach(cd => {
+                    createNewCard();
+                    const card = mainContent.lastElementChild;
+                    applyCardState(card, cd);
+                    if (cd.photo && fotos[cd.photo.file]) aplicarFotoATarjeta(card, cd.photo, fotos[cd.photo.file]);
+                });
+
+                updateAddFirstButtonVisibility();
+                saveAppState();
+                resultsHistoryModal.style.display = 'none';
+                showToast(fallidas > 0
+                    ? `Resultados cargados, pero ${fallidas} foto(s) no se han podido descargar.`
+                    : `Cargados ${datos.cards.length} partido(s) con sus resultados.`, fallidas > 0);
+            } catch (err) {
+                console.error('Error al cargar los resultados desde GitHub:', err);
+                resultsHistoryAviso.style.display = 'block';
+                resultsHistoryAviso.textContent = 'No se han podido cargar los resultados seleccionados. Inténtalo de nuevo.';
+                botones().forEach(b => b.disabled = false);
+            }
+        }
 
         // === INICIALIZACIÓN DE LA APLICACIÓN ===
         renderTeamModalList();
