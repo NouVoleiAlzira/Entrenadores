@@ -110,41 +110,6 @@
             color: #000000;
         }
 
-        /* ==========================================================================
-           BOTÓN DE AJUSTES DE CONEXIÓN CON GITHUB (esquina superior derecha)
-           ========================================================================== */
-        .btn-config-github {
-            position: fixed;
-            top: calc(12px + env(safe-area-inset-top));
-            right: calc(12px + env(safe-area-inset-right));
-            z-index: 900;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 42px;
-            height: 42px;
-            background-color: rgba(0, 0, 0, 0.55);
-            color: #ffffff;
-            border: 1px solid rgba(255, 255, 255, 0.35);
-            border-radius: 50%;
-            padding: 0;
-            cursor: pointer;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
-            touch-action: manipulation;
-            transition: background-color 0.2s, transform 0.15s;
-        }
-        .btn-config-github svg {
-            flex-shrink: 0;
-        }
-        .btn-config-github:active {
-            transform: scale(0.92);
-        }
-        @media (hover: hover) and (pointer: fine) {
-            .btn-config-github:hover {
-                background-color: rgba(0, 0, 0, 0.8);
-            }
-        }
-
         #btn-reset {
             background: var(--nva-warning);
             border-color: var(--nva-warning-hover);
@@ -582,13 +547,6 @@
 
     <button type="button" class="nva-btn-inicio" onclick="nvaVolverInicio()" aria-label="Volver a la página principal">← Inicio</button>
 
-    <!-- Botón flotante: Ajustes de conexión con GitHub -->
-    <button type="button" id="btnConfigGitHub" class="btn-config-github" onclick="abrirModalConfigGitHub()" aria-label="Configurar conexión con GitHub">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true">
-            <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
-        </svg>
-    </button>
-
     <!-- Barra flotante de acciones en la esquina inferior derecha -->
     <div id="excel-loader-bar">
         <button id="btn-load-history">📂 Cargar historial</button>
@@ -675,37 +633,6 @@
             <p style="font-size: 13px; color: #aaa; margin-bottom: 10px;">Selecciona uno de los últimos 6 partidos guardados en GitHub:</p>
             <div id="historyAviso" style="color:#bbb; font-size:0.9em; margin-bottom:10px;">Cargando lista de archivos...</div>
             <div class="history-dates-list" id="historyDatesContainer"></div>
-        </div>
-    </div>
-
-    <!-- Modal Configuración GitHub -->
-    <div id="modalConfigGitHub" class="modal">
-        <div class="modal-box" style="max-width: 480px; text-align: left;">
-            <h3 style="text-align: center;">Configuración de GitHub</h3>
-            <p style="color:#aaa; font-size:13px; margin-bottom:14px;">
-                Estos datos se guardan solo en este dispositivo (en el navegador) y se usan para cargar los partidos guardados en tu repositorio de GitHub.
-            </p>
-            <div style="margin-bottom:14px;">
-                <label style="display:block; color:#ccc; font-size:0.85em; margin-bottom:4px;">Usuario / organización de GitHub</label>
-                <input type="text" id="inputConfigGithubOwner" class="custom-input" style="margin-bottom:0;" placeholder="Ej: NouVoleiAlzira" autocomplete="off" />
-            </div>
-            <div style="margin-bottom:14px;">
-                <label style="display:block; color:#ccc; font-size:0.85em; margin-bottom:4px;">Repositorio</label>
-                <input type="text" id="inputConfigGithubRepo" class="custom-input" style="margin-bottom:0;" placeholder="Ej: NVA_Storage" autocomplete="off" />
-            </div>
-            <div style="margin-bottom:14px;">
-                <label style="display:block; color:#ccc; font-size:0.85em; margin-bottom:4px;">Carpeta</label>
-                <input type="text" id="inputConfigGithubCarpeta" class="custom-input" style="margin-bottom:0;" placeholder="Ej: Partidos" autocomplete="off" />
-            </div>
-            <div style="margin-bottom:6px;">
-                <label style="display:block; color:#ccc; font-size:0.85em; margin-bottom:4px;">Token de acceso personal (PAT)</label>
-                <input type="password" id="inputConfigGithubToken" class="custom-input" style="margin-bottom:0;" placeholder="github_pat_..." autocomplete="off" />
-            </div>
-            <div style="display:flex; justify-content:center; gap:10px; margin-top:18px; flex-wrap:wrap;">
-                <button class="btn-modal-action" style="background:#555;" onclick="borrarConfigGitHub()">BORRAR DATOS</button>
-                <button class="btn-modal-action" onclick="guardarConfigGitHubDesdeModal()">GUARDAR</button>
-                <button class="btn-modal-action" style="background:#333;" onclick="cerrarModalConfigGitHub()">CERRAR</button>
-            </div>
         </div>
     </div>
 
@@ -813,7 +740,6 @@
         const historyModal = document.getElementById('historyModal');
         const historyDatesContainer = document.getElementById('historyDatesContainer');
         const historyAviso = document.getElementById('historyAviso');
-        const modalConfigGitHub = document.getElementById('modalConfigGitHub');
 
         // Variables de estado
         let calendarViewDate = new Date();
@@ -1194,11 +1120,9 @@
             jpgButton.style.pointerEvents = 'none';
 
             const excelBar = document.getElementById('excel-loader-bar');
-            const configBtn = document.getElementById('btnConfigGitHub');
 
             try {
                 excelBar.style.display = 'none';
-                if (configBtn) configBtn.style.display = 'none';
 
                 // Conservamos la preparación original de fondos para las capturas.
                 await prepareCardsForCapture();
@@ -1239,7 +1163,6 @@
                 // Restauramos interfaz y fondos aunque la captura falle.
                 restoreCardsAfterCapture();
                 excelBar.style.display = 'flex';
-                if (configBtn) configBtn.style.display = 'flex';
                 jpgButton.innerHTML = originalText;
                 jpgButton.style.pointerEvents = 'auto';
             }
@@ -1252,74 +1175,22 @@
         // ajustes (arriba a la derecha) y se guardan solo en el localStorage de su
         // propio dispositivo/navegador. Usa la misma clave que Partidos.html, así
         // que si ya configuraste la conexión allí, aquí se reutiliza automáticamente.
-        const GITHUB_CONFIG_KEY = 'nvaGithubConfig';
+        // Conexión con GitHub: se reutilizan los datos que ya se han introducido en la
+        // página principal (index.html), guardados en el navegador con la clave
+        // NVA_GH_SETTINGS (usuario, repositorio y token). Los datos de los partidos
+        // se guardan y cargan siempre en la carpeta PartidosyResultados del mismo repositorio.
+        const GITHUB_CARPETA_PARTIDOS = 'PartidosyResultados';
 
         function obtenerConfigGitHub() {
             try {
-                const raw = localStorage.getItem(GITHUB_CONFIG_KEY);
+                const raw = localStorage.getItem('NVA_GH_SETTINGS');
                 if (!raw) return null;
-                const config = JSON.parse(raw);
-                if (!config || !config.owner || !config.repo || !config.token) return null;
-                if (!config.carpeta) config.carpeta = 'Partidos';
-                return config;
+                const s = JSON.parse(raw);
+                if (!s || !s.user || !s.repo || !s.token) return null;
+                return { owner: s.user, repo: s.repo, token: s.token, carpeta: GITHUB_CARPETA_PARTIDOS };
             } catch (err) {
                 return null;
             }
-        }
-
-        function guardarConfigGitHubEnDispositivo(config) {
-            try {
-                localStorage.setItem(GITHUB_CONFIG_KEY, JSON.stringify(config));
-                return true;
-            } catch (err) {
-                console.warn('No se pudo guardar la configuración de GitHub en este dispositivo.', err);
-                return false;
-            }
-        }
-
-        function abrirModalConfigGitHub() {
-            const config = obtenerConfigGitHub() || {};
-            document.getElementById('inputConfigGithubOwner').value = config.owner || '';
-            document.getElementById('inputConfigGithubRepo').value = config.repo || '';
-            document.getElementById('inputConfigGithubCarpeta').value = config.carpeta || 'Partidos';
-            document.getElementById('inputConfigGithubToken').value = config.token || '';
-            modalConfigGitHub.style.display = 'flex';
-        }
-
-        function cerrarModalConfigGitHub() {
-            modalConfigGitHub.style.display = 'none';
-        }
-
-        function guardarConfigGitHubDesdeModal() {
-            const owner = document.getElementById('inputConfigGithubOwner').value.trim();
-            const repo = document.getElementById('inputConfigGithubRepo').value.trim();
-            let carpeta = document.getElementById('inputConfigGithubCarpeta').value.trim();
-            const token = document.getElementById('inputConfigGithubToken').value.trim();
-
-            if (!owner || !repo || !token) {
-                showToast('Rellena al menos el usuario/organización, el repositorio y el token de acceso.', true);
-                return;
-            }
-            if (!carpeta) carpeta = 'Partidos';
-
-            const guardado = guardarConfigGitHubEnDispositivo({ owner, repo, carpeta, token });
-            if (guardado) {
-                cerrarModalConfigGitHub();
-                showToast('✅ Configuración de GitHub guardada en este dispositivo.');
-            } else {
-                showToast('No se ha podido guardar la configuración en este dispositivo.', true);
-            }
-        }
-
-        function borrarConfigGitHub() {
-            try {
-                localStorage.removeItem(GITHUB_CONFIG_KEY);
-            } catch (err) { /* ignorar */ }
-            document.getElementById('inputConfigGithubOwner').value = '';
-            document.getElementById('inputConfigGithubRepo').value = '';
-            document.getElementById('inputConfigGithubCarpeta').value = 'Partidos';
-            document.getElementById('inputConfigGithubToken').value = '';
-            showToast('🗑️ Se ha borrado la configuración de GitHub de este dispositivo.', true);
         }
 
         function githubHeaders(config) {
@@ -1336,8 +1207,8 @@
         // SISTEMA DE CARGA DE HISTORIAL DESDE GITHUB (igual que en Partidos.html)
         // ==========================================================================
         // Al pulsar "Cargar historial" se abre una ventana con los últimos 6
-        // partidos guardados en GitHub (mismo repositorio/carpeta configurados en
-        // el icono de ajustes). Al seleccionar uno se cargan todos sus datos.
+        // partidos guardados en GitHub (mismo repositorio configurado en
+        // la página principal, carpeta PartidosyResultados). Al seleccionar uno se cargan todos sus datos.
         btnLoadHistory.addEventListener('click', () => {
             abrirModalCargarHistorialGitHub();
         });
@@ -1345,8 +1216,7 @@
         async function abrirModalCargarHistorialGitHub() {
             const config = obtenerConfigGitHub();
             if (!config) {
-                showToast('Antes de cargar el historial, configura la conexión con GitHub pulsando el icono de ajustes (arriba a la derecha).', true);
-                abrirModalConfigGitHub();
+                showToast('Antes de cargar el historial, configura la conexión con GitHub en la página principal (ajustes de GitHub) y vuelve aquí.', true);
                 return;
             }
 
@@ -2112,7 +1982,6 @@
             if (e.target === scoreModal) { scoreModal.style.display = 'none'; currentScoreContainer = null; }
             if (e.target === historyModal) historyModal.style.display = 'none';
             if (e.target === jpgModeModal) jpgModeModal.style.display = 'none';
-            if (e.target === modalConfigGitHub) modalConfigGitHub.style.display = 'none';
         });
 
         // === INICIALIZACIÓN DE LA APLICACIÓN ===
