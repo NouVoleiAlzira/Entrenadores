@@ -967,7 +967,7 @@
       <div class="pdf-results-page">
         ${idx === 0 ? `
           <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:3px solid #0052d4; padding-bottom:12px; margin-bottom:18px;">
-            <img src="LOGO NVA.png" alt="Logo" style="height:65px; width:auto;">
+            <img src="LOGO-NVA.png" alt="Logo" style="height:65px; width:auto;">
             <h1 style="font-size:24px; color:#0052d4; flex:1; text-align:center; font-weight:800; margin:0 10px; letter-spacing:0.5px;">Club Nou Vòlei Alzira</h1>
           </div>
           <div style="text-align:center; margin-bottom:6px;">
