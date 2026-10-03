@@ -5,6 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Nou Volei Alzira - Registro de Entrenamiento</title>
 
+  <!-- ===== PWA ===== -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1e3c72">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <!-- iPhone / iPad -->
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="NVA Entrenadores">
+  <!-- ===== FIN PWA ===== -->
+
   <!-- Conexiones anticipadas: acelera la primera petición a cada dominio
        (DNS + TLS ya resueltos cuando realmente se necesiten). -->
   <link rel="preconnect" href="https://api.github.com">
@@ -567,5 +579,16 @@
      terminar de parsear la página (mismo momento que antes, cuando el
      script iba embebido al final del body, pero sin bloquear la descarga). -->
 <script src="app.js" defer></script>
+
+<!-- Registro del Service Worker (PWA) -->
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js").catch(function (err) {
+        console.warn("Service Worker no registrado:", err);
+      });
+    });
+  }
+</script>
 </body>
 </html>
