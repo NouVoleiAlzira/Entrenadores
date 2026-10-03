@@ -2002,18 +2002,37 @@
     </script>
 
 <script>
-/* Navegación: botón Inicio + tecla/gesto ATRÁS => página principal.
-   Se usa location.replace para no acumular historial entre páginas. */
+/* Navegación: botón Inicio + ATRÁS => página principal.
+   Si se llegó desde la principal, se vuelve con el historial (no se acumulan entradas).
+   Si la página se abrió directamente, se usa location.replace. */
 (function () {
     var INICIO = "index.html";
-    function volver() { location.replace(INICIO); }
-    window.nvaVolverInicio = volver;
-    var st = history.state || {};
-    if (st.nvaSub !== "guard") {
-        history.replaceState({ nvaSub: "base" }, "");
-        history.pushState({ nvaSub: "guard" }, "");
+    var vieneDeInicio = false;
+    try {
+        if (document.referrer) {
+            var r = new URL(document.referrer);
+            vieneDeInicio = r.origin === location.origin && !/(Partidos|Resultados)\.html$/i.test(r.pathname);
+        }
+    } catch (e) {}
+
+    function irInicio() {
+        if (vieneDeInicio && history.length > 1) {
+            history.back();
+            setTimeout(function () { location.replace(INICIO); }, 800);   // por si no hubiera a dónde volver
+        } else {
+            location.replace(INICIO);
+        }
     }
-    window.addEventListener("popstate", volver);
+    window.nvaVolverInicio = irInicio;
+
+    if (!vieneDeInicio) {
+        var st = history.state || {};
+        if (st.nvaSub !== "guard") {
+            history.replaceState({ nvaSub: "base" }, "");
+            history.pushState({ nvaSub: "guard" }, "");
+        }
+        window.addEventListener("popstate", function () { location.replace(INICIO); });
+    }
 })();
 </script>
 </body>
