@@ -556,8 +556,31 @@
             font-size: 12px;
         }
     </style>
+
+    <style>
+        /* Botón volver a la página principal (fuera del área que se captura) */
+        .nva-btn-inicio {
+            position: fixed;
+            top: calc(12px + env(safe-area-inset-top));
+            left: calc(12px + env(safe-area-inset-left));
+            z-index: 900;
+            display: flex; align-items: center; gap: 6px;
+            height: 42px; padding: 0 14px;
+            background-color: rgba(0, 0, 0, 0.55);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            border-radius: 21px;
+            font-size: 15px; font-weight: bold; font-family: inherit;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+        }
+        .nva-btn-inicio:active { transform: scale(0.95); }
+    </style>
 </head>
 <body>
+
+    <button type="button" class="nva-btn-inicio" onclick="nvaVolverInicio()" aria-label="Volver a la página principal">← Inicio</button>
 
     <!-- Botón flotante: Ajustes de conexión con GitHub -->
     <button type="button" id="btnConfigGitHub" class="btn-config-github" onclick="abrirModalConfigGitHub()" aria-label="Configurar conexión con GitHub">
@@ -2108,5 +2131,21 @@
             });
         }
     </script>
+
+<script>
+/* Navegación: botón Inicio + tecla/gesto ATRÁS => página principal.
+   Se usa location.replace para no acumular historial entre páginas. */
+(function () {
+    var INICIO = "index.html";
+    function volver() { location.replace(INICIO); }
+    window.nvaVolverInicio = volver;
+    var st = history.state || {};
+    if (st.nvaSub !== "guard") {
+        history.replaceState({ nvaSub: "base" }, "");
+        history.pushState({ nvaSub: "guard" }, "");
+    }
+    window.addEventListener("popstate", volver);
+})();
+</script>
 </body>
 </html>
