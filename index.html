@@ -94,7 +94,10 @@
     </div>
 
     <div class="section-title" style="margin-top:20px;">🗓️ Horarios de entrenamiento</div>
-    <button class="btn-pdf-mode2" style="margin-bottom:20px;" onclick="openHorarios()">🗓️ Horarios</button>
+    <div style="display:flex; gap:8px; margin-bottom:20px;">
+      <button class="btn-pdf-mode2" style="flex:1; min-width:0; margin-bottom:0;" onclick="openHorarios()">🗓️ Horarios</button>
+      <button class="btn-pdf-mode2" style="flex:1; min-width:0; margin-bottom:0;" onclick="openWeekCalendar()">📆 Calendario semanal</button>
+    </div>
   </div>
 
   <!-- PANTALLA OTROS: botones de información e instrucciones -->
@@ -281,6 +284,28 @@
       </div>
       <div id="queryTeamsCheckboxes" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; max-height: 200px; overflow-y: auto;"></div>
       <button class="btn-save-session" onclick="withLoading(confirmSaveQuery, 'Publicando consulta en el Tablón...')">Publicar Consulta en Tablón</button>
+    </div>
+  </div>
+
+  <!-- MODAL: CALENDARIO SEMANAL (entrenamientos del horario + registros) -->
+  <div class="modal-backdrop" id="modalWeekCalendar">
+    <div class="modal-box" style="max-width: 440px;">
+      <div class="modal-header">
+        <div class="modal-title">📆 Calendario semanal</div>
+        <button class="btn-close-modal" onclick="closeWeekCalendar()">✕</button>
+      </div>
+      <div class="wk-nav">
+        <button class="wk-nav-btn" onclick="wkMove(-1)">‹</button>
+        <div class="wk-range" id="wkRange"></div>
+        <button class="wk-nav-btn" onclick="wkMove(1)">›</button>
+      </div>
+      <button class="wk-today-btn" id="wkTodayBtn" onclick="wkGoToday()">Ir a la semana en curso</button>
+      <div class="wk-legend">
+        <span><b class="wk-mark wk-v">V</b> con registro</span>
+        <span><b class="wk-mark wk-x">X</b> sin registro</span>
+        <span><b class="wk-mark wk-p">·</b> pendiente</span>
+      </div>
+      <div id="wkBody" class="wk-body"></div>
     </div>
   </div>
 

@@ -3077,6 +3077,102 @@
     await writeGitHubFile(path, text, `Actualizar liga de ${teamKey}`);
   }
 
+  // =====================================================================
+  //  CALENDARIO SEMANAL
+  //  Muestra, de lunes a viernes, los entrenamientos del horario guardado
+  //  (Horarios.json) y marca cada uno con:
+  //    V = existe un registro de ese equipo en esa fecha
+  //    X = ya ha terminado y no tiene registro
+  //    · = todavía no ha terminado
+  // =====================================================================
+  let wkOffset = 0; // 0 = semana en curso, -1 = anterior, 1 = siguiente...
+  const WK_MONTHS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+
+  function wkFmt(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+  function wkMonday(offset) {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7) + offset * 7);
+    return d;
+  }
+
+  function openWeekCalendar() {
+    wkOffset = 0;
+    document.getElementById("modalWeekCalendar").classList.add("active");
+    renderWeekCalendar();
+    // Se actualizan en segundo plano horarios y registros desde GitHub y se repinta
+    Promise.all([
+      fetchTrainingLogsFromGitHub(),
+      (typeof fetchHorariosFromGitHub === "function" ? fetchHorariosFromGitHub() : Promise.resolve())
+    ]).then(() => {
+      if (document.getElementById("modalWeekCalendar").classList.contains("active")) renderWeekCalendar();
+    }).catch(e => console.error("Calendario semanal:", e));
+  }
+  function closeWeekCalendar() {
+    document.getElementById("modalWeekCalendar").classList.remove("active");
+  }
+  function wkMove(delta) { wkOffset += delta; renderWeekCalendar(); }
+  function wkGoToday() { wkOffset = 0; renderWeekCalendar(); }
+
+  function renderWeekCalendar() {
+    const mon = wkMonday(wkOffset);
+    const fri = new Date(mon); fri.setDate(mon.getDate() + 4);
+    document.getElementById("wkRange").innerText =
+      `${mon.getDate()} ${WK_MONTHS[mon.getMonth()]} – ${fri.getDate()} ${WK_MONTHS[fri.getMonth()]} ${fri.getFullYear()}`;
+    document.getElementById("wkTodayBtn").style.display = wkOffset === 0 ? "none" : "block";
+
+    const now = new Date();
+    const todayStr = wkFmt(now);
+    const teamsMap = hzTeamsMap();
+    const logSet = new Set(allTrainingLogs.map(l => `${l.equipo}|${l.fecha}`));
+    const body = document.getElementById("wkBody");
+
+    const hasAny = Object.keys(hz.trainings).some(k => (hz.trainings[k] || []).length);
+    if (!hasAny) {
+      body.innerHTML = `<div class="wk-day-empty">No hay entrenamientos en el horario. Créalos en 🗓️ Horarios y guárdalos en GitHub.</div>`;
+      return;
+    }
+
+    let okCount = 0, missCount = 0, html = "";
+    for (let i = 0; i < 5; i++) {
+      const d = new Date(mon); d.setDate(mon.getDate() + i);
+      const ds = wkFmt(d);
+      const items = [];
+      Object.keys(hz.trainings).forEach(key => {
+        (hz.trainings[key] || []).filter(t => t.day === i + 1).forEach(t => items.push({ key, t }));
+      });
+      items.sort((a, b) => hzT2M(a.t.start) - hzT2M(b.t.start));
+
+      let rows = "";
+      items.forEach(({ key, t }) => {
+        const team = teamsMap[key];
+        let label = key;
+        if (team) { const lp = hzLabelParts(team, key); label = `${lp.cat} ${lp.suf}`.trim() || key; }
+        const color = (hz.teamColors && hz.teamColors[key]) || "#94a3b8";
+        const ci = hzCourtInfo(t.courtId);
+        const place = ci ? `${ci.venue.name} · ${ci.court.name}` : "";
+        const end = new Date(d); const em = hzT2M(t.end); end.setHours(Math.floor(em / 60), em % 60, 0, 0);
+        const has = logSet.has(`${key}|${ds}`);
+        let mark = `<span class="wk-mark wk-p">·</span>`;
+        if (has) { mark = `<span class="wk-mark wk-v">V</span>`; okCount++; }
+        else if (end <= now) { mark = `<span class="wk-mark wk-x">X</span>`; missCount++; }
+        rows += `<div class="wk-row">
+          <div class="wk-row-color" style="background:${hzEsc(color)};"></div>
+          <div class="wk-row-main">
+            <div class="wk-row-team">${hzEsc(label)}</div>
+            <div class="wk-row-sub">${hzEsc(t.start)}–${hzEsc(t.end)}${place ? " · " + hzEsc(place) : ""}</div>
+          </div>${mark}</div>`;
+      });
+      if (!rows) rows = `<div class="wk-day-empty">Sin entrenamientos</div>`;
+      html += `<div class="wk-day${ds === todayStr ? " wk-is-today" : ""}">
+        <div class="wk-day-head"><span>${HZ_DAYS[i]}</span><span>${d.getDate()} ${WK_MONTHS[d.getMonth()]}</span></div>${rows}</div>`;
+    }
+    html += `<div class="wk-summary">Con registro: <b>${okCount}</b> · Sin registro: <b>${missCount}</b></div>`;
+    body.innerHTML = html;
+  }
+
   // --- Navegación entre Asistencia (Entrenamiento) y Partido ---
   function goToMatchScreen() {
     if (!currentTeam) return;
