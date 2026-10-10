@@ -866,7 +866,7 @@
     .wk-nav-btn { border: none; background: #e2e8f0; border-radius: 6px; width: 38px; height: 34px; font-size: 1.2rem; font-weight: 700; cursor: pointer; color: var(--azul-dark); }
     .wk-range { flex: 1; text-align: center; font-weight: 700; font-size: 0.85rem; color: #fff; }
     .wk-today-btn { width: 100%; border: 1px solid var(--gray-border); background: #f8fafc; border-radius: 6px; padding: 5px; font-size: 0.74rem; color: #475569; cursor: pointer; margin-bottom: 6px; }
-    .wk-canvas { width: 100%; height: auto; display: block; border-radius: 8px; cursor: zoom-in; background: #fff; }
+    .wk-canvas { width: 100%; height: auto; display: block; border-radius: 8px; cursor: pointer; background: #fff; }
     .wk-legend { display: flex; justify-content: center; gap: 18px; font-size: 0.74rem; color: #fff; margin-top: 8px; }
     .wk-mark { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font-weight: 800; font-size: 0.75rem; margin-right: 4px; }
     .wk-v { background: #16a34a; color: white; }

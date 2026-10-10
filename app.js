@@ -3104,6 +3104,9 @@
     const end = new Date(d); end.setHours(Math.floor(x.e / 60), x.e % 60, 0, 0);
     return end <= now ? "X" : null;
   }
+  let wkHits = [];        // geometría de los entrenamientos dibujados (para detectar el toque)
+  let wkShownMonday = null;
+
   function wkOpts() {
     const mon = wkMonday(wkOffset);
     const fri = new Date(mon); fri.setDate(mon.getDate() + 4);
@@ -3114,6 +3117,7 @@
       subtitle: `Semana del ${mon.getDate()} ${WK_MONTHS[mon.getMonth()]} al ${fri.getDate()} ${WK_MONTHS[fri.getMonth()]} ${fri.getFullYear()}`,
       dayLabels,
       mark: x => wkMarkFor(x, mon, logSet, now),
+      hits: [],
       _mon: mon, _logSet: logSet, _now: now
     };
   }
@@ -3123,6 +3127,8 @@
     if (!canvas) return;
     const opts = wkOpts();
     hzDrawSchedule(canvas, opts);
+    wkHits = opts.hits;
+    wkShownMonday = opts._mon;
     document.getElementById("wkRange").innerText = opts.subtitle;
     document.getElementById("wkTodayBtn").style.display = wkOffset === 0 ? "none" : "block";
     let ok = 0, miss = 0;
@@ -3135,12 +3141,50 @@
   function wkMove(delta) { wkOffset += delta; renderWeekCalendar(); }
   function wkGoToday() { wkOffset = 0; renderWeekCalendar(); }
 
-  // Toca la imagen para verla ampliada (reutiliza la ventana de zoom de Horarios)
-  function wkOpenZoom() {
-    const c = document.createElement("canvas");
-    hzDrawSchedule(c, wkOpts());
-    hzEl("hzZoomImg").src = c.toDataURL("image/png");
-    hzEl("modalHzZoom").classList.add("active");
+  function wkPointInPoly(px, py, pts) {
+    let inside = false;
+    for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+      const xi = pts[i][0], yi = pts[i][1], xj = pts[j][0], yj = pts[j][1];
+      if (((yi > py) !== (yj > py)) && (px < (xj - xi) * (py - yi) / (yj - yi) + xi)) inside = !inside;
+    }
+    return inside;
+  }
+
+  // Toque sobre la imagen: si cae en un entrenamiento, se abre su registro
+  function wkCanvasClick(ev) {
+    const canvas = document.getElementById("wkCanvas");
+    if (!canvas || !wkShownMonday) return;
+    const r = canvas.getBoundingClientRect();
+    const px = (ev.clientX - r.left) * canvas.width / r.width;
+    const py = (ev.clientY - r.top) * canvas.height / r.height;
+    for (let i = wkHits.length - 1; i >= 0; i--) {
+      if (wkPointInPoly(px, py, wkHits[i].pts)) {
+        const d = new Date(wkShownMonday); d.setDate(d.getDate() + wkHits[i].day - 1);
+        wkOpenTraining(wkHits[i].key, wkFmt(d));
+        return;
+      }
+    }
+  }
+
+  // Abre la pantalla de registro del equipo en esa fecha (cargando el registro si ya existe)
+  function wkOpenTraining(teamKey, dateStr) {
+    if (isPdfMode) return;
+    const matches = ref => {
+      if (ref === teamKey) return true;
+      const t = appData.teams.find(x => getTeamKey(x) === ref || x.name === ref);
+      return !!t && getTeamKey(t) === teamKey;
+    };
+    const coaches = appData.coaches.filter(c => (c.teams || []).some(matches));
+    const coach = coaches.find(c => c.id === activeCoachId) || coaches[0];
+    if (!coach) { alert("Este equipo no tiene ningún entrenador asignado."); return; }
+
+    selectCoachAndTeam(coach, teamKey, teamKey);
+    document.getElementById("sessionDatePicker").value = dateStr;
+    const log = allTrainingLogs.find(l => l.equipo === teamKey && l.fecha === dateStr);
+    if (log && Array.isArray(log.jugadores)) {
+      sessionData = JSON.parse(JSON.stringify(log.jugadores));
+      renderPlayersMain();
+    }
   }
 
   // Primer pintado con los datos locales; GitHub lo repinta al terminar de sincronizar
@@ -4813,6 +4857,8 @@
           if (lp.cat) parts.push({ text: lp.cat, mult: 1, weight: 800 });
           if (lp.suf) parts.push({ text: lp.suf, mult: 1.45, weight: 800 });
           parts.push({ text: `(${hzM2T(x.s)}-${hzM2T(x.e)})`, mult: 0.72, weight: 700 });
+          if (opts.hits) opts.hits.push({ pts: [[x0, yTL], [x1, yTR], [x1, yBR], [x0, yBL]], key: x.key, day: x.day });
+
           // Marca V / X (solo en el calendario semanal de la página principal)
           const markCh = opts.mark ? opts.mark(x) : null;
           const mr = markCh ? Math.max(12, Math.min(28, (yBR - yTL) * 0.22)) : 0;
