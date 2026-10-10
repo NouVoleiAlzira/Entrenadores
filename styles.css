@@ -861,6 +861,8 @@
       cursor: pointer;
     }
 
+    .btn-add-pdf { background: #1e3c72; font-size: 0.72rem; white-space: nowrap; }
+
     .item-list { display: flex; flex-direction: column; gap: 4px; max-height: 140px; overflow-y: auto; }
 
     .item-row {

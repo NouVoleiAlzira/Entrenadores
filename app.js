@@ -2934,6 +2934,121 @@
     renderLeagueManagement();
   }
 
+  // --- Cargar la liga desde el PDF de la federación (tabla CLASIFICACION) ---
+  // Lee el PDF en el propio dispositivo (pdf.js, se descarga solo la primera vez),
+  // toma los equipos de la última tabla y quita el equipo del club seleccionado.
+  const PDFJS_URL = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+  const PDFJS_WORKER_URL = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+  async function ensurePdfJs() {
+    if (!window.pdfjsLib) await loadScriptOnce(PDFJS_URL);
+    if (!window.pdfjsLib.GlobalWorkerOptions.workerSrc) {
+      // El worker está en otro dominio: se envuelve en un blob para que el navegador lo permita.
+      const blob = new Blob([`importScripts("${PDFJS_WORKER_URL}");`], { type: "text/javascript" });
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(blob);
+    }
+  }
+
+  function normalizeTeamName(n) {
+    return (n || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .toUpperCase().replace(/[^A-Z0-9]+/g, " ").trim();
+  }
+
+  // Devuelve [{pos, name}] con las filas de la tabla CLASIFICACION del PDF.
+  async function extractStandingsTeamsFromPdf(file) {
+    await ensurePdfJs();
+    const pdf = await window.pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+    const rows = [];
+    let seenHeading = false;
+    for (let p = 1; p <= pdf.numPages; p++) {
+      const page = await pdf.getPage(p);
+      const content = await page.getTextContent();
+      // Agrupar los textos por línea (misma coordenada Y) y ordenarlos de izquierda a derecha
+      const lines = [];
+      content.items.forEach(it => {
+        if (!it.str || !it.str.trim()) return;
+        const y = it.transform[5], x = it.transform[4];
+        let line = lines.find(l => Math.abs(l.y - y) < 2.5);
+        if (!line) { line = { y: y, items: [] }; lines.push(line); }
+        line.items.push({ x: x, str: it.str.trim() });
+      });
+      lines.sort((a, b) => b.y - a.y);
+      lines.forEach(l => {
+        const text = l.items.sort((a, b) => a.x - b.x).map(i => i.str).join(" ").replace(/\s+/g, " ");
+        if (/CLASIFICACI[OÓ]N/i.test(text)) { seenHeading = true; rows.length = 0; return; }
+        // Pos + Equipo + 11 columnas numéricas (Pj PG3 PG2 PP1 PP0 SA SF SC PF PC Ptos)
+        const m = text.match(/^(\d{1,2})\s+(.+?)((?:\s+\d+){11})$/);
+        if (m && /[A-Za-zÀ-ÿ]/.test(m[2])) rows.push({ pos: parseInt(m[1], 10), name: m[2].trim() });
+      });
+    }
+    return rows;
+  }
+
+  function findOwnTeamRow(rows, teamName) {
+    const target = normalizeTeamName(teamName);
+    if (!target) return -1;
+    let i = rows.findIndex(r => normalizeTeamName(r.name) === target);
+    if (i >= 0) return i;
+    const cands = rows.map((r, idx) => ({ idx, n: normalizeTeamName(r.name) }))
+      .filter(c => c.n.includes(target) || target.includes(c.n));
+    return cands.length === 1 ? cands[0].idx : -1;
+  }
+
+  async function handleLeaguePdfSelected(input) {
+    const file = input.files && input.files[0];
+    input.value = ""; // permite volver a elegir el mismo archivo
+    if (!file) return;
+    if (!leagueEdit.key) { alert("Selecciona primero un equipo."); return; }
+
+    let rows;
+    mostrarCargando("Leyendo el PDF...");
+    try {
+      rows = await extractStandingsTeamsFromPdf(file);
+    } catch (e) {
+      console.error("Error al leer el PDF:", e);
+      ocultarCargando();
+      alert("No se pudo leer el PDF. Comprueba que es el calendario de la federación y que hay conexión la primera vez (se descarga el lector de PDF).");
+      return;
+    }
+    ocultarCargando();
+
+    if (rows.length < 2) {
+      alert("No he encontrado la tabla de CLASIFICACIÓN en este PDF.");
+      return;
+    }
+
+    const teamObj = appData.teams.find(t => getTeamKey(t) === leagueEdit.key);
+    const ownName = teamObj ? teamObj.name : leagueEdit.key;
+    let ownIdx = findOwnTeamRow(rows, ownName);
+
+    if (ownIdx < 0) {
+      const menu = rows.map((r, i) => `${i + 1}. ${r.name}`).join("\n");
+      const ans = prompt(`No encuentro "${ownName}" en la tabla.\nEscribe el número de TU equipo para excluirlo (o deja vacío para no excluir ninguno):\n\n${menu}`);
+      if (ans === null) return;
+      const n = parseInt(ans, 10);
+      if (n >= 1 && n <= rows.length) ownIdx = n - 1;
+    }
+
+    const rivals = rows.filter((_, i) => i !== ownIdx).map(r => r.name);
+    if (!rivals.length) { alert("No se han encontrado rivales."); return; }
+
+    let finalList;
+    if (leagueEdit.list.length > 0) {
+      const replace = confirm(`Se han encontrado ${rivals.length} rivales.\n\nAceptar = REEMPLAZAR la lista actual (${leagueEdit.list.length} equipos).\nCancelar = AÑADIR solo los que falten.`);
+      if (replace) finalList = rivals;
+      else {
+        const have = new Set(leagueEdit.list.map(normalizeTeamName));
+        finalList = leagueEdit.list.concat(rivals.filter(r => !have.has(normalizeTeamName(r))));
+      }
+    } else {
+      finalList = rivals;
+    }
+
+    leagueEdit.list = finalList;
+    saveLeagueEditList();
+    renderLeagueManagement();
+  }
+
   // Guarda en local (caché que también usa la pantalla Partido) y envía a GitHub.
   // Los envíos se encadenan para que lleguen en orden y no se pisen entre sí.
   function saveLeagueEditList() {

@@ -478,6 +478,8 @@
           <div class="input-group">
             <input type="text" id="newLeagueTeamName" class="app-input" placeholder="Nombre Equipo de la liga">
             <button class="btn-add" onclick="addLeagueTeam()">+</button>
+            <button class="btn-add btn-add-pdf" title="Cargar PDF de la federación" onclick="document.getElementById('leaguePdfInput').click()">📄 PDF</button>
+            <input type="file" id="leaguePdfInput" accept="application/pdf,.pdf" style="display:none" onchange="handleLeaguePdfSelected(this)">
           </div>
           <div id="draggableLeagueList"></div>
         </div>
