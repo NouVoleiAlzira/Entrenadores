@@ -2105,6 +2105,7 @@
     if (screenCoachTeamEl && screenCoachTeamEl.classList.contains("active")) {
       renderCoachTeamSelection();
       rebuildDireccionAccordionIfExpanded();
+      renderWeekCalendar();
     }
 
     if (screenAttendanceEl && screenAttendanceEl.classList.contains("active")) {
@@ -3078,12 +3079,12 @@
   }
 
   // =====================================================================
-  //  CALENDARIO SEMANAL
-  //  Muestra, de lunes a viernes, los entrenamientos del horario guardado
-  //  (Horarios.json) y marca cada uno con:
+  //  CALENDARIO SEMANAL (página principal)
+  //  Dibuja la misma imagen que «Horarios» (hzDrawSchedule) pero con las
+  //  fechas de la semana y, sobre cada entrenamiento ya terminado:
   //    V = existe un registro de ese equipo en esa fecha
-  //    X = ya ha terminado y no tiene registro
-  //    · = todavía no ha terminado
+  //    X = no tiene registro
+  //  Los entrenamientos que aún no han terminado no llevan marca.
   // =====================================================================
   let wkOffset = 0; // 0 = semana en curso, -1 = anterior, 1 = siguiente...
   const WK_MONTHS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
@@ -3097,81 +3098,53 @@
     d.setDate(d.getDate() - ((d.getDay() + 6) % 7) + offset * 7);
     return d;
   }
-
-  function openWeekCalendar() {
-    wkOffset = 0;
-    document.getElementById("modalWeekCalendar").classList.add("active");
-    renderWeekCalendar();
-    // Se actualizan en segundo plano horarios y registros desde GitHub y se repinta
-    Promise.all([
-      fetchTrainingLogsFromGitHub(),
-      (typeof fetchHorariosFromGitHub === "function" ? fetchHorariosFromGitHub() : Promise.resolve())
-    ]).then(() => {
-      if (document.getElementById("modalWeekCalendar").classList.contains("active")) renderWeekCalendar();
-    }).catch(e => console.error("Calendario semanal:", e));
+  function wkMarkFor(x, mon, logSet, now) {
+    const d = new Date(mon); d.setDate(mon.getDate() + x.day - 1);
+    if (logSet.has(`${x.key}|${wkFmt(d)}`)) return "V";
+    const end = new Date(d); end.setHours(Math.floor(x.e / 60), x.e % 60, 0, 0);
+    return end <= now ? "X" : null;
   }
-  function closeWeekCalendar() {
-    document.getElementById("modalWeekCalendar").classList.remove("active");
+  function wkOpts() {
+    const mon = wkMonday(wkOffset);
+    const fri = new Date(mon); fri.setDate(mon.getDate() + 4);
+    const now = new Date();
+    const logSet = new Set(allTrainingLogs.map(l => `${l.equipo}|${l.fecha}`));
+    const dayLabels = [0, 1, 2, 3, 4].map(i => { const d = new Date(mon); d.setDate(mon.getDate() + i); return String(d.getDate()); });
+    return {
+      subtitle: `Semana del ${mon.getDate()} ${WK_MONTHS[mon.getMonth()]} al ${fri.getDate()} ${WK_MONTHS[fri.getMonth()]} ${fri.getFullYear()}`,
+      dayLabels,
+      mark: x => wkMarkFor(x, mon, logSet, now),
+      _mon: mon, _logSet: logSet, _now: now
+    };
+  }
+
+  function renderWeekCalendar() {
+    const canvas = document.getElementById("wkCanvas");
+    if (!canvas) return;
+    const opts = wkOpts();
+    hzDrawSchedule(canvas, opts);
+    document.getElementById("wkRange").innerText = opts.subtitle;
+    document.getElementById("wkTodayBtn").style.display = wkOffset === 0 ? "none" : "block";
+    let ok = 0, miss = 0;
+    hzBuildModel().sessions.forEach(x => {
+      const m = wkMarkFor(x, opts._mon, opts._logSet, opts._now);
+      if (m === "V") ok++; else if (m === "X") miss++;
+    });
+    document.getElementById("wkSummary").innerHTML = `Con registro: <b>${ok}</b> · Sin registro: <b>${miss}</b>`;
   }
   function wkMove(delta) { wkOffset += delta; renderWeekCalendar(); }
   function wkGoToday() { wkOffset = 0; renderWeekCalendar(); }
 
-  function renderWeekCalendar() {
-    const mon = wkMonday(wkOffset);
-    const fri = new Date(mon); fri.setDate(mon.getDate() + 4);
-    document.getElementById("wkRange").innerText =
-      `${mon.getDate()} ${WK_MONTHS[mon.getMonth()]} – ${fri.getDate()} ${WK_MONTHS[fri.getMonth()]} ${fri.getFullYear()}`;
-    document.getElementById("wkTodayBtn").style.display = wkOffset === 0 ? "none" : "block";
-
-    const now = new Date();
-    const todayStr = wkFmt(now);
-    const teamsMap = hzTeamsMap();
-    const logSet = new Set(allTrainingLogs.map(l => `${l.equipo}|${l.fecha}`));
-    const body = document.getElementById("wkBody");
-
-    const hasAny = Object.keys(hz.trainings).some(k => (hz.trainings[k] || []).length);
-    if (!hasAny) {
-      body.innerHTML = `<div class="wk-day-empty">No hay entrenamientos en el horario. Créalos en 🗓️ Horarios y guárdalos en GitHub.</div>`;
-      return;
-    }
-
-    let okCount = 0, missCount = 0, html = "";
-    for (let i = 0; i < 5; i++) {
-      const d = new Date(mon); d.setDate(mon.getDate() + i);
-      const ds = wkFmt(d);
-      const items = [];
-      Object.keys(hz.trainings).forEach(key => {
-        (hz.trainings[key] || []).filter(t => t.day === i + 1).forEach(t => items.push({ key, t }));
-      });
-      items.sort((a, b) => hzT2M(a.t.start) - hzT2M(b.t.start));
-
-      let rows = "";
-      items.forEach(({ key, t }) => {
-        const team = teamsMap[key];
-        let label = key;
-        if (team) { const lp = hzLabelParts(team, key); label = `${lp.cat} ${lp.suf}`.trim() || key; }
-        const color = (hz.teamColors && hz.teamColors[key]) || "#94a3b8";
-        const ci = hzCourtInfo(t.courtId);
-        const place = ci ? `${ci.venue.name} · ${ci.court.name}` : "";
-        const end = new Date(d); const em = hzT2M(t.end); end.setHours(Math.floor(em / 60), em % 60, 0, 0);
-        const has = logSet.has(`${key}|${ds}`);
-        let mark = `<span class="wk-mark wk-p">·</span>`;
-        if (has) { mark = `<span class="wk-mark wk-v">V</span>`; okCount++; }
-        else if (end <= now) { mark = `<span class="wk-mark wk-x">X</span>`; missCount++; }
-        rows += `<div class="wk-row">
-          <div class="wk-row-color" style="background:${hzEsc(color)};"></div>
-          <div class="wk-row-main">
-            <div class="wk-row-team">${hzEsc(label)}</div>
-            <div class="wk-row-sub">${hzEsc(t.start)}–${hzEsc(t.end)}${place ? " · " + hzEsc(place) : ""}</div>
-          </div>${mark}</div>`;
-      });
-      if (!rows) rows = `<div class="wk-day-empty">Sin entrenamientos</div>`;
-      html += `<div class="wk-day${ds === todayStr ? " wk-is-today" : ""}">
-        <div class="wk-day-head"><span>${HZ_DAYS[i]}</span><span>${d.getDate()} ${WK_MONTHS[d.getMonth()]}</span></div>${rows}</div>`;
-    }
-    html += `<div class="wk-summary">Con registro: <b>${okCount}</b> · Sin registro: <b>${missCount}</b></div>`;
-    body.innerHTML = html;
+  // Toca la imagen para verla ampliada (reutiliza la ventana de zoom de Horarios)
+  function wkOpenZoom() {
+    const c = document.createElement("canvas");
+    hzDrawSchedule(c, wkOpts());
+    hzEl("hzZoomImg").src = c.toDataURL("image/png");
+    hzEl("modalHzZoom").classList.add("active");
   }
+
+  // Primer pintado con los datos locales; GitHub lo repinta al terminar de sincronizar
+  window.addEventListener("load", () => setTimeout(() => { try { renderWeekCalendar(); } catch (e) { console.error(e); } }, 0));
 
   // --- Navegación entre Asistencia (Entrenamiento) y Partido ---
   function goToMatchScreen() {
@@ -4701,7 +4674,8 @@
     ctx.restore();
   }
 
-  function hzDrawSchedule(canvas) {
+  function hzDrawSchedule(canvas, opts) {
+    opts = opts || {};
     const W = 2970, H = 2100, M = 70;   // A4 apaisado (297x210 mm) a 10 px/mm
     canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext("2d");
@@ -4735,7 +4709,7 @@
     ctx.font = `800 104px ${HZ_FONT}`;
     hzDrawSpaced(ctx, "Horarios Nou Volei Alzira", W / 2, top0 + 95, 8);
     ctx.font = `700 64px ${HZ_FONT}`;
-    hzDrawSpaced(ctx, "Temporada " + hz.season, W / 2, top0 + 190, 4);
+    hzDrawSpaced(ctx, opts.subtitle || ("Temporada " + hz.season), W / 2, top0 + 190, 4);
     ctx.restore();
 
     // Interior blanco del horario
@@ -4758,7 +4732,7 @@
     model.days.forEach((d, di) => {
       const n = colsPerDay[di], x0 = xOfCol(ci), w = n * colW;
       cell(x0, tableY, w, hDay, "#a6a6a6");
-      cellText(HZ_DAYS[di].toUpperCase(), x0, tableY, w, hDay, 46, 800);
+      cellText(HZ_DAYS[di].toUpperCase() + (opts.dayLabels ? " " + opts.dayLabels[di] : ""), x0, tableY, w, hDay, 46, 800);
       if (!d.cols.length) {
         cell(x0, tableY + hDay, w, hVen + hCrt, "#cfcfcf");
         cellText("SIN PISTA", x0, tableY + hDay, w, hVen + hCrt, 26, 700);
@@ -4839,8 +4813,22 @@
           if (lp.cat) parts.push({ text: lp.cat, mult: 1, weight: 800 });
           if (lp.suf) parts.push({ text: lp.suf, mult: 1.45, weight: 800 });
           parts.push({ text: `(${hzM2T(x.s)}-${hzM2T(x.e)})`, mult: 0.72, weight: 700 });
-          const fit = hzFitText(ctx, parts, bW, bBot - bTop - 6, 46, 11);
-          hzDrawLines(ctx, fit, (x0 + x1) / 2, bTop + 3, bBot - bTop - 6);
+          // Marca V / X (solo en el calendario semanal de la página principal)
+          const markCh = opts.mark ? opts.mark(x) : null;
+          const mr = markCh ? Math.max(12, Math.min(28, (yBR - yTL) * 0.22)) : 0;
+          const reserve = markCh && (bBot - bTop) > 2 * mr + 70 ? 2 * mr + 6 : 0;
+          const fit = hzFitText(ctx, parts, bW, bBot - bTop - 6 - reserve, 46, 11);
+          hzDrawLines(ctx, fit, (x0 + x1) / 2, bTop + 3 + reserve, bBot - bTop - 6 - reserve);
+          if (markCh) {
+            const bx = reserve ? (x0 + x1) / 2 : x0 + mr + 6;
+            const by = reserve ? bTop + 3 + mr : yTL + mr + 4;
+            ctx.beginPath(); ctx.arc(bx, by, mr, 0, Math.PI * 2);
+            ctx.fillStyle = markCh === "V" ? "#16a34a" : "#dc2626"; ctx.fill();
+            ctx.strokeStyle = "#fff"; ctx.lineWidth = 3; ctx.stroke();
+            ctx.fillStyle = "#fff"; ctx.font = `800 ${Math.round(mr * 1.3)}px ${HZ_FONT}`;
+            ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.fillText(markCh, bx, by + mr * 0.06);
+          }
         });
       });
       ci += colsPerDay[di];
