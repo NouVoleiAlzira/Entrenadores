@@ -688,14 +688,62 @@
       banner.style.display = "none";
       btn.style.opacity = "1";
     }
+    // Se repinta la lista para mostrar/ocultar las opciones "TODOS los equipos"
+    renderCoachTeamSelection();
   }
 
   // Modo del calendario de período: false = informe de entrenamiento de un
   // equipo; true = PDF con los resultados de todos los partidos del período.
   let pdfResultsMode = false;
 
+  // Informe de varios equipos a la vez (null = informe de un solo equipo)
+  let pdfBatchEntries = null;
+  let pdfBatchFileLabel = "";
+
+  function getCoachTeamEntries(coach) {
+    return (coach.teams || []).map(ref => {
+      const t = appData.teams.find(x => getTeamKey(x) === ref || x.name === ref);
+      return { teamKey: t ? getTeamKey(t) : ref, name: t ? `${t.name} (${t.category})` : ref };
+    });
+  }
+
+  // coach = un entrenador -> todos sus equipos; coach = null -> todos los equipos de todos los entrenadores
+  function openBatchDateRangeModal(coach) {
+    let entries = [], title, fileLabel;
+    if (coach) {
+      entries = getCoachTeamEntries(coach).map(e => ({ teamKey: e.teamKey, label: e.name }));
+      title = `Todos los equipos de ${coach.name}`;
+      fileLabel = "Equipos_" + String(coach.name).replace(/[^a-zA-Z0-9]/g, "_");
+    } else {
+      const seen = new Set();   // un equipo con varios entrenadores solo sale una vez
+      appData.coaches.forEach(c => getCoachTeamEntries(c).forEach(e => {
+        if (seen.has(e.teamKey)) return;
+        seen.add(e.teamKey);
+        entries.push({ teamKey: e.teamKey, label: `${e.name} · ${c.name}` });
+      }));
+      title = "Todos los equipos";
+      fileLabel = "Todos_los_equipos";
+    }
+    if (entries.length === 0) { alert("No hay equipos asignados."); return; }
+
+    pdfResultsMode = false;
+    pdfBatchEntries = entries;
+    pdfBatchFileLabel = fileLabel;
+    rangeStart = null;
+    rangeEnd = null;
+    calYear = new Date().getFullYear();
+    calMonth = new Date().getMonth();
+
+    document.getElementById("pdfModalTitle").innerText = `🗓️ Período - ${title}`;
+    document.getElementById("btnConfirmPdf").innerText = "Generar Informe PDF";
+    updateDateSelectionSummary();
+    renderCalendar();
+    document.getElementById("modalDateRange").classList.add("active");
+  }
+
   function openDateRangeModal(coach, teamKey, displayName) {
     pdfResultsMode = false;
+    pdfBatchEntries = null;
     pdfSelectedCoach = coach;
     pdfSelectedTeamKey = teamKey;
     pdfSelectedTeamName = displayName;
@@ -797,6 +845,10 @@
       withLoading(openResultsMatchSelection, 'Buscando partidos del período...');
       return;
     }
+    if (pdfBatchEntries) {
+      withLoading(generateBatchPDF, 'Generando informes de entrenamiento...');
+      return;
+    }
     generatePDF();
   }
 
@@ -804,6 +856,7 @@
   function openResultsRangeModal() {
     if (isPdfMode) togglePdfMode();
     pdfResultsMode = true;
+    pdfBatchEntries = null;
     rangeStart = null;
     rangeEnd = null;
     calYear = new Date().getFullYear();
@@ -1012,29 +1065,30 @@
     }
   }
 
-  async function generatePDF() {
-    await ensureExportLibs();
-    // Igual que en el Historial: sincroniza antes de recopilar los registros
-    // para que el PDF incluya también entrenamientos guardados en GitHub
-    // desde otros dispositivos y no solo los que ya estaban en caché local.
-    // Antes de leer, se envía cualquier cambio pendiente en la cola offline.
+  // Registros de un equipo dentro del período seleccionado
+  function collectTeamLogs(teamKey) {
+    return allTrainingLogs
+      .filter(log => log.equipo === teamKey && log.fecha >= rangeStart && log.fecha <= rangeEnd)
+      .sort((a, b) => a.fecha.localeCompare(b.fecha));
+  }
+
+  // Igual que en el Historial: sincroniza antes de recopilar los registros
+  // para que el PDF incluya también entrenamientos guardados en GitHub
+  // desde otros dispositivos y no solo los que ya estaban en caché local.
+  // Antes de leer, se envía cualquier cambio pendiente en la cola offline.
+  async function syncTrainingLogsForPdf() {
     if (ghSettings.user && ghSettings.repo && navigator.onLine) {
       if (offlineQueue.length > 0) await processOfflineQueue();
       await fetchTrainingLogsFromGitHub();
     }
+  }
 
-    const logs = allTrainingLogs.filter(log => log.equipo === pdfSelectedTeamKey && log.fecha >= rangeStart && log.fecha <= rangeEnd);
-    logs.sort((a, b) => a.fecha.localeCompare(b.fecha));
-
-    if (logs.length === 0) {
-      alert(`No existen registros de entrenamiento guardados para ${pdfSelectedTeamName} entre ${rangeStart} y ${rangeEnd}.`);
-      return;
-    }
-
-    document.getElementById("pdfReportTeamTitle").innerText = `Informe de Entrenamiento: ${pdfSelectedTeamName}`;
+  // Pinta en el área oculta el informe de UN equipo y lo añade como página al PDF
+  async function addTeamReportPage(pdf, teamKey, teamName, logs, isFirstPage) {
+    document.getElementById("pdfReportTeamTitle").innerText = `Informe de Entrenamiento: ${teamName}`;
     document.getElementById("pdfReportDateRange").innerText = `Período: ${rangeStart} al ${rangeEnd}`;
 
-    const teamPlayers = getPlayersForTeamKey(pdfSelectedTeamKey);
+    const teamPlayers = getPlayersForTeamKey(teamKey);
     const tableBody = document.getElementById("pdfReportTableBody");
     tableBody.innerHTML = "";
 
@@ -1168,55 +1222,112 @@
     });
 
     const exportArea = document.getElementById("pdfReportExportArea");
-    
-    setTimeout(async () => {
-      try {
-        const canvas = await html2canvas(exportArea, { scale: 2, useCORS: true });
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
 
-        const fullCanvas = document.createElement("canvas");
-        const scale = 2;
-        fullCanvas.width = pdfWidth * 3.7795275591 * scale; 
-        fullCanvas.height = pdfHeight * 3.7795275591 * scale;
-        const ctx = fullCanvas.getContext("2d");
+    await new Promise(r => setTimeout(r, 300));
 
-        const bgGradient = ctx.createLinearGradient(0, 0, fullCanvas.width, fullCanvas.height);
-        bgGradient.addColorStop(0, 'rgba(0, 102, 255, 0.3)');
-        bgGradient.addColorStop(0.5, 'rgba(67, 100, 247, 0.3)');
-        bgGradient.addColorStop(1, 'rgba(0, 210, 255, 0.3)');
-        ctx.fillStyle = bgGradient;
-        ctx.fillRect(0, 0, fullCanvas.width, fullCanvas.height);
+    const canvas = await html2canvas(exportArea, { scale: 2, useCORS: true });
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
 
-        const watermarkImg = exportArea.querySelector('.pdf-watermark');
-        if (watermarkImg && watermarkImg.complete) {
-          ctx.save();
-          ctx.globalAlpha = 0.12;
-          const wmWidth = 380 * scale;
-          const wmHeight = (watermarkImg.naturalHeight / watermarkImg.naturalWidth) * wmWidth || wmWidth;
-          const wmX = (fullCanvas.width - wmWidth) / 2;
-          const wmY = (fullCanvas.height - wmHeight) / 2;
-          ctx.drawImage(watermarkImg, wmX, wmY, wmWidth, wmHeight);
-          ctx.restore();
-        }
+    const fullCanvas = document.createElement("canvas");
+    const scale = 2;
+    fullCanvas.width = pdfWidth * 3.7795275591 * scale; 
+    fullCanvas.height = pdfHeight * 3.7795275591 * scale;
+    const ctx = fullCanvas.getContext("2d");
 
-        ctx.drawImage(canvas, 0, 0, fullCanvas.width, (canvas.height * fullCanvas.width) / canvas.width);
+    const bgGradient = ctx.createLinearGradient(0, 0, fullCanvas.width, fullCanvas.height);
+    bgGradient.addColorStop(0, 'rgba(0, 102, 255, 0.3)');
+    bgGradient.addColorStop(0.5, 'rgba(67, 100, 247, 0.3)');
+    bgGradient.addColorStop(1, 'rgba(0, 210, 255, 0.3)');
+    ctx.fillStyle = bgGradient;
+    ctx.fillRect(0, 0, fullCanvas.width, fullCanvas.height);
 
-        const imgData = fullCanvas.toDataURL('image/png');
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-        pdf.save(`Informe_${pdfSelectedTeamName.replace(/[^a-zA-Z0-9]/g, '_')}_${rangeStart}_al_${rangeEnd}.pdf`);
-      } catch (e) {
-        console.error("Error al generar el PDF:", e);
-        alert("Ocurrió un error al generar el PDF.");
+    const watermarkImg = exportArea.querySelector('.pdf-watermark');
+    if (watermarkImg && watermarkImg.complete) {
+      ctx.save();
+      ctx.globalAlpha = 0.12;
+      const wmWidth = 380 * scale;
+      const wmHeight = (watermarkImg.naturalHeight / watermarkImg.naturalWidth) * wmWidth || wmWidth;
+      const wmX = (fullCanvas.width - wmWidth) / 2;
+      const wmY = (fullCanvas.height - wmHeight) / 2;
+      ctx.drawImage(watermarkImg, wmX, wmY, wmWidth, wmHeight);
+      ctx.restore();
+    }
+
+    ctx.drawImage(canvas, 0, 0, fullCanvas.width, (canvas.height * fullCanvas.width) / canvas.width);
+
+    const imgData = fullCanvas.toDataURL('image/png');
+    if (!isFirstPage) pdf.addPage();
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+  }
+
+  async function generatePDF() {
+    await ensureExportLibs();
+    await syncTrainingLogsForPdf();
+
+    const logs = collectTeamLogs(pdfSelectedTeamKey);
+    if (logs.length === 0) {
+      alert(`No existen registros de entrenamiento guardados para ${pdfSelectedTeamName} entre ${rangeStart} y ${rangeEnd}.`);
+      return;
+    }
+
+    try {
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      await addTeamReportPage(pdf, pdfSelectedTeamKey, pdfSelectedTeamName, logs, true);
+      pdf.save(`Informe_${pdfSelectedTeamName.replace(/[^a-zA-Z0-9]/g, '_')}_${rangeStart}_al_${rangeEnd}.pdf`);
+    } catch (e) {
+      console.error("Error al generar el PDF:", e);
+      alert("Ocurrió un error al generar el PDF.");
+    }
+  }
+
+  // Un único PDF con una página por equipo (los equipos sin registros en el período se omiten)
+  async function generateBatchPDF() {
+    const entries = pdfBatchEntries || [];
+    if (entries.length === 0) { alert("No hay equipos para generar el informe."); return; }
+    await ensureExportLibs();
+    await syncTrainingLogsForPdf();
+
+    const omitidos = [];
+    let pages = 0;
+    try {
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      for (const en of entries) {
+        const logs = collectTeamLogs(en.teamKey);
+        if (logs.length === 0) { omitidos.push(en.label); continue; }
+        await addTeamReportPage(pdf, en.teamKey, en.label, logs, pages === 0);
+        pages++;
       }
-    }, 300);
+      if (pages === 0) {
+        alert(`No existen registros de entrenamiento guardados entre ${rangeStart} y ${rangeEnd} para ninguno de los equipos seleccionados.`);
+        return;
+      }
+      pdf.save(`Informe_${pdfBatchFileLabel}_${rangeStart}_al_${rangeEnd}.pdf`);
+    } catch (e) {
+      console.error("Error al generar el PDF de equipos:", e);
+      alert("Ocurrió un error al generar el PDF.");
+      return;
+    }
+    if (omitidos.length > 0) {
+      alert("PDF generado. Equipos sin registros en el período (no incluidos):\n- " + omitidos.join("\n- "));
+    }
   }
 
   function renderCoachTeamSelection() {
     const container = document.getElementById("coachTeamList");
     container.innerHTML = "";
+
+    if (isPdfMode && appData.coaches.length > 0) {
+      const allBtn = document.createElement("button");
+      allBtn.className = "team-btn team-btn-all";
+      allBtn.style.marginBottom = "8px";
+      allBtn.style.width = "100%";
+      allBtn.innerHTML = `<span>📚 TODOS los equipos de todos los entrenadores</span> <span>Generar PDF →</span>`;
+      allBtn.onclick = () => openBatchDateRangeModal(null);
+      container.appendChild(allBtn);
+    }
 
     appData.coaches.forEach(coach => {
       const isSelected = coach.id === activeCoachId;
@@ -1233,6 +1344,13 @@
         if (!coach.teams || coach.teams.length === 0) {
           teamsDiv.innerHTML = `<div style="color: rgba(255,255,255,0.7); font-size: 0.8rem; padding: 4px;">Sin equipos asignados</div>`;
         } else {
+          if (isPdfMode) {
+            const coachAllBtn = document.createElement("button");
+            coachAllBtn.className = "team-btn team-btn-all";
+            coachAllBtn.innerHTML = `<span>📚 TODOS los equipos de ${coach.name}</span> <span>Generar PDF →</span>`;
+            coachAllBtn.onclick = () => openBatchDateRangeModal(coach);
+            teamsDiv.appendChild(coachAllBtn);
+          }
           coach.teams.forEach(teamRef => {
             const teamObj = appData.teams.find(t => getTeamKey(t) === teamRef || t.name === teamRef);
             const displayName = teamObj ? `${teamObj.name} (${teamObj.category})` : teamRef;
@@ -3129,8 +3247,6 @@
     hzDrawSchedule(canvas, opts);
     wkHits = opts.hits;
     wkShownMonday = opts._mon;
-    document.getElementById("wkRange").innerText = opts.subtitle;
-    document.getElementById("wkTodayBtn").style.display = wkOffset === 0 ? "none" : "block";
     let ok = 0, miss = 0;
     hzBuildModel().sessions.forEach(x => {
       const m = wkMarkFor(x, opts._mon, opts._logSet, opts._now);
@@ -3139,7 +3255,6 @@
     document.getElementById("wkSummary").innerHTML = `Con registro: <b>${ok}</b> · Sin registro: <b>${miss}</b>`;
   }
   function wkMove(delta) { wkOffset += delta; renderWeekCalendar(); }
-  function wkGoToday() { wkOffset = 0; renderWeekCalendar(); }
 
   function wkPointInPoly(px, py, pts) {
     let inside = false;
@@ -3186,6 +3301,44 @@
       renderPlayersMain();
     }
   }
+
+  // =====================================================================
+  //  SECCIONES PLEGABLES (página principal)
+  //  El estado (desplegado/plegado) se guarda en el localStorage de cada
+  //  dispositivo, así que cada usuario conserva el suyo. Por defecto están
+  //  desplegadas.
+  // =====================================================================
+  const SECTIONS_KEY = "NVA_SECTIONS_STATE";
+  const SECTION_IDS = ["wk", "trainings", "tablon"];
+
+  function loadSectionsState() {
+    try { return JSON.parse(localStorage.getItem(SECTIONS_KEY)) || {}; } catch (e) { return {}; }
+  }
+  function applySectionState(id, open) {
+    const head = document.getElementById("secHead_" + id);
+    const body = document.getElementById("secBody_" + id);
+    if (!head || !body) return;
+    head.classList.toggle("collapsed", !open);
+    body.classList.toggle("collapsed", !open);
+    head.setAttribute("aria-expanded", open ? "true" : "false");
+    // El textarea del tablón no se puede medir mientras está oculto
+    if (open && id === "tablon") autoResizeTablon(document.getElementById("tablonTextarea"));
+  }
+  function toggleSection(id) {
+    const st = loadSectionsState();
+    const open = st[id] === false;          // estaba plegada -> se despliega
+    st[id] = open;
+    try { localStorage.setItem(SECTIONS_KEY, JSON.stringify(st)); } catch (e) { console.warn(e); }
+    applySectionState(id, open);
+  }
+  function sectionKey(ev, id) {
+    if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); toggleSection(id); }
+  }
+  function initSections() {
+    const st = loadSectionsState();
+    SECTION_IDS.forEach(id => applySectionState(id, st[id] !== false));
+  }
+  initSections();
 
   // Primer pintado con los datos locales; GitHub lo repinta al terminar de sincronizar
   window.addEventListener("load", () => setTimeout(() => { try { renderWeekCalendar(); } catch (e) { console.error(e); } }, 0));

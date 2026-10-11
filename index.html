@@ -60,34 +60,41 @@
       <button onclick="togglePdfMode()" style="background:none; border:none; color:white; font-weight:700; cursor:pointer;">✕ Cancelar</button>
     </div>
 
-    <div class="section-title">📆 Calendario semanal</div>
-    <div class="wk-nav">
-      <button class="wk-nav-btn" onclick="wkMove(-1)">‹</button>
-      <div class="wk-range" id="wkRange"></div>
-      <button class="wk-nav-btn" onclick="wkMove(1)">›</button>
-    </div>
-    <button class="wk-today-btn" id="wkTodayBtn" onclick="wkGoToday()" style="display:none;">Ir a la semana en curso</button>
-    <canvas id="wkCanvas" class="wk-canvas" onclick="wkCanvasClick(event)" title="Toca un entrenamiento para abrir su registro"></canvas>
-    <div class="wk-legend">
-      <span><b class="wk-mark wk-v">V</b> con registro</span>
-      <span><b class="wk-mark wk-x">X</b> sin registro</span>
-    </div>
-    <div class="wk-summary" id="wkSummary"></div>
-
-    <div class="section-title">🔗 Entrenamientos y Partidos</div>
-    <div id="coachTeamList"></div>
-    
-    <div style="display:flex; gap:8px; margin-top:10px;">
-      <button class="btn-pdf-mode" id="btnPdfMode" onclick="togglePdfMode()" style="flex:1; min-width:0; margin-bottom:0;">📊 PDF ENTRENAMIENTOS</button>
-      <button class="btn-pdf-mode" id="btnPdfResultados" onclick="openResultsRangeModal()" style="flex:1; min-width:0; margin-bottom:0;">🏆 PDF RESULTADOS</button>
+    <!-- ===== Sección plegable: Calendario semanal ===== -->
+    <div class="section-title section-toggle" id="secHead_wk" role="button" tabindex="0" aria-expanded="true" aria-controls="secBody_wk" onclick="toggleSection('wk')" onkeydown="sectionKey(event,'wk')">📆 Calendario semanal <span class="sec-arrow">▾</span></div>
+    <div class="section-body" id="secBody_wk">
+      <div class="wk-canvas-wrap">
+        <canvas id="wkCanvas" class="wk-canvas" onclick="wkCanvasClick(event)" title="Toca un entrenamiento para abrir su registro"></canvas>
+        <button class="wk-nav-btn wk-nav-prev" onclick="wkMove(-1)" aria-label="Semana anterior">‹</button>
+        <button class="wk-nav-btn wk-nav-next" onclick="wkMove(1)" aria-label="Semana siguiente">›</button>
+      </div>
+      <div class="wk-legend">
+        <span><b class="wk-mark wk-v">V</b> con registro</span>
+        <span><b class="wk-mark wk-x">X</b> sin registro</span>
+      </div>
+      <div class="wk-summary" id="wkSummary"></div>
     </div>
 
-    <div class="section-title" style="margin-top:20px;">📝 Tablón de Consultas</div>
-    <textarea id="tablonTextarea" class="comment-input-long" placeholder="Escribe aquí las noticias del club..." oninput="autoResizeTablon(this)" onchange="updateTablon(this.value)"></textarea>
-    <div style="display:flex; gap:8px;">
-      <button class="btn-save-session" style="flex:1;" onclick="withLoading(saveTablon, 'Guardando Tablón en GitHub...')">💾 Guardar Tablón</button>
-      <button class="btn-save-session" style="flex:0 0 auto; width:auto; white-space:nowrap; background: var(--btn-fondoVerde);" onclick="withLoading(refreshTablon, 'Refrescando Tablón...')">🔄 Refrescar</button>
-      <button class="btn-save-session" style="flex:1; background: var(--btn-fondoAmarillo);" onclick="openOtros()">🗃️ OTROS</button>
+    <!-- ===== Sección plegable: Entrenamientos y Partidos ===== -->
+    <div class="section-title section-toggle" id="secHead_trainings" role="button" tabindex="0" aria-expanded="true" aria-controls="secBody_trainings" onclick="toggleSection('trainings')" onkeydown="sectionKey(event,'trainings')">🔗 Entrenamientos y Partidos <span class="sec-arrow">▾</span></div>
+    <div class="section-body" id="secBody_trainings">
+      <div id="coachTeamList"></div>
+
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <button class="btn-pdf-mode" id="btnPdfMode" onclick="togglePdfMode()" style="flex:1; min-width:0; margin-bottom:0;">📊 PDF ENTRENAMIENTOS</button>
+        <button class="btn-pdf-mode" id="btnPdfResultados" onclick="openResultsRangeModal()" style="flex:1; min-width:0; margin-bottom:0;">🏆 PDF RESULTADOS</button>
+      </div>
+    </div>
+
+    <!-- ===== Sección plegable: Tablón de Consultas ===== -->
+    <div class="section-title section-toggle" id="secHead_tablon" role="button" tabindex="0" aria-expanded="true" aria-controls="secBody_tablon" style="margin-top:20px;" onclick="toggleSection('tablon')" onkeydown="sectionKey(event,'tablon')">📝 Tablón de Consultas <span class="sec-arrow">▾</span></div>
+    <div class="section-body" id="secBody_tablon">
+      <textarea id="tablonTextarea" class="comment-input-long" placeholder="Escribe aquí las noticias del club..." oninput="autoResizeTablon(this)" onchange="updateTablon(this.value)"></textarea>
+      <div style="display:flex; gap:8px;">
+        <button class="btn-save-session" style="flex:1;" onclick="withLoading(saveTablon, 'Guardando Tablón en GitHub...')">💾 Guardar Tablón</button>
+        <button class="btn-save-session" style="flex:0 0 auto; width:auto; white-space:nowrap; background: var(--btn-fondoVerde);" onclick="withLoading(refreshTablon, 'Refrescando Tablón...')">🔄 Refrescar</button>
+        <button class="btn-save-session" style="flex:1; background: var(--btn-fondoAmarillo);" onclick="openOtros()">🗃️ OTROS</button>
+      </div>
     </div>
 
     <div class="section-title" style="margin-top:20px;">💼 Dirección NVA</div>

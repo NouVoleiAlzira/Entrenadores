@@ -239,6 +239,14 @@
       
     }
 
+    /* Secciones plegables de la pantalla principal */
+    .section-toggle { cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+    .section-toggle .sec-arrow { display: inline-block; margin-left: 6px; font-size: 1rem; transition: transform 0.2s ease; }
+    .section-toggle.collapsed .sec-arrow { transform: rotate(-90deg); }
+    .section-body.collapsed { display: none; }
+
+    .team-btn-all { background: #fff7d6; color: #7a4b00; border: 2px solid #f59e0b; }
+
     .coach-btn {
       width: 100%;
       background: rgba(255, 255, 255, 0.1);
@@ -862,10 +870,23 @@
     }
 
     /* ---------- Calendario semanal ---------- */
-    .wk-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-    .wk-nav-btn { border: none; background: #e2e8f0; border-radius: 6px; width: 38px; height: 34px; font-size: 1.2rem; font-weight: 700; cursor: pointer; color: var(--azul-dark); }
-    .wk-range { flex: 1; text-align: center; font-weight: 700; font-size: 0.85rem; color: #fff; }
-    .wk-today-btn { width: 100%; border: 1px solid var(--gray-border); background: #f8fafc; border-radius: 6px; padding: 5px; font-size: 0.74rem; color: #475569; cursor: pointer; margin-bottom: 6px; }
+    /* Botones de cambio de semana: dentro del recuadro del horario, semitransparentes */
+    .wk-canvas-wrap { position: relative; }
+    .wk-nav-btn {
+      position: absolute; top: 8px; width: 38px; height: 34px;
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      background: rgba(255, 255, 255, 0.22);
+      color: #fff; border-radius: 8px;
+      font-size: 1.3rem; font-weight: 700; line-height: 1;
+      cursor: pointer; padding: 0;
+      display: flex; align-items: center; justify-content: center;
+      -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+      text-shadow: 0 0 3px rgba(0, 20, 80, 0.8);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .wk-nav-btn:active { background: rgba(255, 255, 255, 0.4); }
+    .wk-nav-prev { left: 8px; }
+    .wk-nav-next { right: 8px; }
     .wk-canvas { width: 100%; height: auto; display: block; border-radius: 8px; cursor: pointer; background: #fff; }
     .wk-legend { display: flex; justify-content: center; gap: 18px; font-size: 0.74rem; color: #fff; margin-top: 8px; }
     .wk-mark { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font-weight: 800; font-size: 0.75rem; margin-right: 4px; }
