@@ -3568,7 +3568,7 @@
             if (r.descansan.length) lineasInfo.push(`• Descansan esta jornada: ${r.descansan.join(', ')}.`);
             if (r.sinFicha.length) lineasInfo.push(`• Encontrados en el Excel pero sin ficha en la lista de equipos (DATOS.xls): ${r.sinFicha.join(', ')}.`);
             if (r.varios.length) lineasInfo.push(`• Con varios partidos en el archivo (se ha usado el primero): ${r.varios.join(', ')}.`);
-            if (r.noBuscados.length) lineasInfo.push(`• No buscados por no tener "Equipos de la liga" (Configuración > Ligas): ${r.noBuscados.join(', ')}.`);
+            if (r.noBuscados.length) lineasInfo.push(`• No buscados: ${r.noBuscados.join(', ')}.`);
 
             if (r.partidos.length === 0) {
                 mostrarAviso('⚠️ No se ha creado ninguna ficha: no se ha encontrado ningún partido de los equipos de la configuración en ese archivo.', true);
