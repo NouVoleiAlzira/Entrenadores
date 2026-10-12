@@ -1420,7 +1420,7 @@
     const total = exportArea.getBoundingClientRect().height;
     const pageCssH = cssW * pdfHeight / pdfWidth;
     const MARGEN = 14;                                   // px CSS arriba y abajo si se reduce
-    const reducir = total > pageCssH;
+    const reducir = total > pageCssH + 2;                // tolerancia por redondeos (el área mide justo 1 página como mínimo)
     const f = reducir ? (pageCssH - 2 * MARGEN) / total : 1;
 
     const wm = exportArea.querySelector(".pdf-watermark");
