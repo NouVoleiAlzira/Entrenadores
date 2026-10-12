@@ -1793,7 +1793,8 @@
     .cp-tl-blk { position: absolute; height: 30px; box-sizing: border-box; border-radius: 6px; padding: 2px 4px; overflow: hidden; display: flex; flex-direction: column; justify-content: center; cursor: pointer; font-size: 0.62rem; line-height: 1.1; color: #fff; border: 2px solid transparent; }
     .cp-tl-blk.home { background: #1E8A57; }
     .cp-tl-blk.away { background: #7c3aed; }
-    .cp-tl-blk.placed { border: 2px dashed var(--balon); color: var(--balon); touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+    .cp-tl-blk { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+    .cp-tl-blk.placed { border: 2px dashed var(--balon); color: var(--balon); }
     .cp-tl-blk.placed.home { background: rgba(30,138,87,.35); }
     .cp-tl-blk.placed.away { background: rgba(124,58,237,.35); }
     .cp-tl-blk.dragging { z-index: 5; box-shadow: 0 6px 16px rgba(0,0,0,.5); transform: scale(1.06); opacity: .95; }
@@ -1820,3 +1821,12 @@
     .cp-placed-note { color: var(--balon); font-style: italic; }
     .cp-match.cp-has-warn { border-left: 4px solid var(--alzira); }
     .cp-swap { flex: 0 0 auto; align-self: center; border: 1px solid var(--linea); background: rgba(233,238,250,0.08); color: var(--tiza); border-radius: 8px; padding: 6px 8px; font: inherit; font-size: 0.68rem; font-weight: 700; cursor: pointer; max-width: 92px; line-height: 1.15; }
+    .cp-tl-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
+    .cp-tl-btn { border: 1px solid var(--linea); background: rgba(233,238,250,0.08); color: #fff; border-radius: 8px; padding: 6px 10px; font: inherit; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
+    .cp-tl-btn-red { border-color: var(--alzira); color: #fca5a5; }
+    .cp-changes { margin-top: 8px; padding: 8px; border-radius: 10px; border: 1px solid var(--linea); background: rgba(233,238,250,0.04); }
+    .cp-change { display: flex; gap: 8px; align-items: center; padding: 6px 2px; border-bottom: 1px solid var(--linea); color: var(--tiza); font-size: 0.78rem; }
+    .cp-change b { color: #fff; }
+    .cp-change-txt { flex: 1; min-width: 0; }
+    .cp-change-undo { flex: 0 0 auto; border: 1px solid var(--linea); background: none; color: var(--balon); border-radius: 8px; width: 32px; height: 32px; font-size: 1rem; cursor: pointer; }
+    .cp-change-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }

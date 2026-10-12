@@ -166,8 +166,9 @@
   // Encaja los partidos sin hora en la mejor hora posible (voraz: primero los más restringidos)
   function planMatches(all) {
     const fixed = all.filter(m => hasTime(m)).map(m => Object.assign(m, { start: toMin(m.time), placed: false }));
-    // Propuestos que el usuario ha movido a mano: se respetan tal cual
+    // Partidos movidos a mano en la línea temporal (propuestos o confirmados): se respetan tal cual
     const moved = (cp.moved || {});
+    fixed.forEach(m => { if (moved[m.mk]) Object.assign(m, { date: moved[m.mk].date, start: moved[m.mk].start, moved: true }); });
     all.filter(m => !hasTime(m) && moved[m.mk]).forEach(m => { Object.assign(m, { date: moved[m.mk].date, start: moved[m.mk].start, placed: true, moved: true }); fixed.push(m); });
     const free = all.filter(m => !hasTime(m) && !moved[m.mk]);
     free.sort((a, b) => (isHome(b) - isHome(a)) || ((teamGroup(b.team) === "mayor") - (teamGroup(a.team) === "mayor")) || a.date.localeCompare(b.date));
@@ -302,16 +303,18 @@
           <div class="cp-tl-track" style="height:${Math.max(1, lanes.length) * 34 + 4}px">${tardeBg}`;
         dm.forEach(m => {
           const w = warnOf[m.id];
-          const cls = ["cp-tl-blk", isHome(m) ? "home" : "away", m.placed ? "placed" : "", w ? "warn" : ""].join(" ");
-          const tip = `${toHHMM(m.start)}${m.placed ? " (propuesta)" : ""} · ${m.team} ${isHome(m) ? "vs" : "en"} ${m.rival || "?"}${m.coaches.length ? " · " + m.coaches.join(", ") : ""}${w ? "\n⚠ " + w.map(x => x.text).join("\n⚠ ") : ""}`;
-          t += `<div class="${cls}" style="left:${pct(m.start)};width:${pct(minH * 60 + DUR)};top:${m.lane * 34 + 2}px" title="${esc(tip)}" onclick="cpShowMatch(this)" data-tip="${esc(tip)}"${m.placed ? ` data-mk="${esc(m.mk)}" data-start="${m.start}"` : ""}>
-            <span class="cp-tl-t">${w ? "⚠️" : ""}${toHHMM(m.start)}</span><span class="cp-tl-n">${esc(short(m.team))}</span></div>`;
+          const cls = ["cp-tl-blk", isHome(m) ? "home" : "away", m.placed ? "placed" : "", m.moved ? "moved" : "", w ? "warn" : ""].join(" ");
+          const tip = `${toHHMM(m.start)}${m.placed ? " (propuesta)" : ""}${m.moved ? " (movido)" : ""} · ${m.team} ${isHome(m) ? "vs" : "en"} ${m.rival || "?"}${m.coaches.length ? " · " + m.coaches.join(", ") : ""}${w ? "\n⚠ " + w.map(x => x.text).join("\n⚠ ") : ""}`;
+          t += `<div class="${cls}" style="left:${pct(m.start)};width:${pct(minH * 60 + DUR)};top:${m.lane * 34 + 2}px" title="${esc(tip)}" onclick="cpShowMatch(this)" data-tip="${esc(tip)}" data-mk="${esc(m.mk)}" data-start="${m.start}">
+            <span class="cp-tl-t">${w ? "⚠️" : ""}${m.moved ? "✎" : ""}${toHHMM(m.start)}</span><span class="cp-tl-n">${esc(short(m.team))}</span></div>`;
         });
         t += `</div></div>`;
       });
-      const nMoved = Object.keys(cp.moved || {}).length;
-      t += `<div class="cp-tl-legend"><span><i class="cp-lg home"></i>Casa</span><span><i class="cp-lg away"></i>Fuera</span><span><i class="cp-lg placed"></i>Hora propuesta</span><span><i class="cp-lg warn"></i>Aviso</span></div>
-        <div class="cp-tl-legend"><span class="cp-tl-hint">Toca un partido para ver el detalle. Mantén pulsado uno propuesto para moverlo (hora o día).</span>${nMoved ? `<button type="button" class="cp-tl-reset" onclick="cpResetMoves()">↺ Recolocar propuestos (${nMoved} movidos)</button>` : ""}</div>`;
+      const nCh = changeList().length;
+      t += `<div class="cp-tl-legend"><span><i class="cp-lg home"></i>Casa</span><span><i class="cp-lg away"></i>Fuera</span><span><i class="cp-lg placed"></i>Hora propuesta</span><span><i class="cp-lg warn"></i>Aviso</span><span>✎ Movido</span></div>
+        <div class="cp-tl-legend"><span class="cp-tl-hint">Toca un partido para ver el detalle. Mantén pulsado cualquier partido para moverlo (hora o día).</span></div>
+        <div class="cp-tl-actions"><button type="button" class="cp-tl-btn" onclick="cpToggleChanges()">📝 Cambios realizados (${nCh}) ${changesOpen ? "▴" : "▾"}</button></div>
+        <div class="cp-changes" id="cpChanges" style="${changesOpen ? "" : "display:none"}">${renderChanges()}</div>`;
       tl.dataset.minh = minH; tl.dataset.span = span;
       tl.innerHTML = t;
     }
@@ -343,9 +346,79 @@
       writeGitHubFile(CP_FILE, cp, "Mover partido propuesto");
     }
   }
+  // ---------- Lista de cambios realizados (movimientos y cambios de campo) ----------
+  let changesOpen = false;
+  function matchByKey(mk) {
+    for (const key of Object.keys(cp.teams)) for (const m of (cp.teams[key].matches || [])) if (moveKey(key, m) === mk) return Object.assign({ team: key }, m);
+    return null;
+  }
+  const whenTxt = (date, time) => `${DIAS[dow(date)]} ${fmtDay(date).slice(0, 5)} ${time || "sin hora"}`;
+  function changeList() {
+    const out = [];
+    const keys = new Set(Object.keys(cp.moved || {}).concat(Object.keys(cp.homeOv || {})));
+    keys.forEach(mk => {
+      const m = matchByKey(mk);
+      if (!m) return;
+      const mv = (cp.moved || {})[mk], hv = (cp.homeOv || {})[mk];
+      const vs = `${m.team} vs ${m.rival || "?"}`;
+      const items = [];
+      if (mv) items.push(`Horario: ${whenTxt(m.date, hasTime(m) ? m.time : "")} → ${whenTxt(mv.date, toHHMM(mv.start))}`);
+      if (hv !== undefined) items.push(`Campo: ${hv ? "visitante → local" : "local → visitante"}`);
+      out.push({ mk, vs, items, sort: (mv ? mv.date : m.date) + (mv ? toHHMM(mv.start) : (m.time || "")) });
+    });
+    return out.sort((a, b) => a.sort.localeCompare(b.sort));
+  }
+  function renderChanges() {
+    const ch = changeList();
+    if (!ch.length) return `<div class="cp-empty">No hay cambios. Mantén pulsado un partido para moverlo, o usa «Pasar a local/visitante» en la lista.</div>`;
+    return ch.map(c => `<div class="cp-change"><div class="cp-change-txt"><b>${esc(c.vs)}</b>${c.items.map(i => `<div>${esc(i)}</div>`).join("")}</div>
+        <button type="button" class="cp-change-undo" data-mk="${esc(c.mk)}" onclick="cpUndoChange(this)" title="Deshacer">↺</button></div>`).join("")
+      + `<div class="cp-change-actions"><button type="button" class="cp-tl-btn" onclick="cpChangesPdf()">📄 Crear PDF</button>
+         <button type="button" class="cp-tl-btn cp-tl-btn-red" onclick="cpResetMoves()">↺ Deshacer todos</button></div>`;
+  }
+  window.cpToggleChanges = function () { changesOpen = !changesOpen; renderMatches(); };
+  window.cpUndoChange = function (btn) {
+    const mk = btn.getAttribute("data-mk");
+    if (cp.moved) delete cp.moved[mk];
+    if (cp.homeOv) delete cp.homeOv[mk];
+    saveMoves(); renderMatches();
+  };
   window.cpResetMoves = function () {
-    if (!confirm("¿Volver a colocar automáticamente todos los partidos propuestos que has movido?")) return;
-    cp.moved = {}; saveMoves(); renderMatches();
+    if (!confirm("¿Deshacer todos los cambios (movimientos y cambios de campo)?")) return;
+    cp.moved = {}; cp.homeOv = {}; saveMoves(); renderMatches();
+  };
+  window.cpChangesPdf = async function () {
+    const ch = changeList();
+    if (!ch.length) return;
+    try {
+      if (typeof mostrarCargando === "function") mostrarCargando("Creando PDF...");
+      await ensureExportLibs();
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF("p", "mm", "a4");
+      const W = 210, M = 15;
+      let y = 18;
+      pdf.setFont("helvetica", "bold"); pdf.setFontSize(16);
+      pdf.text("Nou Volei Alzira - Cambios en el calendario de partidos", M, y); y += 7;
+      pdf.setFont("helvetica", "normal"); pdf.setFontSize(10);
+      const from = document.getElementById("cpFrom").value, to = document.getElementById("cpTo").value;
+      pdf.text(`Generado el ${fmtDay(isoDay(new Date()))}${from && to ? ` · Fechas consultadas: ${fmtDay(from)} - ${fmtDay(to)}` : ""}`, M, y); y += 4;
+      pdf.setDrawColor(200); pdf.line(M, y, W - M, y); y += 7;
+      ch.forEach((c, i) => {
+        const lines = [c.vs].concat(c.items.map(t => "   " + t.replace("→", "->")));
+        if (y + lines.length * 5.5 > 285) { pdf.addPage(); y = 18; }
+        pdf.setFont("helvetica", "bold"); pdf.setFontSize(11);
+        pdf.text(`${i + 1}. ${lines[0]}`, M, y); y += 5.5;
+        pdf.setFont("helvetica", "normal"); pdf.setFontSize(10);
+        lines.slice(1).forEach(l => { pdf.text(pdf.splitTextToSize(l, W - 2 * M), M, y); y += 5.5; });
+        y += 2;
+      });
+      pdf.save(`Cambios_partidos_${isoDay(new Date())}.pdf`);
+    } catch (e) {
+      console.error(e);
+      alert("No se pudo crear el PDF. La primera vez hace falta conexión para descargar el generador de PDF.");
+    } finally {
+      if (typeof ocultarCargando === "function") ocultarCargando();
+    }
   };
   function dragTarget(x, y) {
     const tl = document.getElementById("cpTimeline");
@@ -363,7 +436,7 @@
   }
   function cancelLongPress() { clearTimeout(drag.timer); drag.timer = null; }
   function onDown(e) {
-    const el = e.target.closest(".cp-tl-blk.placed");
+    const el = e.target.closest(".cp-tl-blk");
     if (!el) return;
     cancelLongPress();
     drag.el = el; drag.x0 = e.clientX; drag.y0 = e.clientY;
@@ -405,7 +478,7 @@
     window.addEventListener("pointermove", onMove, { passive: false });
     window.addEventListener("pointerup", onUp);
     window.addEventListener("pointercancel", () => { cancelLongPress(); if (drag.active) onUp(); });
-    tl.addEventListener("contextmenu", (e) => { if (e.target.closest(".cp-tl-blk.placed")) e.preventDefault(); });
+    tl.addEventListener("contextmenu", (e) => { if (e.target.closest(".cp-tl-blk")) e.preventDefault(); });
   }
 
   function renderTeams() {
