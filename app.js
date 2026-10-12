@@ -3851,7 +3851,7 @@
   //  desplegadas.
   // =====================================================================
   const SECTIONS_KEY = "NVA_SECTIONS_STATE";
-  const SECTION_IDS = ["wk", "trainings", "tablon"];
+  const SECTION_IDS = ["wk", "trainings", "tablon", "direccion"];
 
   function loadSectionsState() {
     try { return JSON.parse(localStorage.getItem(SECTIONS_KEY)) || {}; } catch (e) { return {}; }

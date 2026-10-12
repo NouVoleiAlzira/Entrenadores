@@ -1731,9 +1731,15 @@
     }
 
     /* ---------- Calendario de partidos ---------- */
-    .cp-range { display: flex; gap: 10px; margin-bottom: 12px; }
-    .cp-range label { flex: 1; display: flex; flex-direction: column; gap: 4px; color: var(--niebla); font-size: 0.78rem; font-weight: 600; }
-    .cp-range input { padding: 9px 10px; border-radius: 10px; border: 1px solid var(--linea); background: rgba(233,238,250,0.08); color: #fff; font: inherit; font-size: 0.95rem; color-scheme: dark; }
+    .cp-range { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--linea); background: rgba(233,238,250,0.08); }
+    .cp-range-ico { font-size: 1.1rem; }
+    .cp-range-sep { color: var(--niebla); font-weight: 700; }
+    .cp-range-part { position: relative; flex: 1; display: flex; flex-direction: column; cursor: pointer; }
+    .cp-range-cap { color: var(--niebla); font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+    .cp-range-val { color: #fff; font-weight: 700; font-size: 0.95rem; }
+    /* El input nativo cubre la zona: al tocarla se abre el calendario del dispositivo */
+    .cp-range-part input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; border: 0; padding: 0; margin: 0; cursor: pointer; color-scheme: dark; }
+    .cp-range-part input::-webkit-calendar-picker-indicator { position: absolute; inset: 0; width: 100%; height: 100%; cursor: pointer; }
     .cp-matches { margin-bottom: 12px; }
     .cp-empty { color: var(--niebla); font-size: 0.85rem; text-align: center; padding: 14px 6px; }
     .cp-day { font-family: var(--font-display); font-weight: 700; color: var(--balon); text-transform: uppercase; letter-spacing: .04em; font-size: 0.95rem; margin: 12px 0 6px; }
@@ -1751,3 +1757,66 @@
     .cp-up { color: var(--niebla); font-size: 0.75rem; }
     .cp-none { font-style: italic; }
     .cp-upload { flex: 0 0 auto; border: none; border-radius: 10px; padding: 8px 12px; background: var(--btn-fondorAzul); color: #fff; font: inherit; font-weight: 700; font-size: 0.78rem; cursor: pointer; }
+
+    /* ---------- Subsecciones (dentro de una sección plegable) ---------- */
+    .section-subtitle {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-weight: 700;
+      font-size: 1.1rem;
+      line-height: 1.1;
+      color: var(--niebla);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin: 18px 0 8px;
+      padding-left: 10px;
+      border-left: 3px solid var(--balon);
+    }
+
+    /* ---------- Calendario de partidos: subsecciones, línea temporal y avisos ---------- */
+    .cp-sub-head { display: flex; align-items: center; gap: 6px; margin: 14px 0 8px; padding: 6px 0 6px 10px; border-left: 3px solid var(--balon); font-family: var(--font-display); font-style: italic; font-weight: 700; font-size: 1.05rem; text-transform: uppercase; letter-spacing: .04em; color: #fff; cursor: pointer; user-select: none; }
+    .cp-sub-head .sec-arrow { display: inline-block; margin-left: auto; font-style: normal; font-size: 1.1rem; color: var(--niebla); transition: transform 0.2s ease; }
+    .cp-sub-head:hover .sec-arrow { color: var(--balon); }
+    .cp-sub-head.collapsed .sec-arrow { transform: rotate(-90deg); }
+    .cp-sub-body.collapsed { display: none; }
+    .cp-badge-warn { color: var(--balon); }
+    .cp-timeline { overflow: hidden; }
+    .cp-tl-axis, .cp-tl-row { display: flex; align-items: stretch; gap: 6px; }
+    .cp-tl-label { flex: 0 0 46px; display: flex; flex-direction: column; justify-content: center; color: var(--tiza); font-size: 0.72rem; line-height: 1.15; }
+    .cp-tl-label b { font-family: var(--font-display); font-size: 0.9rem; color: var(--balon); text-transform: uppercase; }
+    .cp-tl-label small { color: var(--niebla); font-size: 0.65rem; }
+    .cp-tl-ticks { position: relative; flex: 1; height: 16px; }
+    .cp-tl-tick { position: absolute; transform: translateX(-50%); color: var(--niebla); font-size: 0.62rem; }
+    .cp-tl-row { margin-bottom: 6px; }
+    .cp-tl-track { position: relative; flex: 1; min-height: 38px; border-radius: 8px; background: repeating-linear-gradient(90deg, rgba(233,238,250,0.06) 0 1px, transparent 1px calc(100% / 6)), rgba(233,238,250,0.05); overflow: hidden; }
+    .cp-tl-tarde { position: absolute; top: 0; bottom: 0; right: 0; background: rgba(36,80,200,0.18); border-left: 1px dashed var(--niebla); }
+    .cp-tl-blk { position: absolute; height: 30px; box-sizing: border-box; border-radius: 6px; padding: 2px 4px; overflow: hidden; display: flex; flex-direction: column; justify-content: center; cursor: pointer; font-size: 0.62rem; line-height: 1.1; color: #fff; border: 2px solid transparent; }
+    .cp-tl-blk.home { background: #1E8A57; }
+    .cp-tl-blk.away { background: #7c3aed; }
+    .cp-tl-blk.placed { border: 2px dashed var(--balon); color: var(--balon); touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+    .cp-tl-blk.placed.home { background: rgba(30,138,87,.35); }
+    .cp-tl-blk.placed.away { background: rgba(124,58,237,.35); }
+    .cp-tl-blk.dragging { z-index: 5; box-shadow: 0 6px 16px rgba(0,0,0,.5); transform: scale(1.06); opacity: .95; }
+    body.cp-dragging { overflow: hidden; touch-action: none; }
+    .cp-tl-row.empty .cp-tl-label { opacity: .55; }
+    .cp-tl-reset { margin-left: auto; border: 1px dashed var(--balon); background: none; color: var(--balon); border-radius: 8px; padding: 3px 8px; font: inherit; font-size: 0.7rem; cursor: pointer; }
+    .cp-tl-blk.warn { border-color: var(--alzira); box-shadow: 0 0 0 1px var(--alzira); }
+    .cp-tl-blk.placed.warn { border-style: dashed; }
+    .cp-tl-t { font-weight: 800; white-space: nowrap; }
+    .cp-tl-n { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cp-tl-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px; color: var(--niebla); font-size: 0.68rem; align-items: center; }
+    .cp-lg { display: inline-block; width: 14px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: middle; }
+    .cp-lg.home { background: #1E8A57; }
+    .cp-lg.away { background: #7c3aed; }
+    .cp-lg.placed { border: 2px dashed var(--balon); }
+    .cp-lg.warn { border: 2px solid var(--alzira); }
+    .cp-tl-hint { font-style: italic; }
+    .cp-warn { padding: 8px 10px; margin-bottom: 6px; border-radius: 10px; font-size: 0.8rem; color: #fff; background: rgba(214,40,57,0.18); border-left: 4px solid var(--alzira); }
+    .cp-warn.media { background: rgba(245,197,24,0.14); border-left-color: var(--balon); }
+    .cp-warn-tag { display: inline-block; margin-left: 4px; padding: 0 6px; border-radius: 6px; border: 1px dashed var(--balon); color: var(--balon); font-size: 0.68rem; }
+    .cp-ok { color: #86efac; }
+    .cp-match.cp-placed { border-style: dashed; border-color: var(--balon); }
+    .cp-match.cp-placed .cp-time { color: var(--balon); }
+    .cp-placed-note { color: var(--balon); font-style: italic; }
+    .cp-match.cp-has-warn { border-left: 4px solid var(--alzira); }
+    .cp-swap { flex: 0 0 auto; align-self: center; border: 1px solid var(--linea); background: rgba(233,238,250,0.08); color: var(--tiza); border-radius: 8px; padding: 6px 8px; font: inherit; font-size: 0.68rem; font-weight: 700; cursor: pointer; max-width: 92px; line-height: 1.15; }

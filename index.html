@@ -105,17 +105,26 @@
     <!-- ===== Sección plegable: Calendario de partidos (empieza plegada) ===== -->
     <div class="section-title section-toggle collapsed" id="secHead_cal" role="button" tabindex="0" aria-expanded="false" aria-controls="secBody_cal" style="margin-top:20px;" onclick="cpToggleSection()" onkeydown="cpSectionKey(event)">Calendario de partidos <span class="sec-arrow">▾</span></div>
     <div class="section-body collapsed" id="secBody_cal">
-      <div class="cp-range">
-        <label>Desde <input type="date" id="cpFrom"></label>
-        <label>Hasta <input type="date" id="cpTo"></label>
+      <div class="cp-range" id="cpRange">
+        <span class="cp-range-ico">📅</span>
+        <label class="cp-range-part"><span class="cp-range-cap">Desde</span><span class="cp-range-val" id="cpFromLabel"></span><input type="date" id="cpFrom" aria-label="Fecha de inicio"></label>
+        <span class="cp-range-sep">–</span>
+        <label class="cp-range-part"><span class="cp-range-cap">Hasta</span><span class="cp-range-val" id="cpToLabel"></span><input type="date" id="cpTo" aria-label="Fecha de fin"></label>
       </div>
-      <div id="cpMatches" class="cp-matches"></div>
-      <button class="btn-save-session cp-teams-btn" id="cpTeamsBtn" onclick="cpToggleTeams()">👥 Equipos · subir PDF de partidos ▾</button>
-      <div id="cpTeams" class="cp-teams" style="display:none;"></div>
+      <div class="cp-sub-head" id="cpSubHead_tl" role="button" tabindex="0" aria-expanded="true" onclick="cpToggleSub('tl')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();cpToggleSub('tl');}">📊 Línea temporal <span class="sec-arrow">▾</span></div>
+      <div class="cp-sub-body" id="cpSub_tl"><div id="cpTimeline" class="cp-timeline"></div></div>
+      <div class="cp-sub-head" id="cpSubHead_warn" role="button" tabindex="0" aria-expanded="true" onclick="cpToggleSub('warn')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();cpToggleSub('warn');}">⚠️ Avisos <span id="cpWarnCount"></span> <span class="sec-arrow">▾</span></div>
+      <div class="cp-sub-body" id="cpSub_warn"><div id="cpWarnings" class="cp-warnings"></div></div>
+      <div class="cp-sub-head" id="cpSubHead_list" role="button" tabindex="0" aria-expanded="true" onclick="cpToggleSub('list')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();cpToggleSub('list');}">📋 Lista de partidos <span id="cpListCount"></span> <span class="sec-arrow">▾</span></div>
+      <div class="cp-sub-body" id="cpSub_list"><div id="cpMatches" class="cp-matches"></div></div>
+      <div class="cp-sub-head" id="cpSubHead_teams" role="button" tabindex="0" aria-expanded="true" onclick="cpToggleSub('teams')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();cpToggleSub('teams');}">👥 Equipos · subir PDF de partidos <span class="sec-arrow">▾</span></div>
+      <div class="cp-sub-body" id="cpSub_teams"><div id="cpTeams" class="cp-teams"></div></div>
       <input type="file" id="cpFileInput" accept="application/pdf,.pdf" style="display:none;">
     </div>
 
-    <div class="section-title" style="margin-top:20px;">Dirección NVA</div>
+    <!-- ===== Sección plegable: Dirección NVA (incluye Carteles y Horarios) ===== -->
+    <div class="section-title section-toggle" id="secHead_direccion" role="button" tabindex="0" aria-expanded="true" aria-controls="secBody_direccion" style="margin-top:20px;" onclick="toggleSection('direccion')" onkeydown="sectionKey(event,'direccion')">Dirección NVA <span class="sec-arrow">▾</span></div>
+    <div class="section-body" id="secBody_direccion">
     <button class="coach-btn" id="btnDireccionNVA" onclick="toggleDireccionNVA()">
       <span>🔔 Gestión y Avisos Individuales</span> <span id="iconDireccionNVA">➤</span>
     </button>
@@ -126,14 +135,15 @@
       <button class="btn-pdf-mode" style="flex:1; min-width:0; margin-bottom:0;" onclick="openSelectQueryPdfModal()">📝 PDF CONSULTA</button>
     </div>
 
-    <div class="section-title" style="margin-top:20px;">Carteles</div>
+    <div class="section-subtitle">Carteles</div>
     <div style="display:flex; gap:8px;">
       <button class="btn-pdf-mode2" style="flex:1; min-width:0; margin-bottom:20;" onclick="location.href='Partidos.html'">📅 Partidos de la semana</button>
       <button class="btn-pdf-mode2" style="flex:1; min-width:0; margin-bottom:20;" onclick="location.href='Resultados.html'">🏆 Resultados de la semana</button>
     </div>
 
-    <div class="section-title" style="margin-top:20px;">Horarios de entrenamiento</div>
+    <div class="section-subtitle">Horarios de entrenamiento</div>
     <button class="btn-pdf-mode2" style="margin-bottom:20px;" onclick="openHorarios()">🗓️ Horarios</button>
+    </div>
   </div>
 
   <!-- PANTALLA OTROS: botones de información e instrucciones -->
