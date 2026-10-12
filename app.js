@@ -1330,7 +1330,7 @@
   //  PDF JUGADORA: informe individual (mismo estilo que el de entrenamientos)
   // =====================================================================
   let pdfPlayerSel = null;   // { teamKey, teamLabel, player, coachName }
-  let pdfPlayerChart1 = null, pdfPlayerChart2 = null;
+  let pdfPlayerChart1 = null;
 
   function openPlayerPdfModal() {
     if (isPdfMode) togglePdfMode();
@@ -1500,7 +1500,7 @@
     const media = presentes.length ? presentes.reduce((a, b) => a + b, 0) / presentes.length : null;
     const strikes = registros.map(r => r.p.strikes || 0);
     const totalStrikes = strikes.reduce((a, b) => a + b, 0);
-    document.getElementById("pdfPlayerStrikesTitle").innerText = `Strikes por entrenamiento (total: ${totalStrikes})`;
+    document.getElementById("pdfPlayerChartTitle").innerText = `Tendencia de Calidad de Entrenamiento y Strikes (total strikes: ${totalStrikes})`;
 
     // --- Comentarios con fecha ---
     const body = document.getElementById("pdfPlayerCommentsBody");
@@ -1511,7 +1511,6 @@
 
     // --- Gráficos ---
     if (pdfPlayerChart1) pdfPlayerChart1.destroy();
-    if (pdfPlayerChart2) pdfPlayerChart2.destroy();
 
     const labelPlugin = {
       id: "playerValueLabel",
@@ -1519,11 +1518,13 @@
         const { ctx } = chart;
         chart.data.datasets.forEach((ds, i) => {
           if (ds.noLabel) return;
+          const esBarra = ds.type === "bar";
           chart.getDatasetMeta(i).data.forEach((el, idx) => {
             const val = ds.data[idx];
             if (val === null || val === undefined) return;
+            if (esBarra && !val) return;   // sin etiqueta en 0 strikes
             ctx.save();
-            ctx.fillStyle = "#0f172a";
+            ctx.fillStyle = esBarra ? "#b91c1c" : "#0f172a";
             ctx.font = "bold 11px -apple-system, sans-serif";
             ctx.textAlign = "center";
             ctx.textBaseline = "bottom";
@@ -1536,64 +1537,79 @@
     };
 
     const ctx1 = document.getElementById("chartPlayerQualityCanvas").getContext("2d");
-    const grad1 = ctx1.createLinearGradient(0, 0, 0, 230);
-    grad1.addColorStop(0, "rgba(0, 82, 212, 0.4)");
+    const grad1 = ctx1.createLinearGradient(0, 0, 0, 300);
+    grad1.addColorStop(0, "rgba(0, 82, 212, 0.35)");
     grad1.addColorStop(1, "rgba(0, 82, 212, 0.03)");
-    const dsCalidad = [{
-      label: "Calidad",
-      data: calidad,
-      borderColor: "#0052d4",
-      borderWidth: 3,
-      backgroundColor: grad1,
-      fill: true,
-      spanGaps: true,
-      tension: 0.35,
-      pointRadius: 5,
-      pointBackgroundColor: "#0066ff",
-      pointBorderColor: "#ffffff",
-      pointBorderWidth: 2
-    }];
+    const maxStrikes = Math.max(0, ...strikes);
+    const dsCombinado = [
+      {
+        type: "bar",
+        label: "Strikes",
+        data: strikes,
+        yAxisID: "y1",
+        backgroundColor: "rgba(239, 68, 68, 0.55)",
+        borderColor: "#ef4444",
+        borderWidth: 1,
+        borderRadius: 5,
+        borderSkipped: false,
+        maxBarThickness: 28,
+        order: 3
+      },
+      {
+        type: "line",
+        label: "Calidad",
+        data: calidad,
+        yAxisID: "y",
+        borderColor: "#0052d4",
+        borderWidth: 3,
+        backgroundColor: grad1,
+        fill: true,
+        spanGaps: true,
+        tension: 0.35,
+        pointRadius: 5,
+        pointBackgroundColor: "#0066ff",
+        pointBorderColor: "#ffffff",
+        pointBorderWidth: 2,
+        order: 2
+      }
+    ];
     if (media !== null) {
-      dsCalidad.push({
-        label: `Media: ${media.toFixed(1)} ★`,
+      dsCombinado.push({
+        type: "line",
+        label: `Media calidad: ${media.toFixed(1)} ★`,
         data: labels.map(() => parseFloat(media.toFixed(2))),
+        yAxisID: "y",
         borderColor: "#f59e0b",
         borderWidth: 2,
         borderDash: [8, 5],
         pointRadius: 0,
         fill: false,
-        noLabel: true
+        noLabel: true,
+        order: 1
       });
     }
     pdfPlayerChart1 = new Chart(ctx1, {
-      type: "line",
-      data: { labels, datasets: dsCalidad },
+      data: { labels, datasets: dsCombinado },
       plugins: [labelPlugin],
       options: {
         responsive: true,
         maintainAspectRatio: false,
         animation: false,
         layout: { padding: { top: 20 } },
-        plugins: { legend: { display: media !== null, position: "bottom" }, tooltip: { enabled: false } },
-        scales: { x: { grid: { display: false } }, y: { min: 1, max: 5, grid: { color: "rgba(0,0,0,0.05)" } } }
-      }
-    });
-
-    const ctx2 = document.getElementById("chartPlayerStrikesCanvas").getContext("2d");
-    const grad2 = ctx2.createLinearGradient(0, 0, 0, 200);
-    grad2.addColorStop(0, "#ef4444");
-    grad2.addColorStop(1, "#f87171");
-    pdfPlayerChart2 = new Chart(ctx2, {
-      type: "bar",
-      data: { labels, datasets: [{ label: "Strikes", data: strikes, backgroundColor: grad2, borderRadius: 6, borderSkipped: false }] },
-      plugins: [labelPlugin],
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: false,
-        layout: { padding: { top: 20 } },
-        plugins: { legend: { display: false }, tooltip: { enabled: false } },
-        scales: { x: { grid: { display: false } }, y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: "rgba(0,0,0,0.05)" } } }
+        plugins: { legend: { display: true, position: "bottom" }, tooltip: { enabled: false } },
+        scales: {
+          x: { grid: { display: false } },
+          y: { min: 1, max: 5, title: { display: true, text: "Calidad" }, grid: { color: "rgba(0,0,0,0.05)" } },
+          // Eje derecho de strikes: máximo holgado para que las barras no tapen la línea de calidad
+          y1: {
+            position: "right",
+            beginAtZero: true,
+            max: Math.max(4, maxStrikes * 2),
+            ticks: { stepSize: 1, precision: 0 },
+            title: { display: true, text: "Strikes" },
+            grid: { drawOnChartArea: false }
+          }
+        }
       }
     });
 
