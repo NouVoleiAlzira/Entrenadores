@@ -8,16 +8,30 @@
   //  versiones, mismo comportamiento: solo cambia el momento de la carga.
   // ---------------------------------------------------------------------
   const NVA_EXPORT_LIBS = [
-    "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js",
-    "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
-    "https://cdn.jsdelivr.net/npm/chart.js"
+    "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js?v=8",
+    "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js?v=8",
+    "https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"
   ];
+  // Huella (SRI) de cada librería externa: si el CDN sirviera un fichero
+  // alterado, el navegador se niega a ejecutarlo. Si se cambia una versión,
+  // hay que actualizar también su huella. ("?v=8" evita que el service worker
+  // antiguo sirva una copia guardada sin CORS, que no pasaría la comprobación.)
+  const NVA_SCRIPT_SRI = {
+    "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js?v=8": "sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H",
+    "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js?v=8": "sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk",
+    "https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js": "sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ",
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=8": "sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e"
+  };
   const _nvaLoadedScripts = {};
   function loadScriptOnce(src) {
     if (_nvaLoadedScripts[src]) return _nvaLoadedScripts[src];
     _nvaLoadedScripts[src] = new Promise((resolve, reject) => {
       const s = document.createElement("script");
       s.src = src;
+      if (NVA_SCRIPT_SRI[src]) {
+        s.integrity = NVA_SCRIPT_SRI[src];
+        s.crossOrigin = "anonymous";
+      }
       s.async = true;
       s.onload = () => resolve();
       s.onerror = () => { delete _nvaLoadedScripts[src]; reject(new Error("No se pudo cargar " + src)); };
@@ -52,7 +66,18 @@
     }
   };
 
-  let ownerPassword = localStorage.getItem("NVA_OWNER_PASS") || "NVA123";
+  // Huella SHA-256 de la contraseña de propietario (la contraseña ya no está
+  // escrita en claro en el código). Para cambiarla, calcula la huella de la
+  // nueva contraseña en la consola del navegador:
+  //   await nvaHashPassword("NuevaContraseña")
+  // y pega aquí el resultado. OJO: esto solo oculta el panel de opciones;
+  // la protección real de los datos es el token de GitHub de cada usuario.
+  const OWNER_PASS_SHA256 = "82dfda665ea0ce1b39d6350f18d6487f23ae2f2f11a31619ea12924a484edc22";
+  async function nvaHashPassword(pass) {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(pass));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+  }
+  localStorage.removeItem("NVA_OWNER_PASS"); // versiones anteriores la guardaban en claro
   let ghSettings = JSON.parse(localStorage.getItem("NVA_GH_SETTINGS")) || { user: "", repo: "", token: "" };
 
   // Carpeta del repositorio donde viven los registros de entrenamiento:
@@ -107,6 +132,28 @@
 
   function b64_to_utf8(str) {
     return decodeURIComponent(Array.prototype.map.call(atob(str.replace(/\s/g, '')), c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+  }
+
+  // Escapa texto antes de insertarlo como HTML (innerHTML o atributos). Los
+  // datos llegan de GitHub y los puede editar cualquiera con acceso al
+  // repositorio: sin escapar, un nombre como <img onerror=...> ejecutaría
+  // código y podría leer el token guardado en este dispositivo.
+  function escapeHtml(v) {
+    return String(v == null ? "" : v)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
+  // Convierte un texto en argumento JS seguro dentro de onclick="...":
+  // funciona con apóstrofos (p.ej. "L'Eliana") y no permite inyectar código.
+  function jsArg(v) {
+    return escapeHtml(JSON.stringify(String(v == null ? "" : v)));
+  }
+
+  // Solo admite colores CSS simples (#hex, rgb()/rgba() o un nombre); si no, usa el de reserva.
+  function safeColor(c, fallback) {
+    const s = String(c == null ? "" : c).trim();
+    return /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|[a-z]{3,20})$/i.test(s) ? s : fallback;
   }
 
   function sanitizeFileName(name) {
@@ -261,7 +308,7 @@
 
         btn.innerHTML = `
           <div style="display:flex; align-items:center; gap:4px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
-            <span>🛡️ ${displayName}</span>
+            <span>🛡️ ${escapeHtml(displayName)}</span>
             ${warningBadge}
           </div>
           <span>➤</span>
@@ -364,7 +411,7 @@
       const wObj = warningsData[playerName];
       const hasWarning = !!wObj;
       const reason = hasWarning ? (typeof wObj === 'string' ? wObj : wObj.reason) : "";
-      const color = hasWarning ? (wObj.color || "#ef4444") : "#ef4444";
+      const color = hasWarning ? safeColor(wObj.color, "#ef4444") : "#ef4444";
 
       const card = document.createElement("div");
       card.className = "player-card";
@@ -505,7 +552,7 @@
       label.style.display = "flex";
       label.style.alignItems = "center";
       label.style.gap = "8px";
-      label.innerHTML = `<input type="checkbox" class="query-team-check" value="${key}"> ${t.name} (${t.category})`;
+      label.innerHTML = `<input type="checkbox" class="query-team-check" value="${escapeHtml(key)}"> ${escapeHtml(t.name)} (${escapeHtml(t.category)})`;
       container.appendChild(label);
     });
 
@@ -593,8 +640,8 @@
       queriesData.forEach(q => {
         const btn = document.createElement("button");
         btn.className = "team-btn";
-        btn.style.borderLeft = `4px solid ${q.color}`;
-        btn.innerHTML = `<span>${q.text}</span> <span style="font-size:0.75rem; color:#64748b;">Generar PDF →</span>`;
+        btn.style.borderLeft = `4px solid ${safeColor(q.color, "#0284c7")}`;
+        btn.innerHTML = `<span>${escapeHtml(q.text)}</span> <span style="font-size:0.75rem; color:#64748b;">Generar PDF →</span>`;
         btn.onclick = () => {
           closeSelectQueryPdfModal();
           generateQueryPDF(q.id);
@@ -629,18 +676,18 @@
         let badge = `<span style="color:#64748b; font-weight:bold;">Pendiente</span>`;
         if (resp === 'V') badge = `<span style="color:#22c55e; font-weight:bold;">✔ (V)</span>`;
         else if (resp === 'X') badge = `<span style="color:#ef4444; font-weight:bold;">✖ (X)</span>`;
-        else if (resp) badge = `<span style="color:#0284c7; font-weight:bold;">${resp}</span>`;
+        else if (resp) badge = `<span style="color:#0284c7; font-weight:bold;">${escapeHtml(resp)}</span>`;
 
         rowsHtml += `
           <tr>
-            <td style="font-weight:600; padding:6px 10px; border-bottom:1px solid #cbd5e1;">${p}</td>
+            <td style="font-weight:600; padding:6px 10px; border-bottom:1px solid #cbd5e1;">${escapeHtml(p)}</td>
             <td style="text-align:center; padding:6px 10px; border-bottom:1px solid #cbd5e1;">${badge}</td>
           </tr>
         `;
       });
 
       teamBox.innerHTML = `
-        <h4 style="font-size:16px; color:#1e3c72; margin-bottom:8px; border-bottom:2px solid ${q.color}; padding-bottom:4px;">${teamKey}</h4>
+        <h4 style="font-size:16px; color:#1e3c72; margin-bottom:8px; border-bottom:2px solid ${safeColor(q.color, "#0284c7")}; padding-bottom:4px;">${escapeHtml(teamKey)}</h4>
         <table class="pdf-table" style="margin-top:0; margin-bottom:10px;">
           <thead>
             <tr>
@@ -1123,7 +1170,7 @@
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td style="font-weight:600;">${playerName}</td>
+        <td style="font-weight:600;">${escapeHtml(playerName)}</td>
         <td style="text-align:center; font-weight:700; color:#0284c7;">${attended}/${totalAssigned}</td>
         <td style="text-align:center; font-weight:700; color:#f59e0b;">${qualityAvg}</td>
         <td style="text-align:center; font-weight:700; color:#ef4444;">${strikesSum}</td>
@@ -1668,7 +1715,7 @@
       const isSelected = coach.id === activeCoachId;
       const coachBtn = document.createElement("button");
       coachBtn.className = `coach-btn ${isSelected ? 'selected' : ''}`;
-      coachBtn.innerHTML = `<span>${isSelected ? '🕵️' : '👤'} ${coach.name}</span> <span>${isSelected ? '🔻' : '➤'}</span>`;
+      coachBtn.innerHTML = `<span>${isSelected ? '🕵️' : '👤'} ${escapeHtml(coach.name)}</span> <span>${isSelected ? '🔻' : '➤'}</span>`;
       coachBtn.onclick = () => toggleCoachSelection(coach.id);
       container.appendChild(coachBtn);
 
@@ -1682,7 +1729,7 @@
           if (isPdfMode) {
             const coachAllBtn = document.createElement("button");
             coachAllBtn.className = "team-btn team-btn-all";
-            coachAllBtn.innerHTML = `<span>📚 TODOS los equipos de ${coach.name}</span> <span>Generar PDF →</span>`;
+            coachAllBtn.innerHTML = `<span>📚 TODOS los equipos de ${escapeHtml(coach.name)}</span> <span>Generar PDF →</span>`;
             coachAllBtn.onclick = () => openBatchDateRangeModal(coach);
             teamsDiv.appendChild(coachAllBtn);
           }
@@ -1693,7 +1740,7 @@
 
             const teamBtn = document.createElement("button");
             teamBtn.className = "team-btn";
-            teamBtn.innerHTML = `<span>🏐 ${displayName}</span> <span>${isPdfMode ? 'Generar PDF →' : ' ➤'}</span>`;
+            teamBtn.innerHTML = `<span>🏐 ${escapeHtml(displayName)}</span> <span>${isPdfMode ? 'Generar PDF →' : ' ➤'}</span>`;
             teamBtn.onclick = () => selectCoachAndTeam(coach, teamKey, displayName);
             teamsDiv.appendChild(teamBtn);
           });
@@ -1963,24 +2010,22 @@
       const wObj = warningsData[player.name];
       const hasWarning = !!wObj;
       const warningText = hasWarning ? (typeof wObj === 'string' ? wObj : wObj.reason) : "";
-      const warningColor = hasWarning ? (wObj.color || "#ef4444") : "#ef4444";
+      const warningColor = hasWarning ? safeColor(wObj.color, "#ef4444") : "#ef4444";
 
       const nameHtml = hasWarning 
-        ? `<div class="warning-capsule" style="background:${warningColor};" title="${player.name} (${warningText})">${player.name} (${warningText})</div>`
-        : `<div class="player-name" title="${player.name}">${player.name}</div>`;
+        ? `<div class="warning-capsule" style="background:${warningColor};" title="${escapeHtml(player.name)} (${escapeHtml(warningText)})">${escapeHtml(player.name)} (${escapeHtml(warningText)})</div>`
+        : `<div class="player-name" title="${escapeHtml(player.name)}">${escapeHtml(player.name)}</div>`;
 
       let queryHtml = "";
       const pendingQuery = queriesData.find(q => q.teams && q.teams.includes(currentTeam) && (!q.responses || !q.responses[player.name]));
       if (pendingQuery) {
         const opts = (pendingQuery.options && pendingQuery.options.length > 0) ? pendingQuery.options : ['V', 'X'];
         const btnsHtml = opts.map(opt => {
-          const safeOpt = opt.replace(/'/g, "\\'").replace(/"/g, "&quot;");
-          const safePlayer = player.name.replace(/'/g, "\\'").replace(/"/g, "&quot;");
-          return `<button class="query-btn" onclick="answerQuery(${pendingQuery.id}, '${safePlayer}', '${safeOpt}')">${opt}</button>`;
+          return `<button class="query-btn" onclick="answerQuery(${Number(pendingQuery.id)}, ${jsArg(player.name)}, ${jsArg(opt)})">${escapeHtml(opt)}</button>`;
         }).join('');
 
         queryHtml = `
-          <div class="query-capsule" style="background:${pendingQuery.color};">
+          <div class="query-capsule" style="background:${safeColor(pendingQuery.color, "#0284c7")};">
             <span>❓</span>
             ${btnsHtml}
           </div>
@@ -1998,7 +2043,7 @@
       // de estados (falta / no convocada) se muestra siempre desplegado.
       const isCommentOpen = !isPresent || !!commentBoxOpen[index];
       const reasonUI = buildAbsenceReasonControls('train', index, player);
-      const safeComment = (player.comments || "").replace(/"/g, "&quot;");
+      const safeComment = escapeHtml(player.comments);
 
       const ratingHtml = isPresent ? `
           <div class="strikes-xxx">
@@ -2125,13 +2170,13 @@
       card.className = "history-card";
       card.innerHTML = `
         <div>
-          <div style="font-weight:700; font-size:0.85rem; color:var(--azul-dark);">📅 ${log.fecha}</div>
-          <div style="font-size:0.75rem; color:#64748b;">Entrenador: ${log.entrenador}</div>
+          <div style="font-weight:700; font-size:0.85rem; color:var(--azul-dark);">📅 ${escapeHtml(log.fecha)}</div>
+          <div style="font-size:0.75rem; color:#64748b;">Entrenador: ${escapeHtml(log.entrenador)}</div>
           <div style="font-size:0.72rem; color:#0284c7; margin-top:2px;">
             Jugadoras: ${log.jugadores.filter(j => j.attendance === 'presente').length} Asisten / ${log.jugadores.filter(j => j.attendance === 'falta').length} Faltas
           </div>
         </div>
-        <button class="btn-edit-history" onclick="loadRecordForEditing('${log.fecha}')">✏️ Cargar/Editar</button>
+        <button class="btn-edit-history" onclick="loadRecordForEditing(${jsArg(log.fecha)})">✏️ Cargar/Editar</button>
       `;
       container.appendChild(card);
     });
@@ -2156,7 +2201,11 @@
 
   async function verifyOwnerPassword() {
     const pass = document.getElementById("ownerPasswordInput").value;
-    if (pass === ownerPassword) {
+    if (!window.crypto || !crypto.subtle) {
+      alert("Para entrar en Opciones abre la app desde su dirección https://.");
+      return;
+    }
+    if (await nvaHashPassword(pass) === OWNER_PASS_SHA256) {
       closePasswordModal();
       await openOptionsModal();
     } else {
@@ -2198,7 +2247,7 @@
     appData.coaches.forEach((c, idx) => {
       const row = document.createElement("div");
       row.className = "item-row";
-      row.innerHTML = `<span><strong>${c.name}</strong> (${c.teams ? c.teams.length : 0} eq.)</span>
+      row.innerHTML = `<span><strong>${escapeHtml(c.name)}</strong> (${c.teams ? c.teams.length : 0} eq.)</span>
                        <button class="btn-del" onclick="deleteCoach(${idx})">✕</button>`;
       coachesList.appendChild(row);
     });
@@ -2210,7 +2259,7 @@
     appData.teams.forEach((t, idx) => {
       const row = document.createElement("div");
       row.className = "item-row";
-      row.innerHTML = `<span><strong>${t.name}</strong> <small class="badge">${t.category}</small></span>
+      row.innerHTML = `<span><strong>${escapeHtml(t.name)}</strong> <small class="badge">${escapeHtml(t.category)}</small></span>
                        <button class="btn-del" onclick="deleteTeam(${idx})">✕</button>`;
       teamsList.appendChild(row);
     });
@@ -2291,7 +2340,7 @@
       label.style.gap = "6px";
 
       const isChecked = coach.teams && (coach.teams.includes(key) || coach.teams.includes(t.name));
-      label.innerHTML = `<input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleTeamCoachAssignment(${coach.id}, '${key}')"> ${t.name} (${t.category})`;
+      label.innerHTML = `<input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleTeamCoachAssignment(${Number(coach.id)}, ${jsArg(key)})"> ${escapeHtml(t.name)} (${escapeHtml(t.category)})`;
       container.appendChild(label);
     });
   }
@@ -2343,11 +2392,11 @@
       item.className = "item-row";
       item.style.marginBottom = "4px";
       item.innerHTML = `
-        <span style="font-weight:600;">${player}</span>
+        <span style="font-weight:600;">${escapeHtml(player)}</span>
         <div style="display:flex; gap:4px; align-items:center;">
-          <button style="border:none; background:#e2e8f0; border-radius:4px; padding:2px 5px; font-size:0.7rem;" onclick="movePlayer('${teamKey}', ${index}, -1)">▲</button>
-          <button style="border:none; background:#e2e8f0; border-radius:4px; padding:2px 5px; font-size:0.7rem;" onclick="movePlayer('${teamKey}', ${index}, 1)">▼</button>
-          <button class="btn-del" onclick="deletePlayer('${teamKey}', ${index})">✕</button>
+          <button style="border:none; background:#e2e8f0; border-radius:4px; padding:2px 5px; font-size:0.7rem;" onclick="movePlayer(${jsArg(teamKey)}, ${index}, -1)">▲</button>
+          <button style="border:none; background:#e2e8f0; border-radius:4px; padding:2px 5px; font-size:0.7rem;" onclick="movePlayer(${jsArg(teamKey)}, ${index}, 1)">▼</button>
+          <button class="btn-del" onclick="deletePlayer(${jsArg(teamKey)}, ${index})">✕</button>
         </div>
       `;
       container.appendChild(item);
@@ -2414,7 +2463,6 @@
 
     localStorage.clear();
     
-    ownerPassword = "NVA123";
     appData = defaultData;
     tablonData = { tablonText: "" };
     otrosData = [];
@@ -2733,7 +2781,6 @@
         appData = JSON.parse(b64_to_utf8(json.content));
 
         localStorage.setItem("NVA_GH_SETTINGS", JSON.stringify(ghSettings));
-        localStorage.setItem("NVA_OWNER_PASS", ownerPassword);
         localStorage.setItem("NVA_APP_DATA", JSON.stringify(appData));
 
         renderCoachTeamSelection();
@@ -3512,7 +3559,7 @@
   // --- Cargar la liga desde el PDF de la federación (tabla CLASIFICACION) ---
   // Lee el PDF en el propio dispositivo (pdf.js, se descarga solo la primera vez),
   // toma los equipos de la última tabla y quita el equipo del club seleccionado.
-  const PDFJS_URL = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+  const PDFJS_URL = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=8";
   const PDFJS_WORKER_URL = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
   async function ensurePdfJs() {
@@ -3980,24 +4027,22 @@
       const wObj = warningsData[player.name];
       const hasWarning = !!wObj;
       const warningText = hasWarning ? (typeof wObj === 'string' ? wObj : wObj.reason) : "";
-      const warningColor = hasWarning ? (wObj.color || "#ef4444") : "#ef4444";
+      const warningColor = hasWarning ? safeColor(wObj.color, "#ef4444") : "#ef4444";
 
       const nameHtml = hasWarning
-        ? `<div class="warning-capsule" style="background:${warningColor};" title="${player.name} (${warningText})">${player.name} (${warningText})</div>`
-        : `<div class="player-name" title="${player.name}">${player.name}</div>`;
+        ? `<div class="warning-capsule" style="background:${warningColor};" title="${escapeHtml(player.name)} (${escapeHtml(warningText)})">${escapeHtml(player.name)} (${escapeHtml(warningText)})</div>`
+        : `<div class="player-name" title="${escapeHtml(player.name)}">${escapeHtml(player.name)}</div>`;
 
       let queryHtml = "";
       const pendingQuery = queriesData.find(q => q.teams && q.teams.includes(currentTeam) && (!q.responses || !q.responses[player.name]));
       if (pendingQuery) {
         const opts = (pendingQuery.options && pendingQuery.options.length > 0) ? pendingQuery.options : ['V', 'X'];
         const btnsHtml = opts.map(opt => {
-          const safeOpt = opt.replace(/'/g, "\\'").replace(/"/g, "&quot;");
-          const safePlayer = player.name.replace(/'/g, "\\'").replace(/"/g, "&quot;");
-          return `<button class="query-btn" onclick="answerMatchQuery(${pendingQuery.id}, '${safePlayer}', '${safeOpt}')">${opt}</button>`;
+          return `<button class="query-btn" onclick="answerMatchQuery(${Number(pendingQuery.id)}, ${jsArg(player.name)}, ${jsArg(opt)})">${escapeHtml(opt)}</button>`;
         }).join('');
 
         queryHtml = `
-          <div class="query-capsule" style="background:${pendingQuery.color};">
+          <div class="query-capsule" style="background:${safeColor(pendingQuery.color, "#0284c7")};">
             <span>❓</span>
             ${btnsHtml}
           </div>
@@ -4013,7 +4058,7 @@
       // de estados (falta / no convocada) se muestra siempre desplegado.
       const isCommentOpen = !isPresent || !!matchCommentBoxOpen[index];
       const reasonUI = buildAbsenceReasonControls('match', index, player);
-      const safeComment = (player.comments || "").replace(/"/g, "&quot;");
+      const safeComment = escapeHtml(player.comments);
 
       const ratingHtml = isPresent ? `
           <div class="strikes-xxx">
@@ -4182,14 +4227,14 @@
       card.className = "history-card";
       card.innerHTML = `
         <div>
-          <div style="font-weight:700; font-size:0.85rem; color:var(--azul-dark);">📅 ${log.fecha}</div>
-          <div style="font-size:0.75rem; color:#64748b;">Entrenador: ${log.entrenador}</div>
+          <div style="font-weight:700; font-size:0.85rem; color:var(--azul-dark);">📅 ${escapeHtml(log.fecha)}</div>
+          <div style="font-size:0.75rem; color:#64748b;">Entrenador: ${escapeHtml(log.entrenador)}</div>
           <div style="font-size:0.72rem; color:#0284c7; margin-top:2px;">
             Jugadoras: ${presentes} Presentes / ${faltas} Faltas / ${noConv} No convocadas
           </div>
           ${resultHtml}
         </div>
-        <button class="btn-edit-history" onclick="loadMatchRecordForEditing('${log.fecha}')">✏️ Cargar/Editar</button>
+        <button class="btn-edit-history" onclick="loadMatchRecordForEditing(${jsArg(log.fecha)})">✏️ Cargar/Editar</button>
       `;
       container.appendChild(card);
     });
@@ -4393,8 +4438,8 @@
         const actions = document.createElement("div");
         actions.className = "otros-actions";
         actions.innerHTML = `
-          <button style="background:linear-gradient(135deg,#0284c7,#0369a1);" onclick="openOtrosEditor('${entry.id}')">✏️ Editar</button>
-          <button style="background:linear-gradient(135deg,#ef4444,#b91c1c);" onclick="deleteOtros('${entry.id}')">🗑️ Eliminar</button>`;
+          <button style="background:linear-gradient(135deg,#0284c7,#0369a1);" onclick="openOtrosEditor(${jsArg(entry.id)})">✏️ Editar</button>
+          <button style="background:linear-gradient(135deg,#ef4444,#b91c1c);" onclick="deleteOtros(${jsArg(entry.id)})">🗑️ Eliminar</button>`;
         panel.appendChild(actions);
         box.appendChild(panel);
       }
@@ -4977,45 +5022,45 @@
     let venuesBody = `<div class="hz-hint">Cada pabellón puede tener varias pistas. Para cada pista indica los días y las horas en que está disponible (puedes añadir varias franjas). Fuera de esas horas el horario se sombrea en gris.</div>`;
     hz.venues.forEach(v => {
       const open = !!hzUI.venueOpen[v.id];
-      venuesBody += `<button class="hz-sub-btn ${open ? "open" : ""}" onclick="hzToggleVenue('${v.id}')">
+      venuesBody += `<button class="hz-sub-btn ${open ? "open" : ""}" onclick="hzToggleVenue(${jsArg(v.id)})">
           <span>🏟️ ${hzEsc(v.name)} <small class="badge">${v.courts.length} pista${v.courts.length === 1 ? "" : "s"}</small></span>
           <span>${open ? "🔻" : "➤"}</span></button>`;
       if (open) {
         venuesBody += `<div class="hz-sub-panel">
           <span class="hz-label">Nombre del pabellón</span>
           <div class="hz-court-head">
-            <input type="text" class="app-input" value="${hzEsc(v.name)}" onchange="hzSetVenueName('${v.id}', this.value)">
-            <button class="btn-del" title="Eliminar pabellón" onclick="hzDelVenue('${v.id}')">🗑</button>
+            <input type="text" class="app-input" value="${hzEsc(v.name)}" onchange="hzSetVenueName(${jsArg(v.id)}, this.value)">
+            <button class="btn-del" title="Eliminar pabellón" onclick="hzDelVenue(${jsArg(v.id)})">🗑</button>
           </div>`;
         v.courts.forEach(c => {
           venuesBody += `<div class="hz-court">
             <span class="hz-label" style="margin-top:0;">Pista</span>
             <div class="hz-court-head">
-              <input type="text" class="app-input" value="${hzEsc(c.name)}" onchange="hzSetCourtName('${v.id}','${c.id}', this.value)">
-              <button class="btn-del" title="Eliminar pista" onclick="hzDelCourt('${v.id}','${c.id}')">🗑</button>
+              <input type="text" class="app-input" value="${hzEsc(c.name)}" onchange="hzSetCourtName(${jsArg(v.id)},${jsArg(c.id)}, this.value)">
+              <button class="btn-del" title="Eliminar pista" onclick="hzDelCourt(${jsArg(v.id)},${jsArg(c.id)})">🗑</button>
             </div>
             <span class="hz-label">Disponibilidad</span>`;
           c.availability.forEach((w, wi) => {
             const chips = HZ_DAYS_SHORT.map((lbl, di) => {
               const d = di + 1;
               return `<button class="hz-chip ${w.days.indexOf(d) >= 0 ? "on" : ""}" title="${HZ_DAYS[di]}"
-                        onclick="hzToggleWinDay('${v.id}','${c.id}',${wi},${d})">${lbl}</button>`;
+                        onclick="hzToggleWinDay(${jsArg(v.id)},${jsArg(c.id)},${wi},${d})">${lbl}</button>`;
             }).join("");
             venuesBody += `<div class="hz-win">
                 <div class="hz-days">${chips}</div>
                 <div class="hz-times">
-                  <select class="app-select" onchange="hzSetWinTime('${v.id}','${c.id}',${wi},'start',this.value)">${hzTimeOpts(HZ_MIN, HZ_MAX - 15, w.start)}</select>
+                  <select class="app-select" onchange="hzSetWinTime(${jsArg(v.id)},${jsArg(c.id)},${wi},'start',this.value)">${hzTimeOpts(HZ_MIN, HZ_MAX - 15, w.start)}</select>
                   <span>–</span>
-                  <select class="app-select" onchange="hzSetWinTime('${v.id}','${c.id}',${wi},'end',this.value)">${hzTimeOpts(hzT2M(w.start) + 15, HZ_MAX, w.end)}</select>
-                  <button class="btn-del" title="Eliminar franja" onclick="hzDelWin('${v.id}','${c.id}',${wi})">🗑</button>
+                  <select class="app-select" onchange="hzSetWinTime(${jsArg(v.id)},${jsArg(c.id)},${wi},'end',this.value)">${hzTimeOpts(hzT2M(w.start) + 15, HZ_MAX, w.end)}</select>
+                  <button class="btn-del" title="Eliminar franja" onclick="hzDelWin(${jsArg(v.id)},${jsArg(c.id)},${wi})">🗑</button>
                 </div>
               </div>`;
           });
           if (!c.availability.length) venuesBody += `<div class="hz-warn">Sin disponibilidad: esta pista no aparecerá en el horario.</div>`;
-          venuesBody += `<button class="hz-mini-btn" onclick="hzAddWin('${v.id}','${c.id}')">+ Añadir franja de disponibilidad</button>
+          venuesBody += `<button class="hz-mini-btn" onclick="hzAddWin(${jsArg(v.id)},${jsArg(c.id)})">+ Añadir franja de disponibilidad</button>
             </div>`;
         });
-        venuesBody += `<button class="hz-mini-btn" onclick="hzAddCourt('${v.id}')">+ Añadir pista a ${hzEsc(v.name)}</button></div>`;
+        venuesBody += `<button class="hz-mini-btn" onclick="hzAddCourt(${jsArg(v.id)})">+ Añadir pista a ${hzEsc(v.name)}</button></div>`;
       }
     });
     venuesBody += `<div class="hz-add-venue">

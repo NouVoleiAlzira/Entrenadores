@@ -2,12 +2,19 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <!-- Seguridad: solo se permite cargar código de este sitio y de los CDN de las
+         librerías, y solo se pueden enviar datos a GitHub. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://api.github.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net data: blob:; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nou Volei Alzira - Cartel de Resultados</title>
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <!-- Enlace al archivo Manifest para PWA / APK -->
     <link rel="manifest" href="manifest.json">
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <!-- Mismas librerías y URLs que Partidos.html: se descargan una sola vez para las dos páginas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js?v=8" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- html2canvas solo se usa al generar la imagen: no bloquea la carga (defer) -->
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js?v=8" integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <style>
         /* ==========================================================================
            VARIABLES GLOBALES Y ESTILOS BASE
@@ -691,6 +698,14 @@
     </template>
 
     <script>
+        // Escapa texto antes de insertarlo como HTML: los nombres vienen del Excel,
+        // de GitHub o del fichero de la federación y no deben poder inyectar código.
+        function escHtml(v) {
+            return String(v == null ? "" : v)
+                .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+        }
+
         // Configuración de áreas e interacciones
         const CONFIG_AREA = { homeLeft: 3.2, homeWidth: 21, awayLeft: 24.8, awayWidth: 21, height: 25, bottomOffset: 2 };
 
@@ -1249,7 +1264,7 @@
                     const btn = document.createElement('button');
                     btn.type = 'button';
                     btn.className = 'history-date-btn';
-                    btn.innerHTML = `<span>📅 ${nombreVisible}</span>`;
+                    btn.innerHTML = `<span>📅 ${escHtml(nombreVisible)}</span>`;
                     btn.onclick = () => seleccionarArchivoHistorialGitHub(archivo, config);
                     historyDatesContainer.appendChild(btn);
                 });
@@ -1727,12 +1742,12 @@
                 const colorCode = item.COLOR || item.color || '';
 
                 const logoPreview = (logoVal && String(logoVal).trim() !== "NaN") 
-                    ? `<img src="LOGOs/${logoVal}.png" style="width:20px; height:20px; object-fit:contain; vertical-align:middle; margin-right:6px;" alt="Logo">` 
+                    ? `<img src="LOGOs/${escHtml(logoVal)}.png" style="width:20px; height:20px; object-fit:contain; vertical-align:middle; margin-right:6px;" alt="Logo">` 
                     : `<span style="color:#666; font-size:11px; margin-right:6px;">[Sin Logo]</span>`;
 
                 if (activeModalTab === 'nva') {
-                    const subtitle = categoryName ? ` - <span style="color:#ccc;">${categoryName}</span>` : '';
-                    btn.innerHTML = `<div style="display:flex; align-items:center; overflow:hidden; text-overflow:ellipsis;">${logoPreview} <b style="margin-right:6px;">${teamName}</b>${subtitle}</div>`;
+                    const subtitle = categoryName ? ` - <span style="color:#ccc;">${escHtml(categoryName)}</span>` : '';
+                    btn.innerHTML = `<div style="display:flex; align-items:center; overflow:hidden; text-overflow:ellipsis;">${logoPreview} <b style="margin-right:6px;">${escHtml(teamName)}</b>${subtitle}</div>`;
                 } else {
                     let currentCategory = "";
                     if (currentActiveCard) {
@@ -1741,7 +1756,7 @@
                     }
                     const isMatchingCategory = currentCategory && categoryName.toUpperCase() === currentCategory;
                     const textStyle = isMatchingCategory ? "color: var(--nva-success); text-shadow: 0 0 8px rgba(0,255,102,0.4);" : "";
-                    btn.innerHTML = `<div style="display:flex; align-items:center; overflow:hidden; text-overflow:ellipsis;">${logoPreview} <b style="margin-right:6px; ${textStyle}">${teamName}</b></div>`;
+                    btn.innerHTML = `<div style="display:flex; align-items:center; overflow:hidden; text-overflow:ellipsis;">${logoPreview} <b style="margin-right:6px; ${textStyle}">${escHtml(teamName)}</b></div>`;
                 }
                 
                 btn.addEventListener('click', () => {

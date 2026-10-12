@@ -1,6 +1,6 @@
 // Service Worker - Nou Volei Alzira
 // Sube el número de versión cada vez que quieras forzar una renovación completa de la caché.
-const VERSION = "nva-v8.07";
+const VERSION = "nva-v8";
 const SHELL_CACHE = VERSION + "-shell";
 const CDN_CACHE = VERSION + "-cdn";
 
@@ -72,9 +72,11 @@ function networkFirst(request, cacheName, timeoutMs) {
 // Caché primero para librerías externas (no cambian: versión fija)
 async function cacheFirst(request, cacheName) {
   const cached = await caches.match(request);
-  if (cached) return cached;
+  // Una copia "opaca" (sin CORS) no sirve para scripts con integrity: se ignora.
+  if (cached && !(cached.type === "opaque" && request.mode === "cors")) return cached;
   const res = await fetch(request);
-  if (res && (res.ok || res.type === "opaque")) {
+  // Solo se guardan respuestas correctas y verificables (nada de opacas).
+  if (res && res.ok) {
     const copy = res.clone();
     caches.open(cacheName).then((c) => c.put(request, copy));
   }

@@ -2,6 +2,10 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <!-- Seguridad: solo se permite cargar código de este sitio y de los CDN de las
+         librerías, y solo se pueden enviar datos a GitHub. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://api.github.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net data: blob:; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#000000">
     <meta name="mobile-web-app-capable" content="yes">
@@ -9,10 +13,11 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="format-detection" content="telephone=no">
     <title>Nou Volei Alzira - Selección de Equipos</title>
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <!-- Librería SheetJS (XLSX) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- Librería html2canvas -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js?v=8" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- Librería html2canvas: solo se usa al descargar la imagen, así que no bloquea la carga (defer) -->
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js?v=8" integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <style>
         /*
          * ================================================================
@@ -1209,6 +1214,14 @@
     </div>
 
     <script>
+        // Escapa texto antes de insertarlo como HTML: los nombres vienen del Excel,
+        // de GitHub o del fichero de la federación y no deben poder inyectar código.
+        function escHtml(v) {
+            return String(v == null ? "" : v)
+                .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+        }
+
         /*
          * ================================================================
          * DATOS, ESTADO Y LÓGICA PRINCIPAL
@@ -1680,11 +1693,11 @@
 
                 tr.innerHTML = `
                     <td>
-                        <img src="${rutaLogo}" class="team-icon" alt="${nombre}" 
+                        <img src="${escHtml(rutaLogo)}" class="team-icon" alt="${escHtml(nombre)}" 
                              onerror="this.onerror=null; this.src=SVG_LOGO_VACIO;">
                     </td>
-                    <td style="font-weight: 600;">${nombre}</td>
-                    <td style="color: #bbb;">${categoria}</td>
+                    <td style="font-weight: 600;">${escHtml(nombre)}</td>
+                    <td style="color: #bbb;">${escHtml(categoria)}</td>
                     <td class="acciones-td">
                         <button class="btn-casa" onclick="seleccionarEquipo(${index}, 'casa')">CASA</button>
                         <button class="btn-fuera" onclick="seleccionarEquipo(${index}, 'fuera')">FUERA</button>
@@ -2008,11 +2021,11 @@
 
                 tr.innerHTML = `
                     <td>
-                        <img src="${rutaLogo}" class="team-icon" alt="${nombre}" 
+                        <img src="${escHtml(rutaLogo)}" class="team-icon" alt="${escHtml(nombre)}" 
                              onerror="this.onerror=null; this.src=SVG_LOGO_VACIO;">
                     </td>
-                    <td style="font-weight: 700; color: #fff;">${nombre}</td>
-                    <td><span class="badge-cat-misma">${categoria}</span></td>
+                    <td style="font-weight: 700; color: #fff;">${escHtml(nombre)}</td>
+                    <td><span class="badge-cat-misma">${escHtml(categoria)}</span></td>
                 `;
 
                 tr.onclick = () => {
@@ -2032,11 +2045,11 @@
 
                 tr.innerHTML = `
                     <td>
-                        <img src="${rutaLogo}" class="team-icon" alt="${nombre}" 
+                        <img src="${escHtml(rutaLogo)}" class="team-icon" alt="${escHtml(nombre)}" 
                              onerror="this.onerror=null; this.src=SVG_LOGO_VACIO;">
                     </td>
-                    <td style="font-weight: 600; color: #ddd;">${nombre}</td>
-                    <td><span class="badge-cat-sin">${categoria || 'Otra categoría'}</span></td>
+                    <td style="font-weight: 600; color: #ddd;">${escHtml(nombre)}</td>
+                    <td><span class="badge-cat-sin">${escHtml(categoria || 'Otra categoría')}</span></td>
                 `;
 
                 tr.onclick = () => {
@@ -2298,7 +2311,7 @@
                     el.style.fontSize = fontSizePx + 'px';
                     el.style.lineHeight = '0.95';
                     el.style.transform = 'none';
-                    el.innerHTML = lineas.map(l => `<span>${l}</span>`).join('<br>');
+                    el.innerHTML = lineas.map(l => `<span>${escHtml(l)}</span>`).join('<br>');
                     return;
                 }
                 fontSizePx -= 0.5;
@@ -2310,7 +2323,7 @@
             el.style.fontSize = fontSizePx + 'px';
             el.style.lineHeight = '0.95';
             el.style.transform = 'none';
-            el.innerHTML = lineasFinales.slice(0, 3).map(l => `<span>${l}</span>`).join('<br>');
+            el.innerHTML = lineasFinales.slice(0, 3).map(l => `<span>${escHtml(l)}</span>`).join('<br>');
         }
 
         window.addEventListener('resize', () => {
@@ -4064,7 +4077,7 @@
             if (textoFechaCabecera) {
                 const elContenedor = document.getElementById('headerTextoFecha');
                 if (elContenedor) {
-                    elContenedor.innerHTML = `<span>${textoFechaCabecera}</span>`;
+                    elContenedor.innerHTML = `<span>${escHtml(textoFechaCabecera)}</span>`;
                     autoAjustarTextoCabecera();
                 }
             }
