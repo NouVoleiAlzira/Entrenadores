@@ -1074,6 +1074,7 @@
       box-shadow: 0 4px 15px rgba(0,0,0,0.05);
     }
     .pdf-player-info p { margin: 0; }
+    .pdf-table-compact td, .pdf-table-compact th { padding: 3px 8px !important; }
     .pdf-player-info b { color: #0052d4; }
 
     .player-pdf-item {

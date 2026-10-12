@@ -1407,69 +1407,64 @@
     return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : f;
   }
 
-  // Captura el área oculta y la reparte en páginas A4 (sin cortar filas de comentarios)
+  // Captura el área oculta y la coloca en UNA sola página A4: si el contenido es más
+  // alto que la página, se reduce proporcionalmente hasta que quepa.
   async function addAreaAsPdfPages(pdf, exportArea) {
     const SC = 1.5;
-    const canvas = await html2canvas(exportArea, { scale: SC, useCORS: true });
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
     const W = Math.round(pdfWidth * 3.7795275591 * SC);
     const H = Math.round(pdfHeight * 3.7795275591 * SC);
 
-    const areaRect = exportArea.getBoundingClientRect();
-    const cssW = areaRect.width, total = areaRect.height;
-    const k = canvas.width / cssW;              // px de la captura por px CSS
-    const ko = W / cssW;                        // px de página por px CSS
+    const cssW = exportArea.getBoundingClientRect().width;
+    const total = exportArea.getBoundingClientRect().height;
     const pageCssH = cssW * pdfHeight / pdfWidth;
-    const TOP = 40, BOTTOM = 30;
-    const bottoms = Array.from(exportArea.querySelectorAll("[data-pdf-row]"))
-      .map(r => r.getBoundingClientRect().bottom - areaRect.top);
-
-    const pages = [];
-    let start = 0;
-    while (total - start > 45) {
-      const limit = start + pageCssH - BOTTOM - (pages.length ? TOP : 0);
-      if (limit >= total) { pages.push([start, total]); break; }
-      const cands = bottoms.filter(b => b > start + 150 && b <= limit);
-      const cut = cands.length ? Math.max(...cands) : limit;
-      pages.push([start, cut]);
-      start = cut;
-    }
-    if (pages.length === 0) pages.push([0, total]);
+    const MARGEN = 14;                                   // px CSS arriba y abajo si se reduce
+    const reducir = total > pageCssH;
+    const f = reducir ? (pageCssH - 2 * MARGEN) / total : 1;
 
     const wm = exportArea.querySelector(".pdf-watermark");
-    pages.forEach(([s, e], i) => {
-      const full = document.createElement("canvas");
-      full.width = W; full.height = H;
-      const ctx = full.getContext("2d");
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, W, H);
+    // Al reducir, la marca de agua capturada se descentraría: se oculta y se dibuja centrada en la página
+    if (reducir && wm) wm.style.visibility = "hidden";
+    let canvas;
+    try {
+      canvas = await html2canvas(exportArea, { scale: SC, useCORS: true });
+    } finally {
+      if (wm) wm.style.visibility = "";
+    }
 
-      const bg = ctx.createLinearGradient(0, 0, W, H);
-      bg.addColorStop(0, "rgba(0, 102, 255, 0.3)");
-      bg.addColorStop(0.5, "rgba(67, 100, 247, 0.3)");
-      bg.addColorStop(1, "rgba(0, 210, 255, 0.3)");
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, W, H);
+    const full = document.createElement("canvas");
+    full.width = W; full.height = H;
+    const ctx = full.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, W, H);
 
-      if (wm && wm.complete && wm.naturalWidth) {
-        const wmW = 380 * SC;
-        const wmH = (wm.naturalHeight / wm.naturalWidth) * wmW || wmW;
-        ctx.save();
-        ctx.globalAlpha = 0.12;
-        // En la 1ª página la marca de agua capturada ya suma la suya; en las demás se repite el mismo tono
-        const veces = i === 0 ? 1 : 2;
-        for (let n = 0; n < veces; n++) ctx.drawImage(wm, (W - wmW) / 2, (H - wmH) / 2, wmW, wmH);
-        ctx.restore();
-      }
+    const bg = ctx.createLinearGradient(0, 0, W, H);
+    bg.addColorStop(0, "rgba(0, 102, 255, 0.3)");
+    bg.addColorStop(0.5, "rgba(67, 100, 247, 0.3)");
+    bg.addColorStop(1, "rgba(0, 210, 255, 0.3)");
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
 
-      const sy = Math.round(s * k);
-      const sh = Math.max(1, Math.round((e - s) * k));
-      ctx.drawImage(canvas, 0, sy, canvas.width, sh, 0, i > 0 ? TOP * ko : 0, W, (e - s) * ko);
+    if (wm && wm.complete && wm.naturalWidth) {
+      const wmW = 380 * SC;
+      const wmH = (wm.naturalHeight / wm.naturalWidth) * wmW || wmW;
+      ctx.save();
+      ctx.globalAlpha = 0.12;
+      // Mismo tono que en el informe de entrenamientos (marca capturada + marca de página)
+      const veces = reducir ? 2 : 1;
+      for (let n = 0; n < veces; n++) ctx.drawImage(wm, (W - wmW) / 2, (H - wmH) / 2, wmW, wmH);
+      ctx.restore();
+    }
 
-      if (i > 0) pdf.addPage();
-      pdf.addImage(full.toDataURL("image/jpeg", 0.85), "JPEG", 0, 0, pdfWidth, pdfHeight, undefined, "FAST");
-    });
+    const ko = W / cssW;                                 // px de página por px CSS
+    const destW = W * f;
+    const destH = total * ko * f;
+    const dx = (W - destW) / 2;
+    const dy = reducir ? MARGEN * ko : 0;
+    ctx.drawImage(canvas, 0, 0, canvas.width, canvas.height, dx, dy, destW, destH);
+
+    pdf.addImage(full.toDataURL("image/jpeg", 0.85), "JPEG", 0, 0, pdfWidth, pdfHeight, undefined, "FAST");
   }
 
   async function generatePlayerPDF() {
@@ -1505,6 +1500,10 @@
     // --- Comentarios con fecha ---
     const body = document.getElementById("pdfPlayerCommentsBody");
     const conComentario = registros.filter(r => (r.p.comments || "").trim());
+    const tablaCom = body.closest("table");
+    const nCom = conComentario.length;
+    tablaCom.style.fontSize = nCom > 16 ? "10px" : (nCom > 8 ? "11px" : "");
+    tablaCom.classList.toggle("pdf-table-compact", nCom > 8);
     body.innerHTML = conComentario.length
       ? conComentario.map(r => `<tr data-pdf-row><td style="white-space:nowrap; font-weight:600;">${pdfFechaCorta(r.fecha)}</td><td>${pdfEscape(r.p.comments.trim())}</td></tr>`).join("")
       : `<tr data-pdf-row><td colspan="2" style="text-align:center; color:#64748b;">Sin comentarios en el período</td></tr>`;
