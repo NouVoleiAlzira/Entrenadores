@@ -1613,6 +1613,7 @@
         function mostrarAviso(texto, esAlerta) {
             const aviso = document.getElementById('avisoEstado');
             aviso.innerText = texto;
+            aviso.style.whiteSpace = 'pre-line';
             aviso.style.display = 'block';
             if (esAlerta) {
                 aviso.style.background = '#2c2215';
@@ -2975,8 +2976,10 @@
         // Marca la fila del equipo como CASA/FUERA en la tabla y rellena
         // mapaDatosPartidos con rival, fecha, hora y lugar, igual que hace
         // la selección manual (ver generarRecuadros / crearRecuadro).
-        function rellenarTarjetaDesdeJornada(nombreClub, tipo, rivalNombre, fechaTxt, horaTxt, campoTxt, categoriaTxt, catRank, divRank, ordenFecha) {
-            const idx = encontrarIndiceEquipoClub(nombreClub, categoriaTxt);
+        function rellenarTarjetaDesdeJornada(nombreClub, tipo, rivalNombre, fechaTxt, horaTxt, campoTxt, categoriaTxt, catRank, divRank, ordenFecha, rivalAlternativo, indiceForzado) {
+            const idx = (indiceForzado !== undefined && indiceForzado >= 0)
+                ? indiceForzado
+                : encontrarIndiceEquipoClub(nombreClub, categoriaTxt);
             if (idx === -1) return -1;
 
             const tr = document.getElementById(`fila-${idx}`);
@@ -2985,9 +2988,15 @@
                 tr.classList.add(tipo === 'casa' ? 'selected-casa' : 'selected-fuera');
             }
 
-            const filaRival = listaOtrosEquiposGlobal.find(
+            let filaRival = listaOtrosEquiposGlobal.find(
                 f => normalizarParaComparar(obtenerNombreEquipo(f)) === normalizarParaComparar(rivalNombre)
             );
+            // Si el nombre del Excel difiere un poco, se prueba con el nombre de la lista de la liga
+            if (!filaRival && rivalAlternativo) {
+                filaRival = listaOtrosEquiposGlobal.find(
+                    f => normalizarParaComparar(obtenerNombreEquipo(f)) === normalizarParaComparar(rivalAlternativo)
+                );
+            }
             const rivalLogo = filaRival ? obtenerRutaLogo(filaRival) : '';
 
             mapaDatosPartidos[idx] = {
@@ -3249,6 +3258,360 @@
             return conPartidos || todas.find(f => f.length > 0) || [];
         }
 
+
+        /*
+         * ================================================================
+         * BÚSQUEDA DE LOS EQUIPOS DE LA CONFIGURACIÓN (index.html) EN EL EXCEL
+         * ================================================================
+         * Los equipos a buscar son los de "Configuración del Club" de la
+         * página principal (localStorage NVA_APP_DATA). Solo se buscan los
+         * que tienen "Equipos de la liga" (Configuración > Ligas: carpeta
+         * Ligas/ de GitHub, con copia en localStorage NVA_LEAGUE_*).
+         * El nombre se compara de forma flexible (acentos, "NOU VOLEI
+         * ALZIRA" = "NVA", comas por apóstrofos, pequeñas erratas...).
+         */
+        const UMBRAL_NOMBRE = 0.8;
+        const PALABRAS_IGNORADAS_NOMBRE = new Set(['CV', 'CD', 'CB', 'CLUB', 'DE', 'DEL', 'LA', 'EL', 'LES', 'ELS', 'VOLEI', 'VOLEY', 'VOLEIBOL', 'VOLEYBOL', 'C', 'V']);
+
+        function tokensNombre(texto) {
+            let t = normalizarParaComparar(texto);
+            t = t.replace(/NOU\s+VOLE[IY]\s+ALZIRA/g, 'NVA').replace(/\bNVA\s+ALZIRA\b/g, 'NVA');
+            t = t.replace(/[^A-Z0-9]+/g, ' ').trim();
+            return t.split(' ').filter(w => w && !PALABRAS_IGNORADAS_NOMBRE.has(w));
+        }
+
+        function distanciaEdicion(a, b) {
+            if (a === b) return 0;
+            if (!a.length) return b.length;
+            if (!b.length) return a.length;
+            let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+            for (let i = 1; i <= a.length; i++) {
+                const cur = [i];
+                for (let j = 1; j <= b.length; j++) {
+                    cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+                }
+                prev = cur;
+            }
+            return prev[b.length];
+        }
+
+        // Devuelve un valor de 0 a 1 (1 = mismo nombre). Se considera el mismo equipo a partir de UMBRAL_NOMBRE.
+        function similitudNombres(a, b) {
+            const ta = tokensNombre(a), tb = tokensNombre(b);
+            if (!ta.length || !tb.length) return 0;
+            const sa = ta.join(' '), sb = tb.join(' ');
+            if (sa === sb) return 1;
+
+            // Letras/números sueltos ("A", "B", "2"...) distinguen equipos: deben coincidir
+            const sueltos = arr => arr.filter(w => w.length === 1 || /^\d+$/.test(w)).sort().join(',');
+            if (sueltos(ta) !== sueltos(tb)) return 0;
+
+            const ca = ta.join(''), cb = tb.join('');
+            const simCadena = 1 - distanciaEdicion(ca, cb) / Math.max(ca.length, cb.length);
+            if (simCadena >= 0.88) return simCadena;
+
+            const [peq, gran] = ta.length <= tb.length ? [ta, tb] : [tb, ta];
+            let ok = 0;
+            peq.forEach(w => {
+                if (gran.some(g => g === w || (w.length >= 5 && g.length >= 5 && distanciaEdicion(w, g) <= 1))) ok++;
+            });
+            const cobertura = ok / peq.length, ratio = ok / gran.length;
+            if (cobertura === 1 && peq.length >= 2) return 0.85;
+            return ratio >= 0.8 ? ratio : 0;
+        }
+
+        function esDescansa(nombre) {
+            return normalizarParaComparar(nombre).includes('DESCANS');
+        }
+
+        // ---- Categoría ----
+        function categoriaBaseDesdeTexto(txt) {
+            const n = normalizarParaComparar(txt);
+            if (n.includes('ALEVIN')) return 'ALEVIN';
+            if (n.includes('INFANTIL')) return 'INFANTIL';
+            if (n.includes('CADETE')) return 'CADETE';
+            if (n.includes('JUVENIL') || n.includes('JUNIOR')) return 'JUVENIL';   // se tratan como el mismo grupo
+            if (n.includes('SENIOR')) return 'SENIOR';
+            return '';
+        }
+        function sexoDesdeTexto(txt) {
+            const n = normalizarParaComparar(txt);
+            if (n.includes('FEMENIN')) return 'F';
+            if (n.includes('MASCULIN')) return 'M';
+            return '';
+        }
+        // Interpreta el código CAT del Excel: 1CF-1, 2IF-1, CFZ-3, IM-2, 3JF-3, SL2M-A, PNF-C...
+        function infoDesdeCAT(catRaw) {
+            const c = (catRaw || '').toString().trim().toUpperCase();
+            let m = c.match(/^(\d)?([ICJS])([FM])(Z)?/);
+            if (m) {
+                const cat = { I: 'INFANTIL', C: 'CADETE', J: 'JUVENIL', S: 'SENIOR' }[m[2]];
+                return { cat, sexo: m[3], division: m[1] || (m[4] ? 'Z' : '') };
+            }
+            m = c.match(/^SL(\d)?([FM])/) || c.match(/^PN([FM])/);
+            if (m) return { cat: 'SENIOR', sexo: m[m.length - 1], division: '' };
+            m = c.match(/^JN([FM])/);
+            if (m) return { cat: 'JUVENIL', sexo: m[1], division: '' };
+            return { cat: '', sexo: '', division: '' };
+        }
+        // true = encaja, false = claramente distinta, null = no se puede saber
+        function categoriaCompatible(categoriaConfig, info) {
+            const base = categoriaBaseDesdeTexto(categoriaConfig);
+            if (!base || !info.cat) return null;
+            if (base !== info.cat) return false;
+            const sx = sexoDesdeTexto(categoriaConfig);
+            if (sx && info.sexo && sx !== info.sexo) return false;
+            return true;
+        }
+
+        // ---- Equipos de la configuración (index.html) ----
+        function leerEquiposConfiguracion() {
+            let datos = null;
+            try { datos = JSON.parse(localStorage.getItem('NVA_APP_DATA')); } catch (e) { datos = null; }
+            if (!datos || !Array.isArray(datos.teams)) return [];
+            const vistos = new Set();
+            const equipos = [];
+            datos.teams.forEach(t => {
+                let name = '', category = '';
+                if (typeof t === 'string') {
+                    const m = t.match(/^(.*?)\s*\((.*)\)\s*$/);
+                    name = m ? m[1].trim() : t.trim();
+                    category = m ? m[2].trim() : '';
+                } else if (t && t.name) {
+                    name = String(t.name).trim();
+                    category = String(t.category || '').trim();
+                }
+                if (!name) return;
+                const key = `${name} (${category})`;
+                if (vistos.has(key)) return;
+                vistos.add(key);
+                equipos.push({ name, category, key, etiqueta: category ? `${name} (${category})` : name });
+            });
+            return equipos;
+        }
+
+        function sanitizarNombreFichero(name) {
+            if (!name) return 'general';
+            return name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9_-]/g, '_');
+        }
+
+        // Lee, para cada equipo, su lista "Equipos de la liga" (misma lógica que index.html):
+        // fichero .txt de la carpeta Ligas/ de GitHub y, si no hay conexión, la copia local.
+        async function obtenerEquiposLigaConfig(equipos) {
+            let gh = null;
+            try {
+                const s = JSON.parse(localStorage.getItem('NVA_GH_SETTINGS'));
+                if (s && s.user && s.repo) gh = s;
+            } catch (e) { gh = null; }
+            const headers = {};
+            if (gh && gh.token) headers['Authorization'] = `token ${gh.token}`;
+
+            let listado = null;
+            if (gh && navigator.onLine) {
+                try {
+                    const res = await fetch(`https://api.github.com/repos/${gh.user}/${gh.repo}/contents/Ligas`, { headers, cache: 'no-store' });
+                    if (res.ok) {
+                        const json = await res.json();
+                        listado = (Array.isArray(json) ? json : []).filter(f => f.name && /\.txt$/i.test(f.name));
+                    } else if (res.status === 404) {
+                        listado = [];
+                    }
+                } catch (e) { listado = null; }
+            }
+
+            const norm = s => sanitizarNombreFichero(s).replace(/_/g, '').toLowerCase();
+            const sinTxt = n => n.replace(/\.txt$/i, '');
+            const mapa = new Map();
+
+            for (const eq of equipos) {
+                const cacheKey = `NVA_LEAGUE_${sanitizarNombreFichero(eq.key)}`;
+                let lista = null;
+
+                if (listado) {
+                    const simple = eq.key.split(' (')[0];
+                    const file = listado.find(f => norm(sinTxt(f.name)) === norm(eq.key))
+                        || listado.find(f => norm(sinTxt(f.name)) === norm(simple));
+                    if (file) {
+                        try {
+                            const res = await fetch(file.url, { headers, cache: 'no-store' });
+                            if (res.ok) {
+                                const json = await res.json();
+                                const texto = base64ToUtf8(json.content || '').replace(/^\uFEFF/, '');
+                                lista = [];
+                                texto.split(/\r?\n/).forEach(l => {
+                                    const n = l.trim();
+                                    if (n && !lista.includes(n)) lista.push(n);
+                                });
+                                try { localStorage.setItem(cacheKey, JSON.stringify(lista)); } catch (e) {}
+                            }
+                        } catch (e) { lista = null; }
+                    }
+                }
+                if (lista === null) {
+                    try {
+                        const cache = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+                        if (Array.isArray(cache)) lista = cache;
+                    } catch (e) {}
+                }
+                mapa.set(eq.key, lista || []);
+            }
+            return mapa;
+        }
+
+        function mejorCoincidenciaLiga(nombreRival, listaLiga) {
+            let mejor = null, mejorValor = 0;
+            listaLiga.forEach(n => {
+                const v = similitudNombres(nombreRival, n);
+                if (v >= UMBRAL_NOMBRE && v > mejorValor) { mejor = n; mejorValor = v; }
+            });
+            return mejor;
+        }
+
+        // Busca en la lista de equipos (DATOS.xls) la ficha del equipo de la configuración
+        function encontrarIndiceFichaEquipoConfig(eq, info) {
+            const porNombre = [];
+            listaEquiposGlobal.forEach((f, i) => {
+                if (similitudNombres(obtenerNombreEquipo(f), eq.name) >= UMBRAL_NOMBRE) porNombre.push(i);
+            });
+            if (porNombre.length === 0) return -1;
+
+            const base = categoriaBaseDesdeTexto(eq.category);
+            const cands = base
+                ? porNombre.filter(i => categoriaBaseDesdeTexto(obtenerCategoria(listaEquiposGlobal[i])) === base)
+                : porNombre;
+            if (cands.length === 0) return -1;
+            if (cands.length === 1) return cands[0];
+
+            // Varias fichas del mismo equipo y categoría: se elige por la división del código CAT
+            const div = info && info.division;
+            if (div) {
+                const porDiv = cands.find(i => {
+                    const c = normalizarParaComparar(obtenerCategoria(listaEquiposGlobal[i]));
+                    return div === 'Z' ? c.includes('ZONAL') : new RegExp('\\b' + div + '\\s*[ªA]?\\s*DIVISION').test(c);
+                });
+                if (porDiv !== undefined) return porDiv;
+            }
+            return cands[0];
+        }
+
+        // Recorre los equipos de la configuración y localiza su partido en las filas del Excel
+        function buscarPartidosEquiposConfig(filas, equipos, ligas) {
+            const res = { partidos: [], noBuscados: [], noEncontrados: [], descansan: [], sinFicha: [], varios: [] };
+
+            equipos.forEach(eq => {
+                const liga = ligas.get(eq.key) || [];
+                if (liga.length === 0) { res.noBuscados.push(eq.etiqueta); return; }
+
+                const candidatos = [];
+                filas.forEach(fila => {
+                    const localRaw = (fila['Local'] || '').toString().trim();
+                    const visitanteRaw = (fila['Visitante'] || '').toString().trim();
+                    if (!localRaw || !visitanteRaw) return;
+
+                    const info = infoDesdeCAT(fila['CAT']);
+                    const compat = categoriaCompatible(eq.category, info);
+                    if (compat === false) return;
+
+                    const esLocal = similitudNombres(localRaw, eq.name) >= UMBRAL_NOMBRE;
+                    const esVisit = !esLocal && similitudNombres(visitanteRaw, eq.name) >= UMBRAL_NOMBRE;
+                    if (!esLocal && !esVisit) return;
+
+                    const rivalRaw = esLocal ? visitanteRaw : localRaw;
+                    const rivalLiga = esDescansa(rivalRaw) ? null : mejorCoincidenciaLiga(rivalRaw, liga);
+                    // Con categoría desconocida solo se acepta si el rival es de la liga del equipo
+                    if (compat !== true && !rivalLiga && !esDescansa(rivalRaw)) return;
+
+                    candidatos.push({
+                        fila, info, rivalRaw, rivalLiga, tipo: esLocal ? 'casa' : 'fuera',
+                        ordenFecha: obtenerOrdenFechaHoraJornada(fila['Fecha'], fila['Hora'])
+                    });
+                });
+
+                if (candidatos.length === 0) { res.noEncontrados.push(eq.etiqueta); return; }
+
+                // Si hay varios partidos, se prefieren los de rivales de la liga y el más temprano
+                let elegidos = candidatos.filter(c => c.rivalLiga || esDescansa(c.rivalRaw));
+                if (elegidos.length === 0) elegidos = candidatos;
+                elegidos.sort((a, b) => a.ordenFecha - b.ordenFecha);
+                const c = elegidos[0];
+                if (elegidos.length > 1) res.varios.push(eq.etiqueta);
+
+                if (esDescansa(c.rivalRaw)) { res.descansan.push(eq.etiqueta); return; }
+
+                const idx = encontrarIndiceFichaEquipoConfig(eq, c.info);
+                if (idx === -1) { res.sinFicha.push(eq.etiqueta); return; }
+
+                const partes = parseFechaPartes(c.fila['Fecha']);
+                const categoriaFicha = obtenerCategoria(listaEquiposGlobal[idx]);
+                const { catRank, divRank } = obtenerRangoCategoriaJornada(categoriaFicha);
+                res.partidos.push({
+                    idx, tipo: c.tipo, equipo: eq,
+                    rival: corregirApostrofes(normalizarNombreClub(c.rivalRaw)),
+                    rivalLiga: c.rivalLiga,
+                    fechaTxt: partes ? fechaLargaDesdePartes(partes) : (c.fila['Fecha'] || '').toString().trim(),
+                    partes,
+                    horaTxt: formatearHora(c.fila['Hora']),
+                    campoTxt: corregirApostrofes((c.fila['Campo'] || '').toString().trim()),
+                    categoriaFicha, catRank, divRank, ordenFecha: c.ordenFecha
+                });
+            });
+            return res;
+        }
+
+        // Flujo completo cuando hay equipos en la configuración de index.html
+        async function procesarJornadaConEquiposConfig(filas, equipos) {
+            const ligas = await obtenerEquiposLigaConfig(equipos);
+            const r = buscarPartidosEquiposConfig(filas, equipos, ligas);
+
+            const lineasInfo = [];
+            if (r.noEncontrados.length) lineasInfo.push(`• No se han encontrado en el Excel: ${r.noEncontrados.join(', ')}.`);
+            if (r.descansan.length) lineasInfo.push(`• Descansan esta jornada: ${r.descansan.join(', ')}.`);
+            if (r.sinFicha.length) lineasInfo.push(`• Encontrados en el Excel pero sin ficha en la lista de equipos (DATOS.xls): ${r.sinFicha.join(', ')}.`);
+            if (r.varios.length) lineasInfo.push(`• Con varios partidos en el archivo (se ha usado el primero): ${r.varios.join(', ')}.`);
+            if (r.noBuscados.length) lineasInfo.push(`• No buscados por no tener "Equipos de la liga" (Configuración > Ligas): ${r.noBuscados.join(', ')}.`);
+
+            if (r.partidos.length === 0) {
+                mostrarAviso('⚠️ No se ha creado ninguna ficha: no se ha encontrado ningún partido de los equipos de la configuración en ese archivo.', true);
+                if (lineasInfo.length) alert('ℹ️ Información de la carga:\n\n' + lineasInfo.join('\n'));
+                return;
+            }
+
+            // Rango de fechas de la cabecera
+            const fechasPartes = r.partidos.map(p => p.partes).filter(Boolean);
+            if (fechasPartes.length > 0) {
+                const orden = [...fechasPartes].sort((a, b) => (a.anio - b.anio) || (a.mes - b.mes) || (a.dia - b.dia));
+                const pri = orden[0], ult = orden[orden.length - 1];
+                const fi = new Date(pri.anio, pri.mes - 1, pri.dia);
+                const ff = new Date(ult.anio, ult.mes - 1, ult.dia);
+                calFechaInicioEfectiva = fi;
+                calFechaFinEfectiva = ff;
+                escribirTextoFechaEnCabecera(fi, ff);
+            }
+
+            let tarjetas = 0;
+            r.partidos.forEach(p => {
+                const rival = p.rival;
+                const idx = rellenarTarjetaDesdeJornada(
+                    obtenerNombreEquipo(listaEquiposGlobal[p.idx]), p.tipo, rival,
+                    p.fechaTxt, p.horaTxt, p.campoTxt, p.categoriaFicha, p.catRank, p.divRank, p.ordenFecha,
+                    p.rivalLiga, p.idx
+                );
+                if (idx !== -1) tarjetas++;
+            });
+
+            if (tarjetas > 0) {
+                generarRecuadros();
+                reordenarRecuadrosPorCategoria();
+                const cont = document.getElementById('contenedorRecuadros');
+                if (cont && cont.children.length > 0) cont.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+
+            const hayAvisos = lineasInfo.length > 0;
+            mostrarAviso(`✅ Se han creado ${tarjetas} ficha${tarjetas === 1 ? '' : 's'} de ${equipos.length} equipo${equipos.length === 1 ? '' : 's'} de la configuración.` +
+                (hayAvisos ? '\n' + lineasInfo.join('\n') : ''), hayAvisos);
+            if (hayAvisos) alert('ℹ️ Información de la carga:\n\n' + lineasInfo.join('\n'));
+        }
+
         async function manejarArchivoJornada(event) {
             const input = event.target;
             const archivo = input.files && input.files[0];
@@ -3304,6 +3667,13 @@
                     }
                 }
                 if (errorSheetJS && !tieneColumnasPartidos(filas)) throw errorSheetJS;
+
+                // Con equipos en la configuración de index.html se buscan esos equipos (y solo los que tienen liga)
+                const equiposConfig = leerEquiposConfiguracion();
+                if (equiposConfig.length > 0) {
+                    await procesarJornadaConEquiposConfig(filas, equiposConfig);
+                    return;
+                }
 
                 const partidosClub = [];
                 const fechasPartes = [];
@@ -3374,12 +3744,14 @@
                     }
                 }
 
-                let mensaje = `✅ Se han encontrado ${partidosClub.length} partido(s) de nuestros equipos`;
+                let mensaje = '';
+                mensaje += `✅ Se han encontrado ${partidosClub.length} partido(s) de nuestros equipos`;
                 mensaje += tarjetasCreadas > 0 ? (tarjetasCreadas === 1 ? ' y se ha creado 1 tarjeta.' : ` y se han creado ${tarjetasCreadas} tarjetas.`) : '.';
                 if (equiposNoEncontrados.length > 0) {
                     mensaje += ` No se encontró en la lista de equipos: ${[...new Set(equiposNoEncontrados)].join(', ')}.`;
                 }
-                mostrarAviso(mensaje, equiposNoEncontrados.length > 0);
+                mensaje += '\nℹ️ No se ha encontrado la configuración de equipos de la página principal en este dispositivo: se ha buscado por el nombre "NVA".';
+                mostrarAviso(mensaje, true);
             } catch (err) {
                 console.error('Error al procesar el archivo de la jornada:', err);
                 alert('No se ha podido procesar el archivo. Comprueba que es un .xls/.xlsx con columnas Fecha, Hora, CAT, Local, Visitante y Campo.\n\nDetalle: ' + (err && err.message ? err.message : err));
