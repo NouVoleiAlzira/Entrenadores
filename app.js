@@ -727,6 +727,7 @@
     if (entries.length === 0) { alert("No hay equipos asignados."); return; }
 
     pdfResultsMode = false;
+    pdfPlayerSel = null;
     pdfBatchEntries = entries;
     pdfBatchFileLabel = fileLabel;
     rangeStart = null;
@@ -744,6 +745,7 @@
   function openDateRangeModal(coach, teamKey, displayName) {
     pdfResultsMode = false;
     pdfBatchEntries = null;
+    pdfPlayerSel = null;
     pdfSelectedCoach = coach;
     pdfSelectedTeamKey = teamKey;
     pdfSelectedTeamName = displayName;
@@ -845,6 +847,10 @@
       withLoading(openResultsMatchSelection, 'Buscando partidos del período...');
       return;
     }
+    if (pdfPlayerSel) {
+      withLoading(generatePlayerPDF, 'Generando informe de jugadora...');
+      return;
+    }
     if (pdfBatchEntries) {
       withLoading(generateBatchPDF, 'Generando informes de entrenamiento...');
       return;
@@ -857,6 +863,7 @@
     if (isPdfMode) togglePdfMode();
     pdfResultsMode = true;
     pdfBatchEntries = null;
+    pdfPlayerSel = null;
     rangeStart = null;
     rangeEnd = null;
     calYear = new Date().getFullYear();
@@ -1316,6 +1323,296 @@
     }
     if (omitidos.length > 0) {
       alert("PDF generado. Equipos sin registros en el período (no incluidos):\n- " + omitidos.join("\n- "));
+    }
+  }
+
+  // =====================================================================
+  //  PDF JUGADORA: informe individual (mismo estilo que el de entrenamientos)
+  // =====================================================================
+  let pdfPlayerSel = null;   // { teamKey, teamLabel, player, coachName }
+  let pdfPlayerChart1 = null, pdfPlayerChart2 = null;
+
+  function openPlayerPdfModal() {
+    if (isPdfMode) togglePdfMode();
+    const sel = document.getElementById("playerPdfTeamSelect");
+    sel.innerHTML = "";
+    sel.add(new Option("Selecciona un equipo...", ""));
+    appData.teams.forEach(t => {
+      const key = getTeamKey(t);
+      sel.add(new Option(key, key));
+    });
+    document.getElementById("playerPdfPlayersWrap").style.display = "none";
+    document.getElementById("modalPlayerPdf").classList.add("active");
+  }
+
+  function closePlayerPdfModal() {
+    document.getElementById("modalPlayerPdf").classList.remove("active");
+  }
+
+  function renderPlayerPdfPlayers() {
+    const key = document.getElementById("playerPdfTeamSelect").value;
+    const wrap = document.getElementById("playerPdfPlayersWrap");
+    const list = document.getElementById("playerPdfPlayersList");
+    list.innerHTML = "";
+    if (!key) { wrap.style.display = "none"; return; }
+
+    const players = getPlayersForTeamKey(key);
+    if (!players || players.length === 0) {
+      list.innerHTML = '<div style="font-size:0.8rem; color:#64748b; padding:6px;">Este equipo no tiene jugadoras.</div>';
+    } else {
+      players.forEach(name => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "player-pdf-item";
+        b.textContent = "🧑 " + name;
+        b.onclick = () => selectPlayerForPdf(key, name);
+        list.appendChild(b);
+      });
+    }
+    wrap.style.display = "block";
+  }
+
+  function selectPlayerForPdf(teamKey, player) {
+    const matches = ref => {
+      if (ref === teamKey) return true;
+      const t = appData.teams.find(x => getTeamKey(x) === ref || x.name === ref);
+      return !!t && getTeamKey(t) === teamKey;
+    };
+    const coaches = appData.coaches.filter(c => (c.teams || []).some(matches)).map(c => c.name);
+    const teamObj = appData.teams.find(t => getTeamKey(t) === teamKey);
+    const teamLabel = (teamObj && typeof teamObj === "object" && teamObj.category)
+      ? `${teamObj.name} - ${teamObj.category}` : teamKey;
+
+    closePlayerPdfModal();
+    pdfResultsMode = false;
+    pdfBatchEntries = null;
+    pdfPlayerSel = { teamKey, teamLabel, player, coachName: coaches.length ? coaches.join(", ") : "-" };
+
+    rangeStart = null;
+    rangeEnd = null;
+    calYear = new Date().getFullYear();
+    calMonth = new Date().getMonth();
+    document.getElementById("pdfModalTitle").innerText = `🗓️ Período - ${player}`;
+    document.getElementById("btnConfirmPdf").innerText = "Generar Informe PDF";
+    updateDateSelectionSummary();
+    renderCalendar();
+    document.getElementById("modalDateRange").classList.add("active");
+  }
+
+  function pdfEscape(v) {
+    return String(v == null ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  function pdfFechaCorta(f) {
+    const p = String(f).split("-");
+    return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : f;
+  }
+
+  // Captura el área oculta y la reparte en páginas A4 (sin cortar filas de comentarios)
+  async function addAreaAsPdfPages(pdf, exportArea) {
+    const SC = 1.5;
+    const canvas = await html2canvas(exportArea, { scale: SC, useCORS: true });
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const W = Math.round(pdfWidth * 3.7795275591 * SC);
+    const H = Math.round(pdfHeight * 3.7795275591 * SC);
+
+    const areaRect = exportArea.getBoundingClientRect();
+    const cssW = areaRect.width, total = areaRect.height;
+    const k = canvas.width / cssW;              // px de la captura por px CSS
+    const ko = W / cssW;                        // px de página por px CSS
+    const pageCssH = cssW * pdfHeight / pdfWidth;
+    const TOP = 40, BOTTOM = 30;
+    const bottoms = Array.from(exportArea.querySelectorAll("[data-pdf-row]"))
+      .map(r => r.getBoundingClientRect().bottom - areaRect.top);
+
+    const pages = [];
+    let start = 0;
+    while (total - start > 45) {
+      const limit = start + pageCssH - BOTTOM - (pages.length ? TOP : 0);
+      if (limit >= total) { pages.push([start, total]); break; }
+      const cands = bottoms.filter(b => b > start + 150 && b <= limit);
+      const cut = cands.length ? Math.max(...cands) : limit;
+      pages.push([start, cut]);
+      start = cut;
+    }
+    if (pages.length === 0) pages.push([0, total]);
+
+    const wm = exportArea.querySelector(".pdf-watermark");
+    pages.forEach(([s, e], i) => {
+      const full = document.createElement("canvas");
+      full.width = W; full.height = H;
+      const ctx = full.getContext("2d");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, W, H);
+
+      const bg = ctx.createLinearGradient(0, 0, W, H);
+      bg.addColorStop(0, "rgba(0, 102, 255, 0.3)");
+      bg.addColorStop(0.5, "rgba(67, 100, 247, 0.3)");
+      bg.addColorStop(1, "rgba(0, 210, 255, 0.3)");
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
+
+      if (wm && wm.complete && wm.naturalWidth) {
+        const wmW = 380 * SC;
+        const wmH = (wm.naturalHeight / wm.naturalWidth) * wmW || wmW;
+        ctx.save();
+        ctx.globalAlpha = 0.12;
+        // En la 1ª página la marca de agua capturada ya suma la suya; en las demás se repite el mismo tono
+        const veces = i === 0 ? 1 : 2;
+        for (let n = 0; n < veces; n++) ctx.drawImage(wm, (W - wmW) / 2, (H - wmH) / 2, wmW, wmH);
+        ctx.restore();
+      }
+
+      const sy = Math.round(s * k);
+      const sh = Math.max(1, Math.round((e - s) * k));
+      ctx.drawImage(canvas, 0, sy, canvas.width, sh, 0, i > 0 ? TOP * ko : 0, W, (e - s) * ko);
+
+      if (i > 0) pdf.addPage();
+      pdf.addImage(full.toDataURL("image/jpeg", 0.85), "JPEG", 0, 0, pdfWidth, pdfHeight, undefined, "FAST");
+    });
+  }
+
+  async function generatePlayerPDF() {
+    const sel = pdfPlayerSel;
+    if (!sel) return;
+    await ensureExportLibs();
+    await syncTrainingLogsForPdf();
+
+    const registros = [];
+    collectTeamLogs(sel.teamKey).forEach(l => {
+      const p = (l.jugadores || []).find(j => j.name === sel.player);
+      if (p) registros.push({ fecha: l.fecha, p });
+    });
+    if (registros.length === 0) {
+      alert(`No existen registros de entrenamiento de ${sel.player} (${sel.teamLabel}) entre ${rangeStart} y ${rangeEnd}.`);
+      return;
+    }
+
+    document.getElementById("pdfPlayerTitle").innerText = `Informe de jugadora: ${sel.player}`;
+    document.getElementById("pdfPlayerCoach").innerText = sel.coachName;
+    document.getElementById("pdfPlayerTeam").innerText = sel.teamLabel;
+    document.getElementById("pdfPlayerPeriod").innerText = `${rangeStart} al ${rangeEnd}`;
+
+    // --- Datos de los gráficos ---
+    const labels = registros.map(r => pdfFechaCorta(r.fecha).slice(0, 5));
+    const calidad = registros.map(r => r.p.attendance === "presente" ? (r.p.quality || 0) : null);
+    const presentes = calidad.filter(v => v !== null);
+    const media = presentes.length ? presentes.reduce((a, b) => a + b, 0) / presentes.length : null;
+    const strikes = registros.map(r => r.p.strikes || 0);
+    const totalStrikes = strikes.reduce((a, b) => a + b, 0);
+    document.getElementById("pdfPlayerStrikesTitle").innerText = `Strikes por entrenamiento (total: ${totalStrikes})`;
+
+    // --- Comentarios con fecha ---
+    const body = document.getElementById("pdfPlayerCommentsBody");
+    const conComentario = registros.filter(r => (r.p.comments || "").trim());
+    body.innerHTML = conComentario.length
+      ? conComentario.map(r => `<tr data-pdf-row><td style="white-space:nowrap; font-weight:600;">${pdfFechaCorta(r.fecha)}</td><td>${pdfEscape(r.p.comments.trim())}</td></tr>`).join("")
+      : `<tr data-pdf-row><td colspan="2" style="text-align:center; color:#64748b;">Sin comentarios en el período</td></tr>`;
+
+    // --- Gráficos ---
+    if (pdfPlayerChart1) pdfPlayerChart1.destroy();
+    if (pdfPlayerChart2) pdfPlayerChart2.destroy();
+
+    const labelPlugin = {
+      id: "playerValueLabel",
+      afterDatasetsDraw(chart) {
+        const { ctx } = chart;
+        chart.data.datasets.forEach((ds, i) => {
+          if (ds.noLabel) return;
+          chart.getDatasetMeta(i).data.forEach((el, idx) => {
+            const val = ds.data[idx];
+            if (val === null || val === undefined) return;
+            ctx.save();
+            ctx.fillStyle = "#0f172a";
+            ctx.font = "bold 11px -apple-system, sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "bottom";
+            const pos = el.tooltipPosition();
+            ctx.fillText(val, pos.x, pos.y - 4);
+            ctx.restore();
+          });
+        });
+      }
+    };
+
+    const ctx1 = document.getElementById("chartPlayerQualityCanvas").getContext("2d");
+    const grad1 = ctx1.createLinearGradient(0, 0, 0, 230);
+    grad1.addColorStop(0, "rgba(0, 82, 212, 0.4)");
+    grad1.addColorStop(1, "rgba(0, 82, 212, 0.03)");
+    const dsCalidad = [{
+      label: "Calidad",
+      data: calidad,
+      borderColor: "#0052d4",
+      borderWidth: 3,
+      backgroundColor: grad1,
+      fill: true,
+      spanGaps: true,
+      tension: 0.35,
+      pointRadius: 5,
+      pointBackgroundColor: "#0066ff",
+      pointBorderColor: "#ffffff",
+      pointBorderWidth: 2
+    }];
+    if (media !== null) {
+      dsCalidad.push({
+        label: `Media: ${media.toFixed(1)} ★`,
+        data: labels.map(() => parseFloat(media.toFixed(2))),
+        borderColor: "#f59e0b",
+        borderWidth: 2,
+        borderDash: [8, 5],
+        pointRadius: 0,
+        fill: false,
+        noLabel: true
+      });
+    }
+    pdfPlayerChart1 = new Chart(ctx1, {
+      type: "line",
+      data: { labels, datasets: dsCalidad },
+      plugins: [labelPlugin],
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        layout: { padding: { top: 20 } },
+        plugins: { legend: { display: media !== null, position: "bottom" }, tooltip: { enabled: false } },
+        scales: { x: { grid: { display: false } }, y: { min: 1, max: 5, grid: { color: "rgba(0,0,0,0.05)" } } }
+      }
+    });
+
+    const ctx2 = document.getElementById("chartPlayerStrikesCanvas").getContext("2d");
+    const grad2 = ctx2.createLinearGradient(0, 0, 0, 200);
+    grad2.addColorStop(0, "#ef4444");
+    grad2.addColorStop(1, "#f87171");
+    pdfPlayerChart2 = new Chart(ctx2, {
+      type: "bar",
+      data: { labels, datasets: [{ label: "Strikes", data: strikes, backgroundColor: grad2, borderRadius: 6, borderSkipped: false }] },
+      plugins: [labelPlugin],
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        layout: { padding: { top: 20 } },
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: { x: { grid: { display: false } }, y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: "rgba(0,0,0,0.05)" } } }
+      }
+    });
+
+    // --- Captura y PDF ---
+    const exportArea = document.getElementById("pdfPlayerExportArea");
+    const wmImg = exportArea.querySelector(".pdf-watermark");
+    if (wmImg) wmImg.style.top = (800 * 297 / 210 / 2) + "px";   // centrada en la 1ª página
+    await Promise.all(Array.from(exportArea.querySelectorAll("img")).map(img =>
+      img.complete ? Promise.resolve() : new Promise(r => { img.onload = img.onerror = r; })));
+    await new Promise(r => setTimeout(r, 300));
+
+    try {
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation: "p", unit: "mm", format: "a4", compress: true });
+      await addAreaAsPdfPages(pdf, exportArea);
+      pdf.save(`Jugadora_${sel.player.replace(/[^a-zA-Z0-9]/g, "_")}_${rangeStart}_al_${rangeEnd}.pdf`);
+    } catch (e) {
+      console.error("Error al generar el PDF de jugadora:", e);
+      alert("Ocurrió un error al generar el PDF de la jugadora.");
     }
   }
 

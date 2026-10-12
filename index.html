@@ -80,9 +80,10 @@
     <div class="section-body" id="secBody_trainings">
       <div id="coachTeamList"></div>
 
-      <div style="display:flex; gap:8px; margin-top:10px;">
-        <button class="btn-pdf-mode" id="btnPdfMode" onclick="togglePdfMode()" style="flex:1; min-width:0; margin-bottom:0;">📊 PDF ENTRENAMIENTOS</button>
-        <button class="btn-pdf-mode" id="btnPdfResultados" onclick="openResultsRangeModal()" style="flex:1; min-width:0; margin-bottom:0;">🏆 PDF RESULTADOS</button>
+      <div style="display:flex; gap:6px; margin-top:10px;">
+        <button class="btn-pdf-mode" id="btnPdfMode" onclick="togglePdfMode()" style="flex:1; min-width:0; margin-bottom:0; font-size:0.7rem; padding:8px 4px;">📊 PDF ENTRENAMIENTOS</button>
+        <button class="btn-pdf-mode" id="btnPdfJugadora" onclick="openPlayerPdfModal()" style="flex:1; min-width:0; margin-bottom:0; font-size:0.7rem; padding:8px 4px;">🧑 PDF JUGADORA</button>
+        <button class="btn-pdf-mode" id="btnPdfResultados" onclick="openResultsRangeModal()" style="flex:1; min-width:0; margin-bottom:0; font-size:0.7rem; padding:8px 4px;">🏆 PDF RESULTADOS</button>
       </div>
     </div>
 
@@ -312,6 +313,21 @@
         <button class="btn-close-modal" onclick="closeSelectQueryPdfModal()">✕</button>
       </div>
       <div id="queryListPdfContainer" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; max-height: 240px; overflow-y: auto;"></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modalPlayerPdf">
+    <div class="modal-box" style="max-width: 380px;">
+      <div class="modal-header">
+        <div class="modal-title">🧑 PDF Jugadora</div>
+        <button class="btn-close-modal" onclick="closePlayerPdfModal()">✕</button>
+      </div>
+      <label style="font-size:0.75rem; color:#64748b; font-weight:600; display:block; margin-bottom:4px;">Equipo:</label>
+      <select id="playerPdfTeamSelect" class="app-select" onchange="renderPlayerPdfPlayers()"></select>
+      <div id="playerPdfPlayersWrap" style="display:none; margin-top:12px;">
+        <label style="font-size:0.75rem; color:#64748b; font-weight:600; display:block; margin-bottom:4px;">Selecciona la jugadora:</label>
+        <div id="playerPdfPlayersList" style="display:flex; flex-direction:column; gap:6px; max-height:45vh; overflow-y:auto;"></div>
+      </div>
     </div>
   </div>
 
@@ -574,6 +590,46 @@
           <canvas id="chartQualityCanvas"></canvas>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTENEDOR OCULTO PARA EXPORTACIÓN A PDF DE JUGADORA -->
+<div id="pdfPlayerExportArea">
+  <img src="LOGO-NVA.png" alt="Marca de Agua" class="pdf-watermark">
+
+  <div class="pdf-content-wrapper">
+    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #0052d4; padding-bottom: 12px; margin-bottom: 18px;">
+      <img src="LOGO-NVA.png" alt="Logo" style="height: 65px; width: auto;">
+      <h1 style="font-size: 24px; color: #0052d4; flex: 1; text-align: center; font-weight: 800; margin: 0 10px; letter-spacing: 0.5px;">Club Nou Vòlei Alzira</h1>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 16px;">
+      <h2 id="pdfPlayerTitle" style="font-size: 24px; color: #0f172a; margin: 0; font-weight: 800;">Informe de jugadora</h2>
+    </div>
+
+    <div class="pdf-player-info">
+      <p><b>Entrenador:</b> <span id="pdfPlayerCoach">-</span></p>
+      <p><b>Equipo y categoría:</b> <span id="pdfPlayerTeam">-</span></p>
+      <p><b>Período:</b> <span id="pdfPlayerPeriod">-</span></p>
+    </div>
+
+    <div class="pdf-chart-box" style="margin-top: 20px;">
+      <h4>Tendencia de Calidad de Entrenamiento</h4>
+      <div style="height: 230px; position: relative;"><canvas id="chartPlayerQualityCanvas"></canvas></div>
+    </div>
+
+    <div class="pdf-chart-box" style="margin-top: 20px;">
+      <h4 id="pdfPlayerStrikesTitle">Strikes</h4>
+      <div style="height: 200px; position: relative;"><canvas id="chartPlayerStrikesCanvas"></canvas></div>
+    </div>
+
+    <div class="pdf-chart-box" style="margin-top: 20px; text-align: left;">
+      <h4 style="text-align: center;">Comentarios</h4>
+      <table class="pdf-table" style="margin: 0;">
+        <thead><tr><th style="width: 105px;">Fecha</th><th>Comentario</th></tr></thead>
+        <tbody id="pdfPlayerCommentsBody"></tbody>
+      </table>
     </div>
   </div>
 </div>
