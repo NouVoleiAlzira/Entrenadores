@@ -1225,15 +1225,19 @@
 
     await new Promise(r => setTimeout(r, 300));
 
-    const canvas = await html2canvas(exportArea, { scale: 2, useCORS: true });
+    const canvas = await html2canvas(exportArea, { scale: 1.5, useCORS: true });
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
 
     const fullCanvas = document.createElement("canvas");
-    const scale = 2;
+    const scale = 1.5;   // ~144 ppp: nítido en pantalla/impresión y mucho más ligero
     fullCanvas.width = pdfWidth * 3.7795275591 * scale; 
     fullCanvas.height = pdfHeight * 3.7795275591 * scale;
     const ctx = fullCanvas.getContext("2d");
+
+    // JPEG no admite transparencia: se parte de un fondo blanco (antes lo daba el PNG transparente)
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, fullCanvas.width, fullCanvas.height);
 
     const bgGradient = ctx.createLinearGradient(0, 0, fullCanvas.width, fullCanvas.height);
     bgGradient.addColorStop(0, 'rgba(0, 102, 255, 0.3)');
@@ -1256,9 +1260,9 @@
 
     ctx.drawImage(canvas, 0, 0, fullCanvas.width, (canvas.height * fullCanvas.width) / canvas.width);
 
-    const imgData = fullCanvas.toDataURL('image/png');
+    const imgData = fullCanvas.toDataURL('image/jpeg', 0.85);
     if (!isFirstPage) pdf.addPage();
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
   }
 
   async function generatePDF() {
@@ -1273,7 +1277,7 @@
 
     try {
       const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: true });
       await addTeamReportPage(pdf, pdfSelectedTeamKey, pdfSelectedTeamName, logs, true);
       pdf.save(`Informe_${pdfSelectedTeamName.replace(/[^a-zA-Z0-9]/g, '_')}_${rangeStart}_al_${rangeEnd}.pdf`);
     } catch (e) {
@@ -1293,7 +1297,7 @@
     let pages = 0;
     try {
       const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: true });
       for (const en of entries) {
         const logs = collectTeamLogs(en.teamKey);
         if (logs.length === 0) { omitidos.push(en.label); continue; }
