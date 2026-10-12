@@ -1,10 +1,37 @@
+/* ===== Tipografías locales (Barlow / Barlow Condensed, SIL OFL) =====
+   Van en la carpeta fonts/ porque la política de seguridad solo permite
+   cargar fuentes desde este mismo sitio. */
+@font-face { font-family: "Barlow"; font-style: normal; font-weight: 400; font-display: swap; src: url("fonts/barlow-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Barlow"; font-style: normal; font-weight: 600; font-display: swap; src: url("fonts/barlow-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Barlow"; font-style: normal; font-weight: 700 900; font-display: swap; src: url("fonts/barlow-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Barlow Condensed"; font-style: normal; font-weight: 600 900; font-display: swap; src: url("fonts/barlow-condensed-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Barlow Condensed"; font-style: italic; font-weight: 600 900; font-display: swap; src: url("fonts/barlow-condensed-latin-800-italic.woff2") format("woff2"); }
+
     :root {
-      --azul-primary: #1e3c72;
-      --azul-dark: #0f172a;
-      --morado-accent: #7e22ce;
-      --rosa-brand: #ec4899;
-      --bg-gradient: linear-gradient(135deg, #000587 0%, #360347 100%);
-      --bg-gradient1: linear-gradient(135deg, #690410 0%, #0b0157 100%);
+      /* ===== Paleta NVA (rediseño "pista") =====
+         Noche  #0D1B45  fondo de la app (azul del club)
+         Pista  #15296A  superficies elevadas
+         Tiza   #E9EEFA  texto y líneas sobre fondo oscuro
+         Balón  #F5C518  amarillo del balón: selección y foco
+         Alzira #D62839  rojo del club: acciones de guardar
+         Niebla #93A3CF  texto secundario */
+      --noche: #0D1B45;
+      --pista: #15296A;
+      --pista-2: #1D3580;
+      --tiza: #E9EEFA;
+      --balon: #F5C518;
+      --alzira: #D62839;
+      --niebla: #93A3CF;
+      --linea: rgba(233, 238, 250, 0.22);
+      --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+      --font-body: "Barlow", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+      --azul-primary: #1B3A8C;
+      --azul-dark: #0D1B45;
+      --morado-accent: #2450C8;
+      --rosa-brand: #D62839;
+      --bg-gradient: var(--noche);
+      --bg-gradient1: var(--noche);
       --text-dark: #1e293b;
       --gray-light: #f8fafc;
       --gray-border: #cbd5e1;
@@ -12,18 +39,19 @@
       --fondo-verdefino: #dcffd9;
       --fondo-rojofino: #f9bcbc;
       --fondo-amarillofino: #fcffdc;
-      --btn-fondoMorado: linear-gradient(180deg, #a855f7, #2c024d);
-      --btn-fondoVerde: linear-gradient(180deg, #42db1f, #023608);
-      --btn-fondorojo: linear-gradient(180deg, #f70a2e, #2e0108);
-      --btn-fondorAzul: linear-gradient(180deg, #0509eb, #0e044a);
-      --btn-fondoAmarillo: linear-gradient(180deg, #edf518, #363801);
+      /* Fondos de botón: planos y con significado (antes degradados brillantes) */
+      --btn-fondoMorado: rgba(233, 238, 250, 0.08);
+      --btn-fondoVerde: #1E8A57;
+      --btn-fondorojo: #D62839;
+      --btn-fondorAzul: #2450C8;
+      --btn-fondoAmarillo: #F5C518;
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: var(--font-body);
       -webkit-tap-highlight-color: transparent;
     }
 
@@ -1418,3 +1446,308 @@
     .hz-actions { display: flex; gap: 8px; margin-top: 10px; }
     .hz-actions button { flex: 1; min-width: 0; margin-bottom: 0; }
     .hz-add-venue { display: flex; gap: 6px; margin-top: 8px; }
+
+    /* =====================================================================
+       REDISEÑO "PISTA" — capa final de estilos
+       Idea: la app es la pista. Fondo azul noche del club, líneas de tiza
+       blanca para separar secciones, rojo Alzira solo en las acciones de
+       guardar y el amarillo del balón para lo seleccionado y el foco.
+       Esta capa va al final para no tocar las reglas anteriores.
+       ===================================================================== */
+
+    /* Los PDF generados conservan su tipografía original */
+    #pdfReportExportArea *, #pdfPlayerExportArea *,
+    #pdfQueryExportArea *, #pdfResultsExportArea * {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body { background: #070F2B; color: var(--tiza); }
+
+    .app-container {
+      background:
+        /* líneas de pista muy tenues: línea de ataque y central */
+        linear-gradient(transparent calc(34% - 1px), rgba(233,238,250,0.035) calc(34% - 1px), rgba(233,238,250,0.035) 34%, transparent 34%),
+        var(--noche);
+      box-shadow: 0 0 0 1px rgba(233,238,250,0.06), 0 20px 60px rgba(0,0,0,0.55);
+    }
+    .app-container::before { opacity: 0.035; }
+
+    /* ---------- Cabecera ---------- */
+    header {
+      background: var(--noche);
+      backdrop-filter: none;
+      border-bottom: 0;
+      padding: 10px 14px;
+      min-height: 64px;
+      box-shadow: inset 0 -3px 0 var(--alzira), 0 6px 18px rgba(0,0,0,0.35);
+    }
+    header::before {
+      /* escudo pequeño a la izquierda del título, en lugar de la marca de agua */
+      display: none;
+    }
+    .header-title-container { gap: 10px; padding: 0 76px; }
+    .header-title-container::before {
+      content: "";
+      flex: none;
+      width: 40px; height: 40px;
+      background: url('LOGO-NVA.png') no-repeat center / contain;
+    }
+    header h1 {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-weight: 800;
+      font-size: clamp(1.35rem, 6.4vw, 2rem);
+      line-height: 1;
+      letter-spacing: 0.01em;
+      background: none;
+      -webkit-background-clip: border-box;
+      -webkit-text-fill-color: currentColor;
+      -webkit-text-stroke: 0;
+      color: var(--tiza);
+    }
+    .btn-header-icon {
+      text-shadow: none;
+      border-radius: 10px;
+      min-width: 40px;
+      justify-content: center;
+    }
+    .btn-header-icon:hover { background: rgba(233,238,250,0.08); }
+
+    .network-badge {
+      font-size: 0.66rem;
+      letter-spacing: 0.02em;
+      text-transform: none;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+    .network-online  { background: rgba(30,138,87,0.22); color: #7BE0AB; box-shadow: inset 0 0 0 1px rgba(123,224,171,0.45); }
+    .network-offline { background: rgba(214,40,57,0.25); color: #FF9AA5; box-shadow: inset 0 0 0 1px rgba(255,154,165,0.5); }
+
+    /* ---------- Pantallas y títulos de sección ---------- */
+    .screen { padding: 14px 16px 24px; }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-align: left;
+      font-family: var(--font-display);
+      font-style: italic;
+      font-weight: 800;
+      font-size: 1.5rem;
+      line-height: 1.1;
+      letter-spacing: 0.005em;
+      color: var(--tiza);
+      text-shadow: none;
+      margin: 22px 0 10px;
+    }
+    .screen > .section-title:first-child,
+    .screen > .pdf-mode-banner + .section-title { margin-top: 4px; }
+    /* la línea de tiza que cierra el título, como una línea de campo */
+    .section-title::after {
+      content: "";
+      flex: 1;
+      height: 2px;
+      min-width: 24px;
+      background: var(--linea);
+      border-radius: 1px;
+    }
+    .section-toggle .sec-arrow {
+      order: 2;
+      margin-left: 0;
+      font-style: normal;
+      font-size: 1.1rem;
+      color: var(--niebla);
+    }
+    .section-toggle:hover .sec-arrow { color: var(--balon); }
+    .section-toggle.collapsed::after { background: rgba(233,238,250,0.12); }
+
+    /* ---------- Botones de entrenador / equipo ---------- */
+    .coach-btn {
+      background: var(--pista);
+      border: 1px solid transparent;
+      border-radius: 14px;
+      padding: 15px 16px;
+      font-size: 1rem;
+      font-weight: 600;
+      box-shadow: 0 1px 0 rgba(233,238,250,0.06) inset, 0 6px 16px rgba(0,0,0,0.22);
+      transition: background-color 0.15s ease, border-color 0.15s ease;
+    }
+    .coach-btn:hover { background: var(--pista-2); }
+    .coach-btn.selected {
+      background: var(--pista-2);
+      border-color: var(--balon);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.22);
+    }
+    .coach-btn > span:last-child { color: var(--niebla); font-size: 0.9rem; }
+    .coach-btn.selected > span:last-child { color: var(--balon); }
+    .coach-btn.otros-nuevo {
+      background: transparent;
+      border: 1.5px dashed var(--linea);
+      box-shadow: none;
+      color: var(--niebla);
+    }
+
+    .teams-container {
+      margin: 2px 0 14px 18px;
+      padding-left: 14px;
+      border-left: 2px solid var(--balon);
+      gap: 6px;
+    }
+    .team-btn {
+      background: var(--tiza);
+      color: var(--noche);
+      border-radius: 10px;
+      padding: 11px 14px;
+      font-weight: 700;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.22);
+    }
+    .team-btn:hover { background: #fff; }
+    .team-btn-all { background: var(--balon); color: var(--noche); border: 0; }
+
+    /* ---------- Botones de acción ----------
+       Rojo  = guardar en GitHub (acción principal)
+       Azul  = abrir otra pantalla o cartel
+       Tiza  = generar PDF (secundario)
+       Verde = refrescar · Amarillo = OTROS */
+    .btn-pdf-mode, .btn-pdf-mode2, .btn-save-session, .btn-danger-action, .btn-history {
+      font-family: var(--font-body);
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      transition: filter 0.15s ease, transform 0.1s ease;
+      min-height: 42px;
+      line-height: 1.2;
+    }
+    .btn-pdf-mode:hover, .btn-pdf-mode2:hover, .btn-save-session:hover,
+    .btn-danger-action:hover, .btn-history:hover { filter: brightness(1.12); }
+    .btn-pdf-mode:active, .btn-pdf-mode2:active, .btn-save-session:active,
+    .btn-danger-action:active, .btn-history:active { transform: translateY(1px); }
+
+    .btn-pdf-mode {
+      box-shadow: none;
+      border: 1px solid var(--linea);
+      color: var(--tiza);
+    }
+    .btn-pdf-mode:hover { background: rgba(233,238,250,0.14); filter: none; }
+    .btn-pdf-mode2 { font-size: 0.85rem; }
+    .btn-save-session { font-size: 0.85rem; }
+    .btn-save-session[style*="btn-fondoAmarillo"] { color: var(--noche); }
+    .btn-danger-action { background: #8F1424; }
+
+    .btn-history { background: var(--pista-2); border: 1px solid var(--linea); box-shadow: none; }
+
+    .pdf-mode-banner {
+      background: var(--balon);
+      color: var(--noche);
+      border-radius: 12px;
+      padding: 10px 14px;
+    }
+    .pdf-mode-banner button { color: var(--noche) !important; }
+
+    /* ---------- Calendario semanal ---------- */
+    .wk-canvas { border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
+    .wk-nav-btn { border-radius: 10px; }
+    .wk-legend, .wk-summary { color: var(--niebla); font-size: 0.78rem; }
+    .wk-legend b { color: #fff; }
+    .wk-v { background: #1E8A57; }
+    .wk-x { background: var(--alzira); }
+
+    /* ---------- Tablón ---------- */
+    #tablonTextarea {
+      opacity: 1;
+      background: rgba(233,238,250,0.06);
+      color: var(--tiza);
+      border: 1px solid var(--linea);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 0.95rem;
+      line-height: 1.45;
+    }
+    #tablonTextarea::placeholder { color: var(--niebla); }
+    #tablonTextarea:focus { border-color: var(--balon); background: rgba(233,238,250,0.09); }
+
+    /* ---------- Registro: fecha y tarjetas de jugadora ---------- */
+    .date-container {
+      background: var(--pista);
+      border: 1px solid var(--linea);
+      color: var(--tiza);
+      border-radius: 10px;
+    }
+    .date-input { border-radius: 7px; font-family: var(--font-body); }
+
+    .player-card {
+      border-radius: 12px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+      margin-bottom: 8px;
+    }
+    .state-strip { border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
+    .player-name { color: var(--noche); font-size: 1.02rem; }
+    .star.active { color: #E5A800; }
+
+    /* ---------- Marcador del partido ---------- */
+    .ms-box { border-color: var(--linea); border-radius: 12px; background: rgba(233,238,250,0.05); }
+    .ms-score { font-family: var(--font-display); font-weight: 800; font-variant-numeric: tabular-nums; }
+    .ms-set-input { border-color: var(--pista); border-radius: 8px; }
+    .ms-set-input:focus { border-color: var(--balon); }
+
+    /* ---------- Paneles blancos (Otros, Horarios) ---------- */
+    .otros-panel, .hz-panel { border-radius: 14px; box-shadow: 0 6px 18px rgba(0,0,0,0.3); }
+    .hz-sub-btn.open, .hz-team-btn.open { border-color: var(--morado-accent); background: #EEF2FF; }
+    .hz-sub-panel { border-left-color: var(--morado-accent); }
+    .hz-status { text-shadow: none; }
+
+    /* ---------- Ventanas (modales) ---------- */
+    .modal-backdrop { background: rgba(7, 15, 43, 0.78); }
+    .modal-box { border-radius: 18px; padding: 18px; box-shadow: 0 24px 60px rgba(0,0,0,0.5); }
+    .modal-header { border-bottom: 2px solid #E6EAF4; padding-bottom: 10px; }
+    .modal-title {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-weight: 800;
+      font-size: 1.35rem;
+      color: var(--noche);
+    }
+    .btn-close-modal { width: 36px; height: 36px; border-radius: 10px; }
+    .btn-close-modal:hover { background: #F1F4FA; color: var(--noche); }
+    .tab-btn.active { color: var(--morado-accent); }
+    .app-input, .app-select { border-radius: 8px; padding: 10px 12px; font-family: var(--font-body); font-size: 0.88rem; }
+    .app-input:focus, .app-select:focus { border-color: var(--morado-accent); box-shadow: 0 0 0 3px rgba(36,80,200,0.15); }
+    .btn-edit-history, .btn-add, .reason-add-btn { background: var(--morado-accent); }
+
+    .loading-spinner { border-top-color: var(--balon); }
+    .loading-overlay { background: rgba(7, 15, 43, 0.82); }
+
+    /* ---------- Accesibilidad ---------- */
+    button:focus-visible, [role="button"]:focus-visible, a:focus-visible,
+    input:focus-visible, select:focus-visible, textarea:focus-visible, .cal-day:focus-visible {
+      outline: 3px solid var(--balon);
+      outline-offset: 2px;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .screen, .teams-container { animation: none; }
+      .btn-pdf-mode, .btn-pdf-mode2, .btn-save-session, .btn-history, .coach-btn { transition: none; }
+    }
+
+    /* ---------- Calendario de partidos ---------- */
+    .cp-range { display: flex; gap: 10px; margin-bottom: 12px; }
+    .cp-range label { flex: 1; display: flex; flex-direction: column; gap: 4px; color: var(--niebla); font-size: 0.78rem; font-weight: 600; }
+    .cp-range input { padding: 9px 10px; border-radius: 10px; border: 1px solid var(--linea); background: rgba(233,238,250,0.08); color: #fff; font: inherit; font-size: 0.95rem; color-scheme: dark; }
+    .cp-matches { margin-bottom: 12px; }
+    .cp-empty { color: var(--niebla); font-size: 0.85rem; text-align: center; padding: 14px 6px; }
+    .cp-day { font-family: var(--font-display); font-weight: 700; color: var(--balon); text-transform: uppercase; letter-spacing: .04em; font-size: 0.95rem; margin: 12px 0 6px; }
+    .cp-match { display: flex; gap: 12px; align-items: center; background: rgba(233,238,250,0.06); border: 1px solid var(--linea); border-radius: 12px; padding: 9px 12px; margin-bottom: 6px; }
+    .cp-time { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; color: #fff; min-width: 48px; }
+    .cp-info { flex: 1; min-width: 0; }
+    .cp-vs { color: var(--tiza); font-size: 0.9rem; }
+    .cp-vs b { color: #fff; }
+    .cp-meta { color: var(--niebla); font-size: 0.75rem; margin-top: 2px; }
+    .cp-teams-btn { width: 100%; }
+    .cp-teams { margin-top: 10px; }
+    .cp-team { display: flex; align-items: center; gap: 10px; padding: 9px 4px; border-bottom: 1px solid var(--linea); }
+    .cp-team-name { flex: 1; min-width: 0; color: #fff; font-weight: 600; font-size: 0.9rem; }
+    .cp-team-status { display: flex; align-items: center; margin-top: 3px; font-weight: 400; }
+    .cp-up { color: var(--niebla); font-size: 0.75rem; }
+    .cp-none { font-style: italic; }
+    .cp-upload { flex: 0 0 auto; border: none; border-radius: 10px; padding: 8px 12px; background: var(--btn-fondorAzul); color: #fff; font: inherit; font-weight: 700; font-size: 0.78rem; cursor: pointer; }

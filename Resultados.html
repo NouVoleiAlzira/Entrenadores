@@ -518,6 +518,58 @@
         }
         .nva-btn-inicio:active { transform: scale(0.95); }
     </style>
+    <style>
+        /* =====================================================================
+           REDISEÑO "PISTA" — solo los controles de la página (botón Inicio,
+           MENU flotante y ventanas). El cartel que se descarga NO cambia.
+           Misma paleta y tipografía que la pantalla principal (styles.css).
+           ===================================================================== */
+        @font-face { font-family: "Barlow"; font-style: normal; font-weight: 600; font-display: swap; src: url("fonts/barlow-latin-600-normal.woff2") format("woff2"); }
+        @font-face { font-family: "Barlow"; font-style: normal; font-weight: 700 900; font-display: swap; src: url("fonts/barlow-latin-700-normal.woff2") format("woff2"); }
+        @font-face { font-family: "Barlow Condensed"; font-style: italic; font-weight: 600 900; font-display: swap; src: url("fonts/barlow-condensed-latin-800-italic.woff2") format("woff2"); }
+
+        .nva-btn-inicio, .btn-menu-acciones, .boton-accion-menu, .btn-accion,
+        .btn-aceptar, .btn-reset, .btn-modal-action, .modal-tab-btn {
+            font-family: "Barlow", "Segoe UI", Arial, sans-serif !important;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+        }
+        .nva-btn-inicio {
+            background-color: rgba(13, 27, 69, 0.82);
+            border: 1px solid rgba(233, 238, 250, 0.28);
+            -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+        }
+        .btn-menu-acciones {
+            background-color: #0D1B45 !important;
+            border: 1px solid rgba(233, 238, 250, 0.28) !important;
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55);
+        }
+        .btn-menu-acciones.abierto { background-color: #F5C518 !important; color: #0D1B45 !important; border-color: #F5C518 !important; }
+        .boton-accion-menu, .btn-accion { box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5); }
+
+        /* Ventanas */
+        .modal-content, .date-range-modal-content, .modal-box {
+            border: 1px solid rgba(233, 238, 250, 0.16) !important;
+            border-radius: 18px !important;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7) !important;
+        }
+        .modal-content, .modal-box, .date-range-modal-content { background-color: #0F1F50 !important; }
+        .modal-header { background-color: #0D1B45 !important; border-bottom: 2px solid #D62839 !important; }
+        .modal-header h2, .modal-box h3 {
+            font-family: "Barlow Condensed", "Arial Narrow", sans-serif !important;
+            font-style: italic;
+            font-weight: 800;
+            font-size: 1.5rem;
+        }
+        .btn-aceptar, .btn-modal-action { background-color: #2450C8; border-radius: 10px; }
+        .btn-reset { background-color: #D62839; border-radius: 10px; }
+
+        .nva-btn-inicio:focus-visible, .btn-menu-acciones:focus-visible, .boton-accion-menu:focus-visible,
+        .btn-accion:focus-visible, .btn-aceptar:focus-visible, .btn-reset:focus-visible, .btn-modal-action:focus-visible {
+            outline: 3px solid #F5C518; outline-offset: 2px;
+        }
+    </style>
 </head>
 <body>
 

@@ -1,6 +1,6 @@
 // Service Worker - Nou Volei Alzira
 // Sube el número de versión cada vez que quieras forzar una renovación completa de la caché.
-const VERSION = "nva-v8";
+const VERSION = "nva-v10";
 const SHELL_CACHE = VERSION + "-shell";
 const CDN_CACHE = VERSION + "-cdn";
 
@@ -10,12 +10,18 @@ const SHELL_FILES = [
   "index.html",
   "styles.css",
   "app.js",
+  "calendario-partidos.js",
   "manifest.json",
   "LOGO-NVA.png",
   "Partidos.html",
   "Resultados.html",
   "icons/icon-192.png",
-  "icons/icon-512.png"
+  "icons/icon-512.png",
+  "fonts/barlow-latin-400-normal.woff2",
+  "fonts/barlow-latin-600-normal.woff2",
+  "fonts/barlow-latin-700-normal.woff2",
+  "fonts/barlow-condensed-latin-700-normal.woff2",
+  "fonts/barlow-condensed-latin-800-italic.woff2"
 ];
 
 // Librerías externas que app.js carga bajo demanda (PDF y gráficos)
