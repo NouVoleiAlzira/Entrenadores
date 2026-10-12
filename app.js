@@ -1546,7 +1546,8 @@
         type: "bar",
         label: "Strikes",
         data: strikes,
-        yAxisID: "y1",
+        yAxisID: "y",
+        pointStyle: "rect",
         backgroundColor: "rgba(239, 68, 68, 0.55)",
         borderColor: "#ef4444",
         borderWidth: 1,
@@ -1560,6 +1561,7 @@
         label: "Calidad",
         data: calidad,
         yAxisID: "y",
+        pointStyle: "line",
         borderColor: "#0052d4",
         borderWidth: 3,
         backgroundColor: grad1,
@@ -1579,6 +1581,7 @@
         label: `Media calidad: ${media.toFixed(1)} ★`,
         data: labels.map(() => parseFloat(media.toFixed(2))),
         yAxisID: "y",
+        pointStyle: "line",
         borderColor: "#f59e0b",
         borderWidth: 2,
         borderDash: [8, 5],
@@ -1588,6 +1591,24 @@
         order: 1
       });
     }
+    // X en los entrenamientos a los que no asistió (sobre la línea de media) y asistencia x/X en la leyenda
+    const yX = media !== null ? parseFloat(media.toFixed(2)) : 1;
+    dsCombinado.push({
+      type: "line",
+      label: `Asistencia: ${presentes.length}/${registros.length}`,
+      data: registros.map(r => r.p.attendance === "presente" ? null : yX),
+      yAxisID: "y",
+      showLine: false,
+      pointStyle: "crossRot",
+      pointRadius: 9,
+      pointHoverRadius: 9,
+      borderColor: "#dc2626",
+      borderWidth: 3,
+      pointBorderColor: "#dc2626",
+      pointBorderWidth: 3,
+      noLabel: true,
+      order: 0
+    });
     pdfPlayerChart1 = new Chart(ctx1, {
       data: { labels, datasets: dsCombinado },
       plugins: [labelPlugin],
@@ -1596,18 +1617,16 @@
         maintainAspectRatio: false,
         animation: false,
         layout: { padding: { top: 20 } },
-        plugins: { legend: { display: true, position: "bottom" }, tooltip: { enabled: false } },
+        plugins: { legend: { display: true, position: "bottom", labels: { usePointStyle: true, boxWidth: 12 } }, tooltip: { enabled: false } },
         scales: {
           x: { grid: { display: false } },
-          y: { min: 1, max: 5, title: { display: true, text: "Calidad" }, grid: { color: "rgba(0,0,0,0.05)" } },
-          // Eje derecho de strikes: máximo holgado para que las barras no tapen la línea de calidad
-          y1: {
-            position: "right",
-            beginAtZero: true,
-            max: Math.max(4, maxStrikes * 2),
+          // Un único eje para calidad (1-5) y strikes (0-3): misma escala
+          y: {
+            min: 0,
+            max: Math.max(5, maxStrikes),
             ticks: { stepSize: 1, precision: 0 },
-            title: { display: true, text: "Strikes" },
-            grid: { drawOnChartArea: false }
+            title: { display: true, text: "Calidad (1-5) · Strikes (0-3)" },
+            grid: { color: "rgba(0,0,0,0.05)" }
           }
         }
       }
