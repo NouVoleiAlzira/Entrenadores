@@ -2488,12 +2488,132 @@
     localStorage.setItem("NVA_OFFLINE_QUEUE", JSON.stringify(offlineQueue));
   }
 
+  // ---------------------------------------------------------------------
+  //  BORRADO DE UN REGISTRO DE ENTRENAMIENTO
+  //  Se elimina de la caché local y del fichero de la carpeta "registros/".
+  //  Si no hay conexión (o falla), el borrado queda en la cola offline.
+  // ---------------------------------------------------------------------
+  function isLogPendingDelete(equipo, fecha) {
+    return offlineQueue.some(op => op.deleteLog && op.equipo === equipo && op.fecha === fecha);
+  }
+
+  function enqueueOfflineDeleteLog(equipo, fecha) {
+    if (isLogPendingDelete(equipo, fecha)) return;
+    offlineQueue.push({
+      deleteLog: true,
+      equipo: equipo,
+      fecha: fecha,
+      fileName: `${TRAINING_LOGS_FOLDER}/Entrenamientos_${sanitizeFileName(equipo)}_${fecha}.json`,
+      commitMessage: `Borrar registro entrenamiento ${equipo} - ${fecha}`,
+      timestamp: Date.now()
+    });
+    localStorage.setItem("NVA_OFFLINE_QUEUE", JSON.stringify(offlineQueue));
+  }
+
+  // Borra en GitHub el/los fichero(s) que contienen el registro de ese equipo y fecha.
+  // Devuelve true si ya no queda nada de ese registro en el repositorio.
+  async function githubDeleteTrainingLogFiles(equipo, fecha) {
+    if (!ghSettings.user || !ghSettings.repo || !ghSettings.token || !navigator.onLine) return false;
+    const files = await listGitHubFolder(TRAINING_LOGS_FOLDER);
+    if (!files) return false;   // no se pudo listar: no se puede confirmar el borrado
+
+    const authHeaders = { "Authorization": `token ${ghSettings.token}` };
+    const candidates = files.filter(f => f.name && f.name.startsWith("Entrenamientos_") && f.name.endsWith(".json") && f.name.includes(fecha));
+
+    for (const file of candidates) {
+      const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${TRAINING_LOGS_FOLDER}/${file.name}`;
+      const getRes = await fetch(url, { headers: authHeaders, cache: "no-store" });
+      if (!getRes.ok) { if (getRes.status === 404) continue; return false; }
+      const getJson = await getRes.json();
+      let parsed;
+      try { parsed = JSON.parse(b64_to_utf8(getJson.content)); } catch (e) { continue; }
+
+      const entries = Array.isArray(parsed) ? parsed : [parsed];
+      const isTarget = e => e && e.equipo === equipo && e.fecha === fecha;
+      if (!entries.some(isTarget)) continue;
+
+      const remaining = entries.filter(e => !isTarget(e));
+      let res;
+      if (remaining.length > 0) {
+        // El fichero contiene también otros registros: se reescribe sin el borrado
+        res = await fetch(url, {
+          method: "PUT",
+          headers: { ...authHeaders, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: `Borrar registro entrenamiento ${equipo} - ${fecha}`,
+            content: utf8_to_b64(JSON.stringify(remaining, null, 2)),
+            sha: getJson.sha
+          })
+        });
+      } else {
+        res = await fetch(url, {
+          method: "DELETE",
+          headers: { ...authHeaders, "Content-Type": "application/json" },
+          body: JSON.stringify({ message: `Borrar registro entrenamiento ${equipo} - ${fecha}`, sha: getJson.sha })
+        });
+      }
+      if (!res.ok && res.status !== 404) return false;
+    }
+    return true;
+  }
+
+  let pendingDeleteLog = null;   // { equipo, fecha }
+
+  function openDeleteLogModal(equipo, fecha) {
+    const existe = allTrainingLogs.some(l => l.equipo === equipo && l.fecha === fecha);
+    if (!existe) {
+      alert("Este entrenamiento no tiene registro guardado: no hay nada que borrar.");
+      return;
+    }
+    pendingDeleteLog = { equipo, fecha };
+    const p = String(fecha).split("-");
+    const fechaTxt = p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : fecha;
+    document.getElementById("deleteLogText").innerText =
+      `¿Quieres borrar el registro de entrenamiento de ${equipo} del ${fechaTxt}?`;
+    document.getElementById("modalDeleteLog").classList.add("active");
+  }
+
+  function closeDeleteLogModal() {
+    document.getElementById("modalDeleteLog").classList.remove("active");
+  }
+
+  async function confirmDeleteLog() {
+    const d = pendingDeleteLog;
+    if (!d) return;
+    pendingDeleteLog = null;
+    closeDeleteLogModal();
+
+    allTrainingLogs = allTrainingLogs.filter(l => !(l.equipo === d.equipo && l.fecha === d.fecha));
+    localStorage.setItem("NVA_TRAINING_LOGS", JSON.stringify(allTrainingLogs));
+
+    let ok = false;
+    try {
+      ok = await githubDeleteTrainingLogFiles(d.equipo, d.fecha);
+    } catch (e) {
+      console.error("Error al borrar el registro en GitHub:", e);
+    }
+    if (!ok) enqueueOfflineDeleteLog(d.equipo, d.fecha);
+
+    renderWeekCalendar();
+    alert(ok
+      ? "Registro borrado."
+      : "Registro borrado en este dispositivo. Se eliminará de GitHub cuando recupere la conexión.");
+  }
+
   async function processOfflineQueue() {
     if (!navigator.onLine || offlineQueue.length === 0) return;
     if (!ghSettings.user || !ghSettings.repo || !ghSettings.token) return;
 
     const remaining = [];
     for (const op of offlineQueue) {
+      if (op.deleteLog) {
+        try {
+          if (!(await githubDeleteTrainingLogFiles(op.equipo, op.fecha))) remaining.push(op);
+        } catch (e) {
+          remaining.push(op);
+        }
+        continue;
+      }
       const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${op.fileName}`;
       try {
         let sha = "";
@@ -2743,6 +2863,7 @@
       const entries = Array.isArray(parsed) ? parsed : [parsed];
       entries.forEach(remoteLog => {
         if (!remoteLog || !remoteLog.equipo || !remoteLog.fecha) return;
+        if (isLogPendingDelete(remoteLog.equipo, remoteLog.fecha)) return;   // borrado pendiente de enviar a GitHub
         const idx = allTrainingLogs.findIndex(l => l.equipo === remoteLog.equipo && l.fecha === remoteLog.fecha);
         if (idx >= 0) {
           allTrainingLogs[idx] = remoteLog;
@@ -3600,21 +3721,60 @@
     return inside;
   }
 
-  // Toque sobre la imagen: si cae en un entrenamiento, se abre su registro
-  function wkCanvasClick(ev) {
+  // Entrenamiento dibujado bajo un punto de la pantalla -> { key, date } o null
+  function wkHitFromPoint(clientX, clientY) {
     const canvas = document.getElementById("wkCanvas");
-    if (!canvas || !wkShownMonday) return;
+    if (!canvas || !wkShownMonday) return null;
     const r = canvas.getBoundingClientRect();
-    const px = (ev.clientX - r.left) * canvas.width / r.width;
-    const py = (ev.clientY - r.top) * canvas.height / r.height;
+    const px = (clientX - r.left) * canvas.width / r.width;
+    const py = (clientY - r.top) * canvas.height / r.height;
     for (let i = wkHits.length - 1; i >= 0; i--) {
       if (wkPointInPoly(px, py, wkHits[i].pts)) {
         const d = new Date(wkShownMonday); d.setDate(d.getDate() + wkHits[i].day - 1);
-        wkOpenTraining(wkHits[i].key, wkFmt(d));
-        return;
+        return { key: wkHits[i].key, date: wkFmt(d) };
       }
     }
+    return null;
   }
+
+  let wkSuppressClick = false;   // tras una pulsación larga no se abre el registro
+
+  // Toque sobre la imagen: si cae en un entrenamiento, se abre su registro
+  function wkCanvasClick(ev) {
+    if (wkSuppressClick) { wkSuppressClick = false; return; }
+    const hit = wkHitFromPoint(ev.clientX, ev.clientY);
+    if (hit) wkOpenTraining(hit.key, hit.date);
+  }
+
+  // Mantener pulsado un entrenamiento (≈0,6 s) abre la ventana para borrar su registro
+  (function initWkLongPress() {
+    const canvas = document.getElementById("wkCanvas");
+    if (!canvas) return;
+    const LONG_PRESS_MS = 600, MOVE_TOLERANCE = 10;
+    let timer = null, start = null;
+    const cancel = () => { if (timer) { clearTimeout(timer); timer = null; } };
+
+    canvas.addEventListener("pointerdown", ev => {
+      if (ev.pointerType === "mouse" && ev.button !== 0) return;
+      wkSuppressClick = false;
+      cancel();
+      start = { x: ev.clientX, y: ev.clientY };
+      timer = setTimeout(() => {
+        timer = null;
+        const hit = wkHitFromPoint(start.x, start.y);
+        if (!hit) return;
+        wkSuppressClick = true;
+        if (navigator.vibrate) { try { navigator.vibrate(30); } catch (e) {} }
+        openDeleteLogModal(hit.key, hit.date);
+      }, LONG_PRESS_MS);
+    });
+    canvas.addEventListener("pointermove", ev => {
+      if (!timer || !start) return;
+      if (Math.abs(ev.clientX - start.x) > MOVE_TOLERANCE || Math.abs(ev.clientY - start.y) > MOVE_TOLERANCE) cancel();
+    });
+    ["pointerup", "pointercancel", "pointerleave"].forEach(t => canvas.addEventListener(t, cancel));
+    canvas.addEventListener("contextmenu", ev => ev.preventDefault());
+  })();
 
   // Abre la pantalla de registro del equipo en esa fecha (cargando el registro si ya existe)
   function wkOpenTraining(teamKey, dateStr) {

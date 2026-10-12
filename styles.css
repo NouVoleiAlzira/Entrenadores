@@ -887,7 +887,7 @@
     .wk-nav-btn:active { background: rgba(255, 255, 255, 0.4); }
     .wk-nav-prev { left: 8px; }
     .wk-nav-next { right: 8px; }
-    .wk-canvas { width: 100%; height: auto; display: block; border-radius: 8px; cursor: pointer; background: #fff; }
+    .wk-canvas { width: 100%; height: auto; display: block; border-radius: 8px; cursor: pointer; background: #fff; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: pan-y; }
     .wk-legend { display: flex; justify-content: center; gap: 18px; font-size: 0.74rem; color: #fff; margin-top: 8px; }
     .wk-mark { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font-weight: 800; font-size: 0.75rem; margin-right: 4px; }
     .wk-v { background: #16a34a; color: white; }

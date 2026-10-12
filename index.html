@@ -64,7 +64,7 @@
     <div class="section-title section-toggle" id="secHead_wk" role="button" tabindex="0" aria-expanded="true" aria-controls="secBody_wk" onclick="toggleSection('wk')" onkeydown="sectionKey(event,'wk')">📆 Calendario semanal <span class="sec-arrow">▾</span></div>
     <div class="section-body" id="secBody_wk">
       <div class="wk-canvas-wrap">
-        <canvas id="wkCanvas" class="wk-canvas" onclick="wkCanvasClick(event)" title="Toca un entrenamiento para abrir su registro"></canvas>
+        <canvas id="wkCanvas" class="wk-canvas" onclick="wkCanvasClick(event)" oncontextmenu="return false;" title="Toca un entrenamiento para abrir su registro. Mantén pulsado para borrarlo."></canvas>
         <button class="wk-nav-btn wk-nav-prev" onclick="wkMove(-1)" aria-label="Semana anterior">‹</button>
         <button class="wk-nav-btn wk-nav-next" onclick="wkMove(1)" aria-label="Semana siguiente">›</button>
       </div>
@@ -313,6 +313,22 @@
         <button class="btn-close-modal" onclick="closeSelectQueryPdfModal()">✕</button>
       </div>
       <div id="queryListPdfContainer" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; max-height: 240px; overflow-y: auto;"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: CONFIRMAR BORRADO DE UN REGISTRO DE ENTRENAMIENTO (pulsación larga en el calendario) -->
+  <div class="modal-backdrop" id="modalDeleteLog">
+    <div class="modal-box" style="max-width: 360px;">
+      <div class="modal-header">
+        <div class="modal-title">🗑️ Borrar registro</div>
+        <button class="btn-close-modal" onclick="closeDeleteLogModal()">✕</button>
+      </div>
+      <p id="deleteLogText" style="font-size:0.9rem; color:#0f172a; line-height:1.4; margin-bottom:6px;"></p>
+      <p style="font-size:0.78rem; color:#b91c1c; font-weight:600; margin-bottom:12px;">Se eliminará también de GitHub y no se puede deshacer.</p>
+      <div style="display:flex; gap:8px;">
+        <button class="btn-save-session" style="flex:1; background:#64748b;" onclick="closeDeleteLogModal()">Cancelar</button>
+        <button class="btn-save-session" style="flex:1; background:linear-gradient(135deg,#ef4444,#b91c1c);" onclick="withLoading(confirmDeleteLog, 'Borrando registro...')">🗑️ Borrar</button>
+      </div>
     </div>
   </div>
 
