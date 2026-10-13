@@ -1838,3 +1838,7 @@
 #modalOptions #draggablePlayerList, #modalOptions #draggablePlayerList > *,
 #modalOptions #draggableLeagueList, #modalOptions #draggableLeagueList > *,
 #modalOptions .tab-content label, #modalOptions .tab-content p { color: var(--text-dark); }
+
+/* Avisos y ventanas: texto oscuro sobre tarjetas claras (si no hay color propio) */
+.warn-line { color: var(--text-dark); }
+.modal-box { color: var(--text-dark); }
