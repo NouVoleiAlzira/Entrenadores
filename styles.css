@@ -1830,3 +1830,11 @@
     .cp-change-txt { flex: 1; min-width: 0; }
     .cp-change-undo { flex: 0 0 auto; border: 1px solid var(--linea); background: none; color: var(--balon); border-radius: 8px; width: 32px; height: 32px; font-size: 1rem; cursor: pointer; }
     .cp-change-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+
+/* Configuración del Club: texto oscuro legible sobre fondo claro */
+#modalOptions .modal-box { color: var(--text-dark); }
+#modalOptions .item-list > *, #modalOptions .item-list span:not(.badge),
+#modalOptions #coachTeamsCheckboxes, #modalOptions #coachTeamsCheckboxes label,
+#modalOptions #draggablePlayerList, #modalOptions #draggablePlayerList > *,
+#modalOptions #draggableLeagueList, #modalOptions #draggableLeagueList > *,
+#modalOptions .tab-content label, #modalOptions .tab-content p { color: var(--text-dark); }

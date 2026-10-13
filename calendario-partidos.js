@@ -245,6 +245,7 @@
     const warns = checkRules(planned);
     const rows = planned.filter(m => (!from || m.date >= from) && (!to || m.date <= to))
       .sort((a, b) => (a.date + toHHMM(a.start)).localeCompare(b.date + toHHMM(b.start)));
+    lastProposals = rows.filter(m => m.placed && !m.moved);
     const ids = new Set(rows.map(m => m.id));
     const shownWarns = warns.filter(w => w.ids.some(i => ids.has(i)));
     const warnOf = {};
@@ -347,18 +348,27 @@
     }
   }
   // ---------- Lista de cambios realizados (movimientos y cambios de campo) ----------
-  let changesOpen = false;
+  let changesOpen = false, changesAll = false, lastProposals = [];
+  function selRange() {
+    const f = document.getElementById("cpFrom"), t = document.getElementById("cpTo");
+    return { from: f ? f.value : "", to: t ? t.value : "" };
+  }
+  const inSel = (d, r) => (!r.from || d >= r.from) && (!r.to || d <= r.to);
   function matchByKey(mk) {
     for (const key of Object.keys(cp.teams)) for (const m of (cp.teams[key].matches || [])) if (moveKey(key, m) === mk) return Object.assign({ team: key }, m);
     return null;
   }
   const whenTxt = (date, time) => `${DIAS[dow(date)]} ${fmtDay(date).slice(0, 5)} ${time || "sin hora"}`;
-  function changeList() {
+  function changeList(all) {
+    if (all === undefined) all = changesAll;
+    const rg = selRange();
     const out = [];
     const keys = new Set(Object.keys(cp.moved || {}).concat(Object.keys(cp.homeOv || {})));
     keys.forEach(mk => {
       const m = matchByKey(mk);
       if (!m) return;
+      const mv0 = (cp.moved || {})[mk];
+      if (!all && !inSel(m.date, rg) && !(mv0 && inSel(mv0.date, rg))) return;
       const mv = (cp.moved || {})[mk], hv = (cp.homeOv || {})[mk];
       const vs = `${m.team} vs ${m.rival || "?"}`;
       const items = [];
@@ -370,12 +380,16 @@
   }
   function renderChanges() {
     const ch = changeList();
-    if (!ch.length) return `<div class="cp-empty">No hay cambios. Mantén pulsado un partido para moverlo, o usa «Pasar a local/visitante» en la lista.</div>`;
-    return ch.map(c => `<div class="cp-change"><div class="cp-change-txt"><b>${esc(c.vs)}</b>${c.items.map(i => `<div>${esc(i)}</div>`).join("")}</div>
+    const filt = `<div class="cp-change-actions"><button type="button" class="cp-tl-btn"${changesAll ? "" : ' style="background:var(--balon);color:var(--noche);border-color:var(--balon)"'} onclick="cpChangesScope(false)">Fechas seleccionadas</button>
+         <button type="button" class="cp-tl-btn"${changesAll ? ' style="background:var(--balon);color:var(--noche);border-color:var(--balon)"' : ""} onclick="cpChangesScope(true)">TODOS</button></div>`;
+    const pdfBtn = `<div class="cp-change-actions"><button type="button" class="cp-tl-btn" onclick="cpChangesPdf()">📄 Crear PDF</button></div>`;
+    if (!ch.length) return filt + `<div class="cp-empty">No hay cambios${changesAll ? "" : " en las fechas seleccionadas"}. Mantén pulsado un partido para moverlo, o usa «Pasar a local/visitante» en la lista.</div>` + (lastProposals.length ? pdfBtn : "");
+    return filt + ch.map(c => `<div class="cp-change"><div class="cp-change-txt"><b>${esc(c.vs)}</b>${c.items.map(i => `<div>${esc(i)}</div>`).join("")}</div>
         <button type="button" class="cp-change-undo" data-mk="${esc(c.mk)}" onclick="cpUndoChange(this)" title="Deshacer">↺</button></div>`).join("")
       + `<div class="cp-change-actions"><button type="button" class="cp-tl-btn" onclick="cpChangesPdf()">📄 Crear PDF</button>
          <button type="button" class="cp-tl-btn cp-tl-btn-red" onclick="cpResetMoves()">↺ Deshacer todos</button></div>`;
   }
+  window.cpChangesScope = function (all) { changesAll = all; renderMatches(); };
   window.cpToggleChanges = function () { changesOpen = !changesOpen; renderMatches(); };
   window.cpUndoChange = function (btn) {
     const mk = btn.getAttribute("data-mk");
@@ -389,7 +403,8 @@
   };
   window.cpChangesPdf = async function () {
     const ch = changeList();
-    if (!ch.length) return;
+    const props = lastProposals.slice();
+    if (!ch.length && !props.length) return;
     try {
       if (typeof mostrarCargando === "function") mostrarCargando("Creando PDF...");
       await ensureExportLibs();
@@ -403,6 +418,9 @@
       const from = document.getElementById("cpFrom").value, to = document.getElementById("cpTo").value;
       pdf.text(`Generado el ${fmtDay(isoDay(new Date()))}${from && to ? ` · Fechas consultadas: ${fmtDay(from)} - ${fmtDay(to)}` : ""}`, M, y); y += 4;
       pdf.setDrawColor(200); pdf.line(M, y, W - M, y); y += 7;
+      pdf.setFont("helvetica", "bold"); pdf.setFontSize(13);
+      pdf.text(`Cambios realizados${changesAll ? " (todos)" : ""}`, M, y); y += 7;
+      if (!ch.length) { pdf.setFont("helvetica", "normal"); pdf.setFontSize(10); pdf.text("Sin cambios.", M, y); y += 7; }
       ch.forEach((c, i) => {
         const lines = [c.vs].concat(c.items.map(t => "   " + t.replace("→", "->")));
         if (y + lines.length * 5.5 > 285) { pdf.addPage(); y = 18; }
@@ -412,6 +430,19 @@
         lines.slice(1).forEach(l => { pdf.text(pdf.splitTextToSize(l, W - 2 * M), M, y); y += 5.5; });
         y += 2;
       });
+      if (props.length) {
+        if (y + 20 > 285) { pdf.addPage(); y = 18; }
+        y += 3;
+        pdf.setFont("helvetica", "bold"); pdf.setFontSize(13);
+        pdf.text("Propuestas de partidos (sin hora oficial)", M, y); y += 7;
+        props.forEach((m, i) => {
+          if (y + 11 > 285) { pdf.addPage(); y = 18; }
+          pdf.setFont("helvetica", "bold"); pdf.setFontSize(11);
+          pdf.text(`${i + 1}. ${m.team} ${isHome(m) ? "vs" : "en"} ${m.rival || "?"}`, M, y); y += 5.5;
+          pdf.setFont("helvetica", "normal"); pdf.setFontSize(10);
+          pdf.text(`   Propuesta: ${whenTxt(m.date, toHHMM(m.start))}${isHome(m) ? " (local)" : " (visitante)"}`, M, y); y += 7.5;
+        });
+      }
       pdf.save(`Cambios_partidos_${isoDay(new Date())}.pdf`);
     } catch (e) {
       console.error(e);
