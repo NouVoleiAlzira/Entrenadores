@@ -1,0 +1,72 @@
+# Descarga los PDF de partidos de la federación (fvbcv.com) para cada equipo con iden
+# y los guarda en Calendarios/<Equipo>.pdf (sobrescribe si ya existe).
+# Los iden se leen de CalendarioPartidos.json, que guarda la app.
+# Se lanza desde el botón «Actualizar todos los PDF» de la app, a mano desde
+# la pestaña Actions de GitHub, o solo cada día a las 6:00 (hora UTC).
+name: Descargar calendarios
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: descargar-calendarios
+  cancel-in-progress: false
+
+jobs:
+  descargar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Descargar PDF uno a uno
+        run: |
+          python3 - <<'PY'
+          import json, os, re, time, unicodedata, urllib.request
+
+          def nombre_archivo(nombre):
+              # Igual que sanitizeFileName() de la app
+              n = unicodedata.normalize("NFD", nombre)
+              n = "".join(c for c in n if unicodedata.category(c) != "Mn")
+              return re.sub(r"[^a-zA-Z0-9_-]", "_", n)
+
+          with open("CalendarioPartidos.json", encoding="utf-8") as f:
+              idens = (json.load(f).get("idens") or {})
+          os.makedirs("Calendarios", exist_ok=True)
+          if not idens:
+              print("No hay ningún equipo con iden en CalendarioPartidos.json")
+
+          for equipo, iden in idens.items():
+              url = f"https://fvbcv.com/exportar_competiciones.php?idens={iden}"
+              ruta = f"Calendarios/{nombre_archivo(equipo)}.pdf"
+              try:
+                  req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (NVA calendarios)"})
+                  with urllib.request.urlopen(req, timeout=60) as r:
+                      datos = r.read()
+                  if not datos.startswith(b"%PDF-"):
+                      print(f"AVISO {equipo} (iden {iden}): la respuesta no es un PDF")
+                      continue
+                  with open(ruta, "wb") as out:
+                      out.write(datos)
+                  print(f"OK {equipo} (iden {iden}) -> {ruta} ({len(datos)} bytes)")
+              except Exception as e:
+                  print(f"ERROR {equipo} (iden {iden}): {e}")
+              time.sleep(2)   # uno a uno, sin saturar la web de la federación
+          PY
+
+      - name: Guardar cambios
+        run: |
+          git config user.name "NVA calendarios"
+          git config user.email "actions@users.noreply.github.com"
+          git add Calendarios
+          if git diff --cached --quiet; then
+            echo "Sin cambios en los PDF"
+          else
+            git commit -m "Actualizar PDF de partidos"
+            git pull --rebase
+            git push
+          fi
