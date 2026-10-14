@@ -889,34 +889,40 @@
   // ---------- Descarga en el servidor (tarea automática de GitHub) ----------
   // La tarea .github/workflows/descargar-calendarios.yml del repositorio de datos baja los PDF
   // desde la federación (allí no hay bloqueo del navegador) y los deja en Calendarios/<Equipo>.pdf.
-  // La app la lanza, espera a que termine y lee esos PDF desde GitHub.
-  const WF_FILE = "descargar-calendarios.yml";
+  // Para no necesitar permisos nuevos en el TOKEN, la app no «lanza» la tarea: solo escribe
+  // Calendarios/solicitud.json (como cualquier otro dato) y la tarea arranca sola al verlo.
+  // Cuando termina escribe Calendarios/estado.json con el mismo id.
+  const WF_PATH = ".github/workflows/descargar-calendarios.yml";
   function ghApi(path, opts) {
     const headers = Object.assign({ "Authorization": `token ${ghSettings.token}`, "Accept": "application/vnd.github+json" }, (opts && opts.headers) || {});
     return fetch(`https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}${path}`, Object.assign({ cache: "no-store" }, opts || {}, { headers }));
   }
-  async function runServerDownload() {
+  async function readServerState() {
+    const r = await ghApi(`/contents/${PDF_FOLDER}/estado.json`, { headers: { "Accept": "application/vnd.github.raw" } });
+    return r.ok ? r.json() : null;
+  }
+  let serverResults = {};
+  async function runServerDownload(teams) {
     if (typeof ghSettings === "undefined" || !ghSettings.user || !ghSettings.repo || !ghSettings.token) return "sin conexión con GitHub configurada";
     mostrarCargando("Pidiendo a GitHub que descargue los PDF...");
     try {
-      await writeGitHubFile(CP_FILE, cp, "Actualizar iden de equipos");   // la tarea lee los iden de aquí
-      const repo = await ghApi("");
-      if (!repo.ok) return `GitHub respondió ${repo.status}`;
-      const branch = (await repo.json()).default_branch || "main";
-      const t0 = Date.now() - 15000;
-      const d = await ghApi(`/actions/workflows/${WF_FILE}/dispatches`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: branch }) });
-      if (d.status === 404) return "la tarea automática no está instalada en GitHub";
-      if (!d.ok) return `GitHub no dejó lanzar la tarea (${d.status}); revisa el permiso «Actions» del token`;
-      // Esperar a que termine (máx. 5 min)
+      const wf = await ghApi(`/contents/${WF_PATH}`);
+      if (wf.status === 404) return "la tarea automática no está instalada en el repositorio";
+      if (!wf.ok) return `GitHub respondió ${wf.status}`;
+      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const idens = {};
+      teams.forEach(t => { idens[getTeamKey(t)] = cp.idens[getTeamKey(t)]; });
+      const ok = await writeGitHubFile(`${PDF_FOLDER}/solicitud.json`, { id, pedido: new Date().toISOString(), idens }, "Solicitar descarga de PDF de partidos");
+      if (!ok) return "no se pudo escribir la solicitud en GitHub";
+      // Esperar a que la tarea termine (máx. 5 min)
       for (let i = 0; i < 60; i++) {
         await wait(5000);
         mostrarCargando(`GitHub está descargando los PDF... (${(i + 1) * 5} s)`);
-        const r = await ghApi(`/actions/workflows/${WF_FILE}/runs?event=workflow_dispatch&per_page=5`);
-        if (!r.ok) continue;
-        const run = ((await r.json()).workflow_runs || []).find(x => new Date(x.created_at).getTime() >= t0);
-        if (run && run.status === "completed") return run.conclusion === "success" ? "" : `la tarea terminó con «${run.conclusion}»`;
+        let st = null;
+        try { st = await readServerState(); } catch (e) {}
+        if (st && st.id === id) { serverResults = st.resultados || {}; return ""; }
       }
-      return "la tarea tardó demasiado";
+      return "la tarea no respondió (¿está activada la pestaña Actions del repositorio?)";
     } catch (e) { console.error(e); return "error al hablar con GitHub"; }
     finally { ocultarCargando(); }
   }
@@ -940,7 +946,7 @@
     let autoOk = null;   // se prueba la descarga automática con el primer equipo
     try {
       // 0) Lo mejor: la tarea automática de GitHub descarga todos los PDF en el servidor
-      const why = await runServerDownload();
+      const why = await runServerDownload(teams);
       let todo = teams;
       if (!why) {
         todo = [];
@@ -948,6 +954,7 @@
           const team = teams[i], key = getTeamKey(team);
           mostrarCargando(`Leyendo ${i + 1}/${teams.length}: ${key}...`);
           let file = null;
+          if (serverResults[key] && serverResults[key] !== "ok") { results.push(`(GitHub no pudo bajar ${key}: ${serverResults[key]})`); ocultarCargando(); todo.push(team); continue; }
           try { file = await readServerPdf(key); } catch (e) { console.warn(`Sin PDF en GitHub para ${key}:`, e); }
           ocultarCargando();
           if (!file) { todo.push(team); continue; }
