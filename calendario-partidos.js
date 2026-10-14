@@ -523,11 +523,13 @@
       const status = info
         ? `<span class="wk-mark wk-v">V</span><span class="cp-up">${fmtDay(info.uploadedAt.slice(0, 10))} · ${(info.matches || []).length} partidos</span>`
         : `<span class="cp-up cp-none">Sin PDF</span>`;
+      const iden = (cp.idens || {})[key] || "";
       return `<div class="cp-team">
         <div class="cp-team-name">${esc(key)}<div class="cp-team-status">${status}</div></div>
+        <label class="cp-iden"><span>Iden</span><input type="text" inputmode="numeric" maxlength="5" placeholder="0000" value="${esc(iden)}" data-key="${esc(key)}" onchange="cpSetIden(this)"></label>
         <button class="cp-upload" onclick="cpPickPdf(${i})">📄 ${info ? "Cambiar" : "Subir"} PDF</button>
       </div>`;
-    }).join("");
+    }).join("") + `<button type="button" class="btn-save-session cp-update-all" onclick="cpUpdateAll()">🔄 Actualizar todos los PDF (equipos con iden)</button>`;
   }
 
   // ---------- Subida y análisis del PDF ----------
@@ -616,16 +618,24 @@
     return Object.keys(count).filter(k => count[k] >= 2).sort((a, b) => count[b] - count[a]);
   }
 
+  // Los equipos del club pueden aparecer como «NVA» o «Nou Volei Alzira»
+  const isClubName = (n) => /\bNVA\b|NOU VOLE[IY]S? ALZIRA/.test(normalizeTeamName(n));
   function findFedName(lines, team) {
     const names = candidateNames(lines);
+    const club = names.filter(isClubName);
     const wanted = [team.name, `${team.name} ${team.category}`];
-    let best = null, bestScore = 0;
-    names.forEach(n => {
-      const s = Math.max(...wanted.map(w => score(w, n))) + (/\bNVA\b|ALZIRA/.test(normalizeTeamName(n)) ? 0.3 : 0);
-      if (s > bestScore) { bestScore = s; best = n; }
-    });
-    return { best: bestScore >= 0.99 ? best : null, names };
+    const sc = (n) => Math.max(...wanted.map(w => score(w, n)));
+    let best = null;
+    if (club.length === 1) best = club[0];
+    else {
+      const pool = (club.length ? club : names).map(n => ({ n, s: sc(n) })).sort((x, y) => y.s - x.s);
+      if (pool.length && pool[0].s >= 0.99 && !(pool[1] && pool[1].s >= pool[0].s)) best = pool[0].n;
+      else if (club.length && pool[0].s >= 0.5 && !(pool[1] && pool[1].s >= pool[0].s)) best = pool[0].n;
+    }
+    // Para preguntar: primero los del club
+    return { best, names: club.concat(names.filter(n => !club.includes(n))) };
   }
+
 
   function extractMatches(lines, fed) {
     const fedN = normalizeTeamName(fed);
@@ -675,44 +685,132 @@
     input.value = "";
     const team = ((typeof appData !== "undefined" && appData.teams) || [])[pickIdx];
     if (!file || !team) return;
+    await processPdf(file, file.name, team, false);
+  }
+
+  // Analiza un PDF y guarda los partidos del equipo. batch = actualización automática
+  // (si el equipo se reconoce solo, no se pide confirmación). Devuelve un texto de resultado.
+  async function processPdf(file, fileName, team, batch) {
     const key = getTeamKey(team);
-    mostrarCargando("Analizando el PDF de partidos...");
+    mostrarCargando(`Analizando el PDF de ${key}...`);
     let lines;
     try { lines = await pdfLines(file); }
     catch (e) {
       console.error(e); ocultarCargando();
-      alert("No se pudo leer el PDF. La primera vez hace falta conexión para descargar el lector de PDF.");
-      return;
+      if (!batch) alert("No se pudo leer el PDF. La primera vez hace falta conexión para descargar el lector de PDF.");
+      return "no se pudo leer el PDF";
     }
     ocultarCargando();
 
     const prev = cp.teams[key];
     let fed = prev && prev.fedName && lines.some(l => normalizeTeamName(l.text).includes(normalizeTeamName(prev.fedName))) ? prev.fedName : null;
+    let asked = false;
     if (!fed) {
       const r = findFedName(lines, team);
       fed = r.best;
       if (!fed) {
-        if (!r.names.length) { alert("No he encontrado partidos con fecha en este PDF."); return; }
+        if (!r.names.length) { if (!batch) alert("No he encontrado partidos con fecha en este PDF."); return "sin partidos con fecha"; }
         const menu = r.names.slice(0, 40).map((n, i) => `${i + 1}. ${n}`).join("\n");
-        const ans = prompt(`No encuentro "${key}" en el PDF.\nEscribe el número del equipo que corresponde:\n\n${menu}`);
-        if (ans === null) return;
+        const ans = prompt(`${key}: no sé cuál es en el PDF.\nEscribe el número del equipo que corresponde (vacío = saltar):\n\n${menu}`);
         const n = parseInt(ans, 10);
-        if (!(n >= 1 && n <= Math.min(40, r.names.length))) return;
-        fed = r.names[n - 1];
+        if (!(n >= 1 && n <= Math.min(40, r.names.length))) return "saltado";
+        fed = r.names[n - 1]; asked = true;
       }
     }
     const matches = extractMatches(lines, fed);
-    if (!matches.length) { alert(`He encontrado "${fed}" pero ningún partido con fecha.`); return; }
-    if (!confirm(`Equipo encontrado en el PDF: "${fed}"\n${matches.length} partidos (del ${fmtDay(matches[0].date)} al ${fmtDay(matches[matches.length - 1].date)}).\n\n¿Guardar para ${key}?`)) return;
+    if (!matches.length) { if (!batch) alert(`He encontrado "${fed}" pero ningún partido con fecha.`); return `«${fed}» sin partidos con fecha`; }
+    if (!batch && !asked && !confirm(`Equipo encontrado en el PDF: "${fed}"\n${matches.length} partidos (del ${fmtDay(matches[0].date)} al ${fmtDay(matches[matches.length - 1].date)}).\n\n¿Guardar para ${key}?`)) return "cancelado";
 
-    cp.teams[key] = { fedName: fed, fileName: file.name, uploadedAt: new Date().toISOString(), matches };
+    cp.teams[key] = { fedName: fed, fileName, uploadedAt: new Date().toISOString(), matches };
     cp.updated = new Date().toISOString();
     saveLocal();
     render();
     if (typeof writeGitHubFile === "function" && typeof ghSettings !== "undefined" && ghSettings.user && ghSettings.repo && ghSettings.token) {
-      writeGitHubFile(CP_FILE, cp, `Calendario de partidos de ${key}`);
+      await writeGitHubFile(CP_FILE, cp, `Calendario de partidos de ${key}`);
     }
+    return `«${fed}», ${matches.length} partidos`;
   }
+
+  // ---------- Iden de cada equipo y actualización automática desde la federación ----------
+  const FED_URL = (iden) => `https://fvbcv.com/exportar_competiciones.php?idens=${encodeURIComponent(iden)}`;
+  window.cpSetIden = function (inp) {
+    const key = inp.getAttribute("data-key");
+    const v = inp.value.replace(/\D/g, "").slice(0, 5);
+    inp.value = v;
+    if (v && v.length < 4) { inp.classList.add("cp-iden-bad"); return; }
+    inp.classList.remove("cp-iden-bad");
+    cp.idens = cp.idens || {};
+    if (v) cp.idens[key] = v; else delete cp.idens[key];
+    saveMoves();
+  };
+
+  // Ventana para cuando el navegador no deja descargar el PDF directamente:
+  // se abre el enlace, se descarga y se elige el archivo. Devuelve File | "skip" | "stop".
+  function askManualPdf(key, iden, pos, total) {
+    return new Promise(resolve => {
+      const o = document.createElement("div");
+      o.className = "cp-modal";
+      o.innerHTML = `<div class="cp-modal-box">
+        <div class="cp-modal-title">Actualizar ${pos}/${total}: ${esc(key)}</div>
+        <div class="cp-modal-txt">El navegador no permite descargar el PDF de la federación automáticamente.<br>1. Pulsa <b>Abrir enlace</b> y descarga el PDF (iden ${esc(iden)}).<br>2. Vuelve aquí y pulsa <b>Elegir PDF descargado</b>.</div>
+        <a class="cp-modal-btn" href="${FED_URL(iden)}" target="_blank" rel="noopener">🔗 Abrir enlace</a>
+        <button type="button" class="cp-modal-btn cp-modal-main">📄 Elegir PDF descargado</button>
+        <div class="cp-modal-row"><button type="button" class="cp-modal-btn cp-modal-skip">Saltar este equipo</button><button type="button" class="cp-modal-btn cp-modal-stop">Parar</button></div>
+        <input type="file" accept="application/pdf,.pdf" style="display:none"></div>`;
+      document.body.appendChild(o);
+      const inp = o.querySelector("input");
+      const done = (v) => { o.remove(); resolve(v); };
+      o.querySelector(".cp-modal-main").onclick = () => inp.click();
+      inp.onchange = () => { if (inp.files && inp.files[0]) done(inp.files[0]); };
+      o.querySelector(".cp-modal-skip").onclick = () => done("skip");
+      o.querySelector(".cp-modal-stop").onclick = () => done("stop");
+    });
+  }
+
+  async function downloadFedPdf(iden) {
+    const res = await fetch(FED_URL(iden), { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const blob = await res.blob();
+    const head = new Uint8Array(await blob.slice(0, 5).arrayBuffer());
+    if (String.fromCharCode(...head) !== "%PDF-") throw new Error("La respuesta no es un PDF");
+    return blob;
+  }
+
+  let updating = false;
+  window.cpUpdateAll = async function () {
+    if (updating) return;
+    const teams = ((typeof appData !== "undefined" && appData.teams) || []).filter(t => (cp.idens || {})[getTeamKey(t)]);
+    if (!teams.length) { alert("Escribe primero el iden (4 o 5 dígitos) de algún equipo."); return; }
+    if (!navigator.onLine) { alert("Sin conexión: no se pueden descargar los PDF ahora."); return; }
+    updating = true;
+    const results = [];
+    let direct = true;   // si falla una descarga directa (bloqueo del navegador), se pasa al modo manual
+    try {
+      for (let i = 0; i < teams.length; i++) {   // uno a uno: no se empieza el siguiente hasta acabar el anterior
+        const team = teams[i], key = getTeamKey(team), iden = cp.idens[key];
+        let file = null;
+        if (direct) {
+          mostrarCargando(`Descargando ${i + 1}/${teams.length}: ${key}...`);
+          try { file = await downloadFedPdf(iden); }
+          catch (e) { console.warn("Descarga directa no disponible:", e); direct = false; }
+          ocultarCargando();
+        }
+        if (!file) {
+          const r = await askManualPdf(key, iden, i + 1, teams.length);
+          if (r === "stop") { results.push(`${key}: parado`); break; }
+          if (r === "skip") { results.push(`${key}: saltado`); continue; }
+          file = r;
+        }
+        const res = await processPdf(file, `iden ${iden}.pdf`, team, true);
+        results.push(`${key}: ${res}`);
+      }
+    } finally {
+      updating = false;
+      ocultarCargando();
+    }
+    render();
+    alert("Actualización terminada:\n\n" + results.join("\n"));
+  };
 
   async function fetchFromGitHub() {
     if (typeof ghSettings === "undefined" || !ghSettings.user || !ghSettings.repo || !navigator.onLine) return;
