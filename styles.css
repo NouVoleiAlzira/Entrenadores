@@ -1753,8 +1753,11 @@
     .cp-teams { margin-top: 10px; }
     .cp-team { display: flex; align-items: center; gap: 10px; padding: 9px 4px; border-bottom: 1px solid var(--linea); }
     .cp-team-name { flex: 1; min-width: 0; color: #fff; font-weight: 600; font-size: 0.9rem; }
-    .cp-team-status { display: flex; align-items: center; margin-top: 3px; font-weight: 400; }
+    .cp-team-status { display: flex; flex-wrap: wrap; align-items: center; margin-top: 3px; font-weight: 400; }
     .cp-up { color: var(--niebla); font-size: 0.75rem; }
+    .cp-chg { display: block; width: 100%; margin-top: 3px; font-size: 0.72rem; font-weight: 700; }
+    .cp-chg-sin { color: var(--niebla); }
+    .cp-chg-con { color: #e0a100; }
     .cp-none { font-style: italic; }
     .cp-upload { flex: 0 0 auto; border: none; border-radius: 10px; padding: 8px 12px; background: var(--btn-fondorAzul); color: #fff; font: inherit; font-weight: 700; font-size: 0.78rem; cursor: pointer; }
 

@@ -520,8 +520,11 @@
     box.innerHTML = teams.map((t, i) => {
       const key = getTeamKey(t);
       const info = cp.teams[key];
+      let change = "";
+      if (info && info.changeStatus === "sin") change = `<span class="cp-chg cp-chg-sin">Sin cambios desde ${fmtDay((info.changedAt || info.uploadedAt).slice(0, 10))}${info.checkedAt ? ` · revisado ${fmtDay(info.checkedAt.slice(0, 10))}` : ""}</span>`;
+      else if (info && info.changeStatus === "con") change = `<span class="cp-chg cp-chg-con">Con cambios (${fmtDay((info.changedAt || info.uploadedAt).slice(0, 10))})</span>`;
       const status = info
-        ? `<span class="wk-mark wk-v">V</span><span class="cp-up">${fmtDay(info.uploadedAt.slice(0, 10))} · ${(info.matches || []).length} partidos</span>`
+        ? `<span class="wk-mark wk-v">V</span><span class="cp-up">${fmtDay(info.uploadedAt.slice(0, 10))} · ${(info.matches || []).length} partidos</span>${change}`
         : `<span class="cp-up cp-none">Sin PDF</span>`;
       const iden = (cp.idens || {})[key] || "";
       return `<div class="cp-team">
@@ -687,7 +690,7 @@
     if (!file || !team) return;
     const key = getTeamKey(team);
     const res = await processPdf(file, `${sanitizeFileName(key)}.pdf`, team, false);
-    if (/partidos$/.test(res)) savePdfToGitHub(key, file);   // copia del PDF en Calendarios/<Equipo>.pdf
+    if (/(con cambios|nuevo)$/.test(res)) savePdfToGitHub(key, file);   // copia del PDF en Calendarios/<Equipo>.pdf
   }
 
   // Analiza un PDF y guarda los partidos del equipo. batch = actualización automática
@@ -721,16 +724,39 @@
     }
     const matches = extractMatches(lines, fed);
     if (!matches.length) { if (!batch) alert(`He encontrado "${fed}" pero ningún partido con fecha.`); return `«${fed}» sin partidos con fecha`; }
+    // ¿Ha cambiado algo respecto a lo que ya había guardado?
+    const same = prev && prev.fedName === fed && sameMatches(prev.matches, matches);
+    if (same) {
+      const now = new Date().toISOString();
+      prev.changeStatus = "sin";
+      prev.changedAt = prev.changedAt || prev.uploadedAt;
+      prev.checkedAt = now;
+      cp.updated = now;
+      saveLocal();
+      render();
+      if (typeof writeGitHubFile === "function" && typeof ghSettings !== "undefined" && ghSettings.user && ghSettings.repo && ghSettings.token) {
+        await writeGitHubFile(CP_FILE, cp, `Calendario de partidos de ${key}: sin cambios`);
+      }
+      if (!batch) alert(`${key}: sin cambios desde el ${fmtDay(prev.changedAt.slice(0, 10))}. Se mantiene lo que había.`);
+      return `«${fed}», ${matches.length} partidos · sin cambios`;
+    }
     if (!batch && !asked && !confirm(`Equipo encontrado en el PDF: "${fed}"\n${matches.length} partidos (del ${fmtDay(matches[0].date)} al ${fmtDay(matches[matches.length - 1].date)}).\n\n¿Guardar para ${key}?`)) return "cancelado";
 
-    cp.teams[key] = { fedName: fed, fileName, uploadedAt: new Date().toISOString(), matches };
-    cp.updated = new Date().toISOString();
+    const now = new Date().toISOString();
+    cp.teams[key] = { fedName: fed, fileName, uploadedAt: now, matches, changeStatus: prev ? "con" : "nuevo", changedAt: now, checkedAt: now };
+    cp.updated = now;
     saveLocal();
     render();
     if (typeof writeGitHubFile === "function" && typeof ghSettings !== "undefined" && ghSettings.user && ghSettings.repo && ghSettings.token) {
       await writeGitHubFile(CP_FILE, cp, `Calendario de partidos de ${key}`);
     }
-    return `«${fed}», ${matches.length} partidos`;
+    return `«${fed}», ${matches.length} partidos · ${prev ? "con cambios" : "nuevo"}`;
+  }
+
+  // Compara dos listas de partidos sin tener en cuenta el orden.
+  function sameMatches(a, b) {
+    const norm = (list) => (list || []).map(m => [m.date, m.time, m.rival, m.home ? 1 : 0, m.venue || "", m.jornada || ""].join("|")).sort().join("\n");
+    return norm(a) === norm(b);
   }
 
   // ---------- Iden de cada equipo y actualización automática desde la federación ----------
@@ -878,7 +904,7 @@
     const fname = `${sanitizeFileName(key)}.pdf`;
     const res = await processPdf(file, fname, team, true, fedHint);
     let saved = "";
-    if (/partidos$/.test(res)) {
+    if (/(con cambios|nuevo)$/.test(res)) {
       mostrarCargando(`Guardando ${fname}...`);
       saved = (await savePdfToGitHub(key, file)) ? ` · guardado ${PDF_FOLDER}/${fname}` : " · PDF no guardado en GitHub";
       ocultarCargando();
