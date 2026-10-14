@@ -530,9 +530,34 @@
       return `<div class="cp-team">
         <div class="cp-team-name">${esc(key)}<div class="cp-team-status">${status}</div></div>
         <label class="cp-iden"><span>Iden</span><input type="text" inputmode="numeric" maxlength="5" placeholder="0000" value="${esc(iden)}" data-key="${esc(key)}" onchange="cpSetIden(this)"></label>
-        <button class="cp-upload" onclick="cpPickPdf(${i})">📄 ${info ? "Cambiar" : "Subir"} PDF</button>
+        ${manualMode ? `<button class="cp-upload" onclick="cpPickPdf(${i})">📄 ${info ? "Cambiar" : "Subir"} PDF</button>` : ""}
       </div>`;
-    }).join("") + `<button type="button" class="btn-save-session cp-update-all" onclick="cpUpdateAll()">🔄 Actualizar todos los PDF (equipos con iden)</button>`;
+    }).join("") + `<div class="cp-auto-note">🕗 Se actualiza automáticamente cada día a las ${autoHour()}</div>
+      <div class="cp-update-btns">
+        <button type="button" class="btn-save-session cp-update-all" onclick="cpUpdateAll()">🔄 Actualizar automáticamente</button>
+        <button type="button" class="btn-save-session cp-update-manual${manualMode ? " active" : ""}" aria-pressed="${manualMode}" onclick="cpToggleManual()">✋ Actualizar manualmente</button>
+      </div>`;
+  }
+
+  // Botones de subir/cambiar PDF a mano: solo visibles tras pulsar «Actualizar manualmente»
+  let manualMode = false;
+  window.cpToggleManual = function () { manualMode = !manualMode; renderTeams(); };
+
+  // Hora local de la actualización diaria de la tarea de GitHub (cron "0 6 * * *", en UTC)
+  const AUTO_UTC_HOUR = 6;
+  function autoHour() {
+    const d = new Date(); d.setUTCHours(AUTO_UTC_HOUR, 0, 0, 0);
+    return d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+  }
+
+  // Línea del resumen final: «- Equipo: x partidos» y debajo si hay cambios o no
+  function fmtRes(key, res, extra) {
+    const m = /^«.*», (\d+) partidos · (.+)$/.exec(res);
+    if (!m) return `- ${key}: ${res}${extra || ""}`;
+    const info = cp.teams[key] || {};
+    let st = m[2] === "nuevo" ? "Nuevo (primera carga)" : m[2] === "con cambios" ? "Con cambios" : "Sin cambios";
+    if (m[2] === "sin cambios" && (info.changedAt || info.uploadedAt)) st += ` desde ${fmtDay((info.changedAt || info.uploadedAt).slice(0, 10))}`;
+    return `- ${key}: ${m[1]} partidos\n   ${st}${extra || ""}`;
   }
 
   // ---------- Subida y análisis del PDF ----------
@@ -906,10 +931,10 @@
     let saved = "";
     if (/(con cambios|nuevo)$/.test(res)) {
       mostrarCargando(`Guardando ${fname}...`);
-      saved = (await savePdfToGitHub(key, file)) ? ` · guardado ${PDF_FOLDER}/${fname}` : " · PDF no guardado en GitHub";
+      saved = (await savePdfToGitHub(key, file)) ? "" : " (PDF no guardado en GitHub)";
       ocultarCargando();
     }
-    results.push(`${key}: ${res}${saved}`);
+    results.push(fmtRes(key, res, saved));
   }
 
   // ---------- Descarga en el servidor (tarea automática de GitHub) ----------
@@ -984,7 +1009,7 @@
           try { file = await readServerPdf(key); } catch (e) { console.warn(`Sin PDF en GitHub para ${key}:`, e); }
           ocultarCargando();
           if (!file) { todo.push(team); continue; }
-          results.push(`${key}: ${await processPdf(file, file.name, team, true)} · ${PDF_FOLDER}/${file.name}`);
+          results.push(fmtRes(key, await processPdf(file, file.name, team, true)));
         }
       } else console.warn("Descarga en GitHub no disponible:", why);
       if (why && why !== "sin conexión con GitHub configurada") results.push(`(Descarga en GitHub no disponible: ${why})`);
@@ -1012,7 +1037,7 @@
         ocultarCargando();
         const files = await askDownloadedPdfs(pending.length);
         if (files === "retry") continue;
-        if (!files) { pending.forEach(t => results.push(`${getTeamKey(t)}: cancelado`)); break; }
+        if (!files) { pending.forEach(t => results.push(`- ${getTeamKey(t)}: cancelado`)); break; }
 
         mostrarCargando("Leyendo los PDF...");
         const parsed = [];
@@ -1028,7 +1053,7 @@
             const n = parseInt(ans, 10);
             if (n >= 1 && n <= parsed.length) best = { p: parsed[n - 1], m: null };
           }
-          if (!best) { results.push(`${key}: no encontrado en los PDF elegidos`); continue; }
+          if (!best) { results.push(`- ${key}: no encontrado en los PDF elegidos`); continue; }
           await saveTeamPdf(team, best.p.f, best.m ? best.m.fed : null, results);
         }
         break;
@@ -1038,7 +1063,7 @@
       ocultarCargando();
     }
     render();
-    alert("Actualización terminada:\n\n" + results.join("\n"));
+    alert("Actualización terminada:\n\n" + results.join("\n\n"));
   };
 
   async function fetchFromGitHub() {
