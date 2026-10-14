@@ -886,6 +886,49 @@
     results.push(`${key}: ${res}${saved}`);
   }
 
+  // ---------- Descarga en el servidor (tarea automática de GitHub) ----------
+  // La tarea .github/workflows/descargar-calendarios.yml del repositorio de datos baja los PDF
+  // desde la federación (allí no hay bloqueo del navegador) y los deja en Calendarios/<Equipo>.pdf.
+  // La app la lanza, espera a que termine y lee esos PDF desde GitHub.
+  const WF_FILE = "descargar-calendarios.yml";
+  function ghApi(path, opts) {
+    const headers = Object.assign({ "Authorization": `token ${ghSettings.token}`, "Accept": "application/vnd.github+json" }, (opts && opts.headers) || {});
+    return fetch(`https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}${path}`, Object.assign({ cache: "no-store" }, opts || {}, { headers }));
+  }
+  async function runServerDownload() {
+    if (typeof ghSettings === "undefined" || !ghSettings.user || !ghSettings.repo || !ghSettings.token) return "sin conexión con GitHub configurada";
+    mostrarCargando("Pidiendo a GitHub que descargue los PDF...");
+    try {
+      await writeGitHubFile(CP_FILE, cp, "Actualizar iden de equipos");   // la tarea lee los iden de aquí
+      const repo = await ghApi("");
+      if (!repo.ok) return `GitHub respondió ${repo.status}`;
+      const branch = (await repo.json()).default_branch || "main";
+      const t0 = Date.now() - 15000;
+      const d = await ghApi(`/actions/workflows/${WF_FILE}/dispatches`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: branch }) });
+      if (d.status === 404) return "la tarea automática no está instalada en GitHub";
+      if (!d.ok) return `GitHub no dejó lanzar la tarea (${d.status}); revisa el permiso «Actions» del token`;
+      // Esperar a que termine (máx. 5 min)
+      for (let i = 0; i < 60; i++) {
+        await wait(5000);
+        mostrarCargando(`GitHub está descargando los PDF... (${(i + 1) * 5} s)`);
+        const r = await ghApi(`/actions/workflows/${WF_FILE}/runs?event=workflow_dispatch&per_page=5`);
+        if (!r.ok) continue;
+        const run = ((await r.json()).workflow_runs || []).find(x => new Date(x.created_at).getTime() >= t0);
+        if (run && run.status === "completed") return run.conclusion === "success" ? "" : `la tarea terminó con «${run.conclusion}»`;
+      }
+      return "la tarea tardó demasiado";
+    } catch (e) { console.error(e); return "error al hablar con GitHub"; }
+    finally { ocultarCargando(); }
+  }
+  async function readServerPdf(key) {
+    const r = await ghApi(`/contents/${PDF_FOLDER}/${sanitizeFileName(key)}.pdf`, { headers: { "Accept": "application/vnd.github.raw" } });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const blob = await r.blob();
+    const head = new Uint8Array(await blob.slice(0, 5).arrayBuffer());
+    if (String.fromCharCode(...head) !== "%PDF-") throw new Error("No es un PDF");
+    return new File([blob], `${sanitizeFileName(key)}.pdf`, { type: "application/pdf" });
+  }
+
   let updating = false;
   window.cpUpdateAll = async function () {
     if (updating) return;
@@ -896,11 +939,28 @@
     const results = [], pending = [];
     let autoOk = null;   // se prueba la descarga automática con el primer equipo
     try {
-      // 1) Descarga automática (directa o por pasarela), uno a uno
-      for (let i = 0; i < teams.length; i++) {
-        const team = teams[i], key = getTeamKey(team), iden = cp.idens[key];
+      // 0) Lo mejor: la tarea automática de GitHub descarga todos los PDF en el servidor
+      const why = await runServerDownload();
+      let todo = teams;
+      if (!why) {
+        todo = [];
+        for (let i = 0; i < teams.length; i++) {
+          const team = teams[i], key = getTeamKey(team);
+          mostrarCargando(`Leyendo ${i + 1}/${teams.length}: ${key}...`);
+          let file = null;
+          try { file = await readServerPdf(key); } catch (e) { console.warn(`Sin PDF en GitHub para ${key}:`, e); }
+          ocultarCargando();
+          if (!file) { todo.push(team); continue; }
+          results.push(`${key}: ${await processPdf(file, file.name, team, true)} · ${PDF_FOLDER}/${file.name}`);
+        }
+      } else console.warn("Descarga en GitHub no disponible:", why);
+      if (why && why !== "sin conexión con GitHub configurada") results.push(`(Descarga en GitHub no disponible: ${why})`);
+
+      // 1) Descarga desde el navegador (directa o por pasarela), uno a uno
+      for (let i = 0; i < todo.length; i++) {
+        const team = todo[i], key = getTeamKey(team), iden = cp.idens[key];
         if (autoOk === false) { pending.push(team); continue; }
-        mostrarCargando(`Descargando ${i + 1}/${teams.length}: ${key}...`);
+        mostrarCargando(`Descargando ${i + 1}/${todo.length}: ${key}...`);
         let file = null;
         try { file = await downloadFedPdf(iden); autoOk = true; }
         catch (e) { console.warn("Descarga automática no disponible:", e); if (autoOk === null) autoOk = false; }
