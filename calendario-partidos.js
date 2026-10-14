@@ -685,7 +685,9 @@
     input.value = "";
     const team = ((typeof appData !== "undefined" && appData.teams) || [])[pickIdx];
     if (!file || !team) return;
-    await processPdf(file, file.name, team, false);
+    const key = getTeamKey(team);
+    const res = await processPdf(file, `${sanitizeFileName(key)}.pdf`, team, false);
+    if (/partidos$/.test(res)) savePdfToGitHub(key, file);   // copia del PDF en Calendarios/<Equipo>.pdf
   }
 
   // Analiza un PDF y guarda los partidos del equipo. batch = actualización automática
@@ -767,13 +769,63 @@
     });
   }
 
+  // La web de la federación no permite descargas desde otras webs (CORS), así que se prueba
+  // primero directo y, si el navegador lo bloquea, a través de pasarelas públicas que añaden
+  // ese permiso. Se recuerda la última que funcionó para empezar por ella.
+  const FED_ROUTES = [
+    { name: "directo", url: (u) => u },
+    { name: "corsproxy.io", url: (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}` },
+    { name: "allorigins", url: (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}` },
+    { name: "codetabs", url: (u) => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(u)}` }
+  ];
+  const ROUTE_KEY = "NVA_FED_ROUTE";
+  async function fetchPdfFrom(url) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 25000);
+    try {
+      const res = await fetch(url, { cache: "no-store", signal: ctrl.signal });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const blob = await res.blob();
+      const head = new Uint8Array(await blob.slice(0, 5).arrayBuffer());
+      if (String.fromCharCode(...head) !== "%PDF-") throw new Error("La respuesta no es un PDF");
+      return blob;
+    } finally { clearTimeout(timer); }
+  }
   async function downloadFedPdf(iden) {
-    const res = await fetch(FED_URL(iden), { cache: "no-store" });
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const blob = await res.blob();
-    const head = new Uint8Array(await blob.slice(0, 5).arrayBuffer());
-    if (String.fromCharCode(...head) !== "%PDF-") throw new Error("La respuesta no es un PDF");
-    return blob;
+    let first = 0;
+    try { first = Math.max(0, FED_ROUTES.findIndex(r => r.name === localStorage.getItem(ROUTE_KEY))); } catch (e) {}
+    const order = FED_ROUTES.slice(first).concat(FED_ROUTES.slice(0, first));
+    let lastErr = null;
+    for (const r of order) {
+      try {
+        const blob = await fetchPdfFrom(r.url(FED_URL(iden)));
+        try { localStorage.setItem(ROUTE_KEY, r.name); } catch (e) {}
+        return blob;
+      } catch (e) { console.warn(`Descarga por ${r.name} fallida:`, e); lastErr = e; }
+    }
+    throw lastErr || new Error("No se pudo descargar");
+  }
+
+  // Guarda el PDF en GitHub como Calendarios/<Equipo>.pdf (sobrescribe si ya existe)
+  const PDF_FOLDER = "Calendarios";
+  async function savePdfToGitHub(key, blob) {
+    if (typeof ghSettings === "undefined" || !ghSettings.user || !ghSettings.repo || !ghSettings.token) return false;
+    const path = `${PDF_FOLDER}/${sanitizeFileName(key)}.pdf`;
+    const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${path}`;
+    const headers = { "Authorization": `token ${ghSettings.token}` };
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    let bin = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    try {
+      let sha = "";
+      const g = await fetch(url, { headers, cache: "no-store" });
+      if (g.ok) sha = (await g.json()).sha;
+      const put = await fetch(url, {
+        method: "PUT", headers: Object.assign({ "Content-Type": "application/json" }, headers),
+        body: JSON.stringify(Object.assign({ message: `PDF de partidos de ${key}`, content: btoa(bin) }, sha ? { sha } : {}))
+      });
+      return put.ok;
+    } catch (e) { console.error("No se pudo guardar el PDF en GitHub:", e); return false; }
   }
 
   let updating = false;
@@ -792,7 +844,7 @@
         if (direct) {
           mostrarCargando(`Descargando ${i + 1}/${teams.length}: ${key}...`);
           try { file = await downloadFedPdf(iden); }
-          catch (e) { console.warn("Descarga directa no disponible:", e); direct = false; }
+          catch (e) { console.warn("Descarga automática no disponible:", e); }
           ocultarCargando();
         }
         if (!file) {
@@ -801,8 +853,15 @@
           if (r === "skip") { results.push(`${key}: saltado`); continue; }
           file = r;
         }
-        const res = await processPdf(file, `iden ${iden}.pdf`, team, true);
-        results.push(`${key}: ${res}`);
+        const fname = `${sanitizeFileName(key)}.pdf`;
+        const res = await processPdf(file, fname, team, true);
+        let saved = "";
+        if (!/saltado|no se pudo|sin partidos/.test(res)) {
+          mostrarCargando(`Guardando ${fname}...`);
+          saved = (await savePdfToGitHub(key, file)) ? ` · guardado ${PDF_FOLDER}/${fname}` : " · PDF no guardado en GitHub";
+          ocultarCargando();
+        }
+        results.push(`${key}: ${res}${saved}`);
       }
     } finally {
       updating = false;
