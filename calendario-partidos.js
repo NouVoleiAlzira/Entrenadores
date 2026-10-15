@@ -32,7 +32,7 @@
     head.classList.toggle("collapsed", !open);
     body.classList.toggle("collapsed", !open);
     head.setAttribute("aria-expanded", open ? "true" : "false");
-    if (open) render();
+    if (open) { render(); if (subState().teams) autoCheckPdfs(); }
   }
   window.cpToggleSection = function () {
     const open = document.getElementById("secBody_cal").classList.contains("collapsed");
@@ -207,7 +207,7 @@
     st[id] = open;
     try { localStorage.setItem(SUB_KEY, JSON.stringify(st)); } catch (e) {}
     applySub(id, open);
-    if (open && id === "teams") renderTeams();
+    if (open && id === "teams") { renderTeams(); autoCheckPdfs(); }
   };
   function applySub(id, open) {
     const head = document.getElementById("cpSubHead_" + id), body = document.getElementById("cpSub_" + id);
@@ -517,7 +517,7 @@
     if (!box || box.closest(".collapsed")) return;
     const teams = (typeof appData !== "undefined" && appData.teams) || [];
     if (!teams.length) { box.innerHTML = `<div class="cp-empty">No hay equipos configurados.</div>`; return; }
-    box.innerHTML = teams.map((t, i) => {
+    box.innerHTML = (autoMsg ? `<div class="cp-auto-msg">${esc(autoMsg)}</div>` : "") + teams.map((t, i) => {
       const key = getTeamKey(t);
       const info = cp.teams[key];
       let change = "";
@@ -720,7 +720,7 @@
 
   // Analiza un PDF y guarda los partidos del equipo. batch = actualización automática
   // (si el equipo se reconoce solo, no se pide confirmación). Devuelve un texto de resultado.
-  async function processPdf(file, fileName, team, batch, fedHint) {
+  async function processPdf(file, fileName, team, batch, fedHint, silent) {
     const key = getTeamKey(team);
     mostrarCargando(`Analizando el PDF de ${key}...`);
     let lines;
@@ -740,6 +740,7 @@
       fed = r.best;
       if (!fed) {
         if (!r.names.length) { if (!batch) alert("No he encontrado partidos con fecha en este PDF."); return "sin partidos con fecha"; }
+        if (silent) return "equipo no reconocido";
         const menu = r.names.slice(0, 40).map((n, i) => `${i + 1}. ${n}`).join("\n");
         const ans = prompt(`${key}: no sé cuál es en el PDF.\nEscribe el número del equipo que corresponde (vacío = saltar):\n\n${menu}`);
         const n = parseInt(ans, 10);
@@ -986,6 +987,56 @@
     return new File([blob], `${sanitizeFileName(key)}.pdf`, { type: "application/pdf" });
   }
 
+  // ---------- Lectura automática al desplegar «Equipos · PDF Competición» ----------
+  // Para cada equipo se mira la fecha del último cambio de su PDF en GitHub (Calendarios/<Equipo>.pdf).
+  // Solo se lee el PDF si es posterior a la última revisión de ese equipo.
+  const AUTO_SEEN = "NVA_CP_AUTO_SEEN";   // PDF ya intentados sin éxito (para no repetirlos cada vez)
+  let autoChecking = false, autoMsg = "";
+  function setAutoMsg(t) { autoMsg = t; renderTeams(); }
+  async function pdfDateInGitHub(key) {
+    const r = await ghApi(`/commits?path=${encodeURIComponent(`${PDF_FOLDER}/${sanitizeFileName(key)}.pdf`)}&per_page=1`);
+    if (!r.ok) return null;
+    const list = await r.json();
+    const c = list && list[0] && list[0].commit;
+    return c ? (c.committer || c.author).date : null;
+  }
+  async function autoCheckPdfs() {
+    if (autoChecking || updating) return;
+    if (typeof ghSettings === "undefined" || !ghSettings.user || !ghSettings.repo || !ghSettings.token || !navigator.onLine) return;
+    const teams = ((typeof appData !== "undefined" && appData.teams) || []).slice();
+    if (!teams.length) return;
+    autoChecking = true;
+    let seen = {};
+    try { seen = JSON.parse(localStorage.getItem(AUTO_SEEN) || "{}") || {}; } catch (e) { seen = {}; }
+    const done = [];
+    try {
+      await fetchFromGitHub();   // primero los datos más recientes, para comparar con la última revisión real
+      for (let i = 0; i < teams.length; i++) {
+        const team = teams[i], key = getTeamKey(team);
+        setAutoMsg(`🔄 Revisando los PDF de GitHub (${i + 1}/${teams.length})...`);
+        let date = null;
+        try { date = await pdfDateInGitHub(key); } catch (e) { console.warn(e); }
+        if (!date) continue;
+        const info = cp.teams[key];
+        const last = info && (info.checkedAt || info.uploadedAt);
+        if (last && new Date(date) <= new Date(last)) continue;   // ya revisado después de ese PDF
+        if (seen[key] === date) continue;
+        let file = null;
+        try { file = await readServerPdf(key); } catch (e) { console.warn(`Sin PDF en GitHub para ${key}:`, e); }
+        if (!file) continue;
+        const res = await processPdf(file, file.name, team, true, null, true);
+        if (/partidos · /.test(res)) { delete seen[key]; done.push(fmtRes(key, res)); }
+        else { seen[key] = date; done.push(`- ${key}: ${res}`); }
+      }
+    } finally {
+      autoChecking = false;
+      ocultarCargando();
+      try { localStorage.setItem(AUTO_SEEN, JSON.stringify(seen)); } catch (e) {}
+    }
+    const when = new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+    setAutoMsg(done.length ? `✅ ${when} · leídos ${done.length} PDF nuevos de GitHub` : `✅ ${when} · los PDF de GitHub no han cambiado desde la última revisión`);
+  }
+
   let updating = false;
   window.cpUpdateAll = async function () {
     if (updating) return;
@@ -1096,7 +1147,7 @@
     initDrag();
     setOpen(open);
     renderMatches();
-    fetchFromGitHub();
+    if (!(open && subState().teams)) fetchFromGitHub();   // si no, ya lo hace autoCheckPdfs
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();
