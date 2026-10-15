@@ -489,8 +489,8 @@
       </div>
 
       <div class="tabs-nav">
-        <button class="tab-btn active" onclick="switchTab(1)">Entrenadores/Equipos</button>
-        <button class="tab-btn" onclick="switchTab(2)">Jugadores/as</button>
+        <button class="tab-btn active" onclick="switchTab(1)">Entrenadores</button>
+        <button class="tab-btn" onclick="switchTab(2)">Jugadores/as y Equipos</button>
         <button class="tab-btn" onclick="switchTab(3)">Ligas</button>
         <button class="tab-btn" onclick="switchTab(4)">Conexión GitHub</button>
       </div>
@@ -506,25 +506,6 @@
         </div>
 
         <div class="config-section">
-          <div class="config-subtitle">Equipos <span class="badge" id="teamCountBadge">0</span></div>
-          <div class="input-group">
-            <input type="text" id="newTeamName" class="app-input" placeholder="Nombre Equipo">
-            <select id="newTeamCategory" class="app-select" style="width: 100px;">
-              <option value="Alevín">Alevín</option>
-              <option value="Infantil">Infantil</option>
-              <option value="Cadete">Cadete</option>
-              <option value="Juvenil">Juvenil</option>
-              <option value="Junior">Junior</option>
-              <option value="Senior Femenino">Senior Femenino</option>
-              <option value="Senior Masculino">Senior Masculino</option>
-              <option value="Mixto">Mixto</option>
-            </select>
-            <button class="btn-add" onclick="addTeam()">+</button>
-          </div>
-          <div class="item-list" id="configTeamsList"></div>
-        </div>
-
-        <div class="config-section">
           <div class="config-subtitle">Asignar Equipos a Entrenador</div>
           <select id="selectCoachAssign" class="app-select" style="margin-bottom: 6px;" onchange="renderCoachAssignments()"></select>
           <div id="coachTeamsCheckboxes" style="display: flex; flex-direction: column; gap: 4px; background: white; padding: 8px; border-radius: 6px; border: 1px solid var(--gray-border);"></div>
@@ -532,6 +513,11 @@
       </div>
 
       <div class="tab-content" id="tabContent2">
+        <div class="config-section">
+          <button type="button" class="btn-save-session imp-btn" onclick="impPickExcel()">📊 Cargar equipos y jugadores/as desde Excel</button>
+          <input type="file" id="impExcelInput" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" style="display:none" onchange="impHandleExcel(this)">
+        </div>
+
         <div class="config-section">
           <div class="config-subtitle">Selecciona Equipo</div>
           <select id="selectTeamPlayers" class="app-select" onchange="renderPlayerManagement()"></select>
@@ -545,9 +531,34 @@
           </div>
           <div id="draggablePlayerList"></div>
         </div>
+
+        <div class="config-section">
+          <div class="config-subtitle">Equipos <span class="badge" id="teamCountBadge">0</span></div>
+          <div class="input-group">
+            <input type="text" id="newTeamName" class="app-input" placeholder="Nombre Equipo">
+            <select id="newTeamCategory" class="app-select" style="width: 100px;">
+              <option value="Alevín">Alevín</option>
+              <option value="Infantil">Infantil</option>
+              <option value="Cadete">Cadete</option>
+              <option value="Juvenil">Juvenil</option>
+              <option value="Junior">Junior</option>
+              <option value="Senior Femenino">Senior Femenino</option>
+              <option value="Senior Masculino">Senior Masculino</option>
+              <option value="Mixto">Mixto</option>
+              <option value="Escuela">Escuela</option>
+            </select>
+            <button class="btn-add" onclick="addTeam()">+</button>
+          </div>
+          <div class="item-list" id="configTeamsList"></div>
+        </div>
+
       </div>
 
       <div class="tab-content" id="tabContent3">
+        <div class="config-section">
+          <button type="button" class="btn-save-session imp-btn" onclick="impLeaguesFromPdfs()">📄 Cargar ligas desde los PDF de la federación (GitHub · Calendarios)</button>
+        </div>
+
         <div class="config-section">
           <div class="config-subtitle">Selecciona Equipo</div>
           <select id="selectTeamLeagues" class="app-select" onchange="withLoading(loadLeagueEditList, 'Cargando equipos de la liga...')"></select>
@@ -697,6 +708,7 @@
      script iba embebido al final del body, pero sin bloquear la descarga). -->
 <script src="app.js" defer></script>
 <script src="calendario-partidos.js" defer></script>
+<script src="importar-datos.js" defer></script>
 
 
 <!-- Botón ATRÁS: vuelve a la pantalla principal y, ya en ella, pregunta antes de salir -->

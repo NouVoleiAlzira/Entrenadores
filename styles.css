@@ -1862,3 +1862,20 @@
     .cp-modal-btn { display: block; text-align: center; text-decoration: none; border: 1px solid var(--linea); background: rgba(233,238,250,0.08); color: #fff; border-radius: 10px; padding: 11px; font: inherit; font-weight: 700; font-size: 0.9rem; cursor: pointer; }
     .cp-modal-main { background: var(--btn-fondoVerde); border-color: var(--btn-fondoVerde); }
     .cp-modal-stop { border-color: var(--alzira); color: #fca5a5; }
+
+/* ---------- Importar datos (Excel de jugadores/as, ligas desde PDF) ---------- */
+    .imp-btn { padding: 9px; margin: 0; }
+    .imp-box { max-width: 440px; max-height: calc(100vh - 32px); }
+    .imp-list { overflow-y: auto; max-height: 55vh; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; }
+    .imp-group { border: 1px solid var(--linea); border-radius: 10px; padding: 8px 10px; }
+    .imp-group-title { font-weight: 800; color: #fff; margin-bottom: 4px; font-size: 0.9rem; }
+    .imp-group-title small, .imp-item small { color: var(--niebla); font-weight: 400; }
+    .imp-item { display: flex; align-items: flex-start; gap: 6px; font-size: 0.82rem; padding: 3px 0; cursor: pointer; }
+    .imp-item input { margin-top: 2px; flex: 0 0 auto; }
+    .imp-item select { font: inherit; font-size: 0.78rem; border-radius: 6px; padding: 1px 4px; color: #0f172a; background: #fff; }
+    .imp-sub { margin-top: 3px; }
+    .imp-add { color: #86efac; }
+    .imp-del { color: #fca5a5; }
+    .imp-ren { color: #fde68a; }
+    .imp-league { color: var(--tiza); }
+    .imp-notes { margin-top: 6px; } .imp-notes summary { cursor: pointer; color: var(--niebla); font-size: 0.8rem; }
