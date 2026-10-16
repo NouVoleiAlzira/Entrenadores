@@ -1,0 +1,391 @@
+/* =====================================================================
+   ANIMACIONES Y PULIDO VISUAL — capa final (va después de styles.css)
+   - Intro de marca al abrir la app (una vez por sesión)
+   - Cabecera con cristal al hacer scroll y línea roja animada
+   - Despliegue de secciones, menús y modales (lo mueve animaciones.js)
+   - Respuesta al pulsar botones
+   Solo se animan transform y opacity (y height en los desplegables).
+   ===================================================================== */
+
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+/* ---------------------------------------------------------------------
+   Fondo: halo azul arriba para dar profundidad a la "pista"
+   --------------------------------------------------------------------- */
+body {
+  background:
+    radial-gradient(90% 50% at 50% 0%, rgba(36, 80, 200, 0.18), transparent 70%),
+    #070F2B;
+}
+.app-container {
+  background:
+    radial-gradient(130% 55% at 50% -8%, rgba(36, 80, 200, 0.30), transparent 62%),
+    linear-gradient(transparent calc(34% - 1px), rgba(233,238,250,0.035) calc(34% - 1px), rgba(233,238,250,0.035) 34%, transparent 34%),
+    var(--noche);
+  /* clip en vez de hidden: recorta igual pero deja que la cabecera sea sticky */
+  overflow: hidden;
+  overflow: clip;
+}
+
+/* ---------------------------------------------------------------------
+   Cabecera
+   --------------------------------------------------------------------- */
+header {
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  transition: background-color 250ms ease, box-shadow 250ms ease;
+}
+header::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--alzira) 0%, #FF4D5E 50%, var(--alzira) 100%);
+  transform-origin: left center;
+  pointer-events: none;
+  z-index: 2;
+}
+header.is-scrolled {
+  background: rgba(13, 27, 69, 0.78);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  backdrop-filter: blur(14px) saturate(150%);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+
+.network-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.network-badge::before {
+  content: "";
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+}
+
+/* ---------------------------------------------------------------------
+   Pantallas
+   --------------------------------------------------------------------- */
+.screen { animation: nvaScreenIn 280ms var(--ease-out); }
+
+@keyframes nvaScreenIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---------------------------------------------------------------------
+   Títulos de sección plegables: flecha en una pastilla que gira
+   --------------------------------------------------------------------- */
+.section-toggle .sec-arrow,
+.cp-sub-head .sec-arrow {
+  display: inline-grid;
+  place-items: center;
+  width: 28px; height: 28px;
+  flex: none;
+  border-radius: 50%;
+  background: rgba(233, 238, 250, 0.06);
+  transition: transform 240ms var(--ease-out), color 150ms ease, background-color 150ms ease;
+}
+.section-toggle::after { transition: opacity 240ms ease; }
+.section-toggle.collapsed::after { opacity: 0.6; }
+
+@media (hover: hover) and (pointer: fine) {
+  .section-toggle:hover .sec-arrow,
+  .cp-sub-head:hover .sec-arrow { background: rgba(245, 197, 24, 0.14); }
+}
+
+/* ---------------------------------------------------------------------
+   Botones de entrenador / equipo
+   --------------------------------------------------------------------- */
+.coach-btn {
+  position: relative;
+  overflow: hidden;
+  background-image: linear-gradient(180deg, rgba(233,238,250,0.05), transparent 60%);
+}
+/* barra amarilla a la izquierda del entrenador abierto */
+.coach-btn::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 10px; bottom: 10px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--balon);
+  opacity: 0;
+}
+.coach-btn.selected::before { opacity: 1; }
+
+.teams-container { animation: none; }
+.team-btn > span:last-child { transition: transform 200ms var(--ease-out); }
+
+/* ---------------------------------------------------------------------
+   Respuesta al pulsar: todos los botones se hunden un poco
+   --------------------------------------------------------------------- */
+.coach-btn, .team-btn, .btn-pdf-mode, .btn-pdf-mode2, .btn-save-session,
+.btn-danger-action, .btn-history, .btn-header-icon, .wk-nav-btn, .btn-add,
+.btn-edit-history, .reason-add-btn, .cp-upload, .cp-modal-btn, .cp-chg-btn,
+.btn-close-modal, .tab-btn {
+  transition:
+    transform 160ms var(--ease-out),
+    background-color 150ms ease,
+    border-color 150ms ease,
+    box-shadow 200ms ease,
+    filter 150ms ease;
+}
+.coach-btn:active, .team-btn:active, .btn-pdf-mode:active, .btn-pdf-mode2:active,
+.btn-save-session:active, .btn-danger-action:active, .btn-history:active,
+.btn-header-icon:active, .wk-nav-btn:active, .btn-add:active,
+.btn-edit-history:active, .reason-add-btn:active, .cp-upload:active,
+.cp-modal-btn:active, .cp-chg-btn:active, .btn-close-modal:active, .tab-btn:active {
+  transform: scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn-pdf-mode:hover, .btn-pdf-mode2:hover, .btn-save-session:hover,
+  .btn-danger-action:hover, .btn-history:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.3);
+  }
+  .team-btn:hover > span:last-child { transform: translateX(3px); }
+}
+
+.app-input, .app-select, #tablonTextarea {
+  transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+}
+
+/* ---------------------------------------------------------------------
+   Desplegables (animaciones.js mide la altura y anima con WAAPI)
+   --------------------------------------------------------------------- */
+.anim-clip { overflow: hidden !important; }
+.anim-closing { display: block !important; }
+.anim-closing[data-anim-display="flex"] { display: flex !important; }
+
+/* ---------------------------------------------------------------------
+   Modales y pantalla de carga
+   --------------------------------------------------------------------- */
+.modal-backdrop.active { animation: nvaFade 220ms var(--ease-out); }
+.modal-backdrop.active > .modal-box { animation: nvaModalIn 260ms var(--ease-out); }
+.cp-modal { animation: nvaFade 220ms var(--ease-out); }
+.cp-modal-box { animation: nvaModalIn 260ms var(--ease-out); }
+
+/* El retraso evita el parpadeo en operaciones muy rápidas */
+.loading-overlay.active { animation: nvaFade 200ms var(--ease-out) 120ms backwards; }
+.loading-overlay.active .loading-message { animation: nvaRise 300ms var(--ease-out) 180ms backwards; }
+
+@keyframes nvaFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes nvaModalIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes nvaRise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes nvaPop {
+  from { opacity: 0; transform: scale(0.85); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes nvaLine {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+/* =====================================================================
+   INTRO
+   ===================================================================== */
+.nva-intro { display: none; }
+html.nva-intro-on .nva-intro,
+html .nva-intro.is-skip {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  cursor: pointer;
+  background:
+    radial-gradient(70% 45% at 50% 42%, rgba(36, 80, 200, 0.45), transparent 70%),
+    var(--noche);
+  clip-path: inset(0 0 0 0);
+  animation: nvaIntroOut 650ms var(--ease-in-out) 1.75s forwards;
+}
+html .nva-intro.is-skip { animation: nvaIntroSkip 250ms var(--ease-out) forwards; }
+
+@keyframes nvaIntroOut {
+  from { clip-path: inset(0 0 0 0); }
+  to   { clip-path: inset(0 0 100% 0); visibility: hidden; }
+}
+@keyframes nvaIntroSkip {
+  to { opacity: 0; visibility: hidden; }
+}
+
+/* Líneas de la pista que se dibujan */
+.nva-intro-court {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  opacity: 0.18;
+}
+.nva-intro-court * {
+  fill: none;
+  stroke: var(--tiza);
+  stroke-width: 0.6;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: nvaDraw 900ms var(--ease-in-out) forwards;
+}
+.nva-intro-court .c2 { animation-delay: 150ms; }
+.nva-intro-court .c3 { animation-delay: 250ms; }
+.nva-intro-court .c4 { animation-delay: 300ms; }
+@keyframes nvaDraw { to { stroke-dashoffset: 0; } }
+
+.nva-intro-center {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 16px;
+  animation: nvaIntroContent 420ms var(--ease-in-out) 1.6s forwards;
+}
+@keyframes nvaIntroContent {
+  to { opacity: 0; transform: translateY(-18px) scale(0.98); }
+}
+
+/* Escudo con el anillo amarillo del balón */
+.nva-intro-logo-wrap {
+  position: relative;
+  width: 132px; height: 132px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 18px;
+}
+.nva-intro-logo {
+  width: 96px; height: 96px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.45));
+  animation: nvaPop 600ms var(--ease-out) 150ms backwards;
+}
+.nva-intro-ring {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  transform: rotate(-90deg);
+}
+.nva-intro-ring circle {
+  fill: none;
+  stroke: var(--balon);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: nvaDraw 800ms var(--ease-out) 250ms forwards;
+}
+
+.nva-intro-title {
+  display: flex;
+  gap: 0.28em;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 800;
+  font-size: clamp(1.8rem, 9vw, 3.2rem);
+  line-height: 1;
+  color: var(--tiza);
+  letter-spacing: 0.01em;
+}
+.nva-intro-title > span {
+  display: block;
+  overflow: hidden;
+  padding: 0 0.08em 0.06em 0;
+}
+.nva-intro-title i {
+  display: block;
+  font-style: inherit;
+  animation: nvaWordUp 550ms var(--ease-out) backwards;
+}
+.nva-intro-title > span:nth-child(1) i { animation-delay: 480ms; }
+.nva-intro-title > span:nth-child(2) i { animation-delay: 560ms; }
+.nva-intro-title > span:nth-child(3) i { animation-delay: 640ms; color: var(--balon); }
+@keyframes nvaWordUp {
+  from { transform: translateY(105%); }
+  to   { transform: none; }
+}
+
+.nva-intro-bar {
+  width: 72px; height: 4px;
+  margin: 14px 0 12px;
+  border-radius: 2px;
+  background: var(--alzira);
+  transform-origin: left center;
+  animation: nvaLine 450ms var(--ease-out) 850ms backwards;
+}
+.nva-intro-sub {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--niebla);
+  animation: nvaFade 400ms ease 1s backwards;
+}
+
+/* ---------------------------------------------------------------------
+   Entrada de la app tras la intro (o al saltarla con un toque)
+   --nva-d es el momento en que empieza; animaciones.js quita la clase
+   al terminar para que no se repita al desplegar secciones.
+   --------------------------------------------------------------------- */
+html.nva-intro-on  { --nva-d: 2s; }
+html.nva-reveal { --nva-d: 0.1s; }
+
+:is(html.nva-intro-on, html.nva-reveal) header::after {
+  animation: nvaLine 600ms var(--ease-out) var(--nva-d) backwards;
+}
+:is(html.nva-intro-on, html.nva-reveal) .header-title-container::before {
+  animation: nvaPop 500ms var(--ease-out) calc(var(--nva-d) + 0.05s) backwards;
+}
+:is(html.nva-intro-on, html.nva-reveal) header h1 {
+  animation: nvaRise 500ms var(--ease-out) calc(var(--nva-d) + 0.12s) backwards;
+}
+:is(html.nva-intro-on, html.nva-reveal) header > div:last-child {
+  animation: nvaRise 500ms var(--ease-out) calc(var(--nva-d) + 0.2s) backwards;
+}
+:is(html.nva-intro-on, html.nva-reveal) #screenCoachTeam > * {
+  animation: nvaRise 450ms var(--ease-out) calc(var(--nva-d) + 0.25s) backwards;
+}
+:is(html.nva-intro-on, html.nva-reveal) #screenCoachTeam > :nth-child(2)  { animation-delay: calc(var(--nva-d) + 0.25s); }
+:is(html.nva-intro-on, html.nva-reveal) #screenCoachTeam > :nth-child(3)  { animation-delay: calc(var(--nva-d) + 0.30s); }
+:is(html.nva-intro-on, html.nva-reveal) #screenCoachTeam > :nth-child(4)  { animation-delay: calc(var(--nva-d) + 0.35s); }
+:is(html.nva-intro-on, html.nva-reveal) #screenCoachTeam > :nth-child(5)  { animation-delay: calc(var(--nva-d) + 0.40s); }
+:is(html.nva-intro-on, html.nva-reveal) #screenCoachTeam > :nth-child(6)  { animation-delay: calc(var(--nva-d) + 0.45s); }
+:is(html.nva-intro-on, html.nva-reveal) #screenCoachTeam > :nth-child(7)  { animation-delay: calc(var(--nva-d) + 0.50s); }
+:is(html.nva-intro-on, html.nva-reveal) #screenCoachTeam > :nth-child(n+8) { animation-delay: calc(var(--nva-d) + 0.55s); }
+
+/* ---------------------------------------------------------------------
+   Movimiento reducido: sin desplazamientos, solo fundidos suaves
+   --------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  html.nva-intro-on .nva-intro { animation: nvaIntroSkip 300ms ease 1.1s forwards; }
+  .nva-intro-center { animation: none; }
+  .nva-intro-court * { animation: none; stroke-dashoffset: 0; }
+  .nva-intro-ring circle { animation: none; stroke-dashoffset: 0; }
+  .nva-intro-logo, .nva-intro-title i, .nva-intro-bar, .nva-intro-sub { animation-name: nvaFade; }
+
+  html.nva-intro-on { --nva-d: 1.2s; }
+  :is(html.nva-intro-on, html.nva-reveal) header::after,
+  :is(html.nva-intro-on, html.nva-reveal) .header-title-container::before,
+  :is(html.nva-intro-on, html.nva-reveal) header h1,
+  :is(html.nva-intro-on, html.nva-reveal) header > div:last-child,
+  :is(html.nva-intro-on, html.nva-reveal) #screenCoachTeam > * { animation-name: nvaFade; }
+
+  .screen { animation: nvaFade 200ms ease; }
+  .modal-backdrop.active > .modal-box, .cp-modal-box { animation: nvaFade 200ms ease; }
+  .loading-overlay.active .loading-message { animation-name: nvaFade; }
+  .coach-btn:active, .team-btn:active, .btn-pdf-mode:active, .btn-pdf-mode2:active,
+  .btn-save-session:active, .btn-danger-action:active, .btn-history:active { transform: none; }
+  .btn-pdf-mode:hover, .btn-pdf-mode2:hover, .btn-save-session:hover,
+  .btn-danger-action:hover, .btn-history:hover { transform: none; }
+  .sec-arrow { transition: color 150ms ease, background-color 150ms ease; }
+}
