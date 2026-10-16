@@ -1848,6 +1848,14 @@
     .cp-iden { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--niebla); font-size: 0.62rem; font-weight: 700; text-transform: uppercase; }
     .cp-iden input { width: 58px; padding: 6px 4px; border-radius: 8px; border: 1px solid var(--linea); background: rgba(233,238,250,0.08); color: #fff; font: inherit; font-size: 0.85rem; text-align: center; }
     .cp-iden input.cp-iden-bad { border-color: var(--alzira); }
+    .cp-chg-btn { margin-left: 6px; border: 1px solid #e0a100; background: transparent; color: #e0a100; border-radius: 8px; padding: 2px 8px; font: inherit; font-size: 0.72rem; font-weight: 700; cursor: pointer; }
+    .cp-chg-list { overflow-y: auto; max-height: 60vh; display: flex; flex-direction: column; gap: 8px; }
+    .cp-chg-item { border: 1px solid var(--linea); border-left-width: 4px; border-radius: 8px; padding: 7px 9px; font-size: 0.82rem; line-height: 1.35; }
+    .cp-chg-item small { color: var(--niebla); }
+    .cp-chg-item.add { border-left-color: #22c55e; }
+    .cp-chg-item.del { border-left-color: #ef4444; }
+    .cp-chg-item.mod { border-left-color: #e0a100; }
+    .cp-chg-item s { color: var(--niebla); }
     .cp-auto-msg { font-size: 0.78rem; color: var(--niebla); padding: 4px 4px 8px; border-bottom: 1px solid var(--linea); }
     .cp-auto-note { margin-top: 12px; font-size: 0.78rem; color: var(--niebla); text-align: center; }
     .cp-update-btns { display: flex; gap: 8px; margin-top: 6px; }

@@ -522,7 +522,7 @@
       const info = cp.teams[key];
       let change = "";
       if (info && info.changeStatus === "sin") change = `<span class="cp-chg cp-chg-sin">Sin cambios desde ${fmtDay((info.changedAt || info.uploadedAt).slice(0, 10))}${info.checkedAt ? ` · revisado ${fmtDay(info.checkedAt.slice(0, 10))}` : ""}</span>`;
-      else if (info && info.changeStatus === "con") change = `<span class="cp-chg cp-chg-con">Con cambios (${fmtDay((info.changedAt || info.uploadedAt).slice(0, 10))})</span>`;
+      else if (info && info.changeStatus === "con") change = `<span class="cp-chg cp-chg-con">Con cambios (${fmtDay((info.changedAt || info.uploadedAt).slice(0, 10))}) <button type="button" class="cp-chg-btn" data-key="${esc(key)}" onclick="cpShowChanges(this)">🔍 Ver cambios</button></span>`;
       const status = info
         ? `<span class="wk-mark wk-v">V</span><span class="cp-up">${fmtDay(info.uploadedAt.slice(0, 10))} · ${(info.matches || []).length} partidos</span>${change}`
         : `<span class="cp-up cp-none">Sin PDF</span>`;
@@ -770,6 +770,7 @@
 
     const now = new Date().toISOString();
     cp.teams[key] = { fedName: fed, fileName, uploadedAt: now, matches, changeStatus: prev ? "con" : "nuevo", changedAt: now, checkedAt: now };
+    if (prev) cp.teams[key].changes = diffMatches(prev.matches, matches);
     cp.updated = now;
     saveLocal();
     render();
@@ -778,6 +779,50 @@
     }
     return `«${fed}», ${matches.length} partidos · ${prev ? "con cambios" : "nuevo"}`;
   }
+
+  // Detalle de los cambios: se emparejan los partidos por rival y campo (local/visitante)
+  // y se anotan los añadidos, los quitados y los que cambian de fecha, hora o pabellón.
+  function diffMatches(oldList, newList) {
+    const slim = (m) => ({ date: m.date, time: m.time, rival: m.rival, home: !!m.home, venue: m.venue || "" });
+    const pk = (m) => `${normalizeTeamName(m.rival)}|${m.home ? 1 : 0}`;
+    const sig = (m) => [m.date, m.time, m.venue || ""].join("|");
+    const olds = (oldList || []).slice(), out = [];
+    const used = new Set();
+    (newList || []).forEach(n => {
+      // primero uno idéntico, si no el mismo rival y campo
+      let i = olds.findIndex((o, k) => !used.has(k) && pk(o) === pk(n) && sig(o) === sig(n));
+      if (i >= 0) { used.add(i); return; }
+      i = olds.findIndex((o, k) => !used.has(k) && pk(o) === pk(n));
+      if (i >= 0) { used.add(i); out.push({ type: "mod", before: slim(olds[i]), after: slim(n) }); }
+      else out.push({ type: "add", after: slim(n) });
+    });
+    olds.forEach((o, k) => { if (!used.has(k)) out.push({ type: "del", before: slim(o) }); });
+    const d = (c) => (c.after || c.before).date + (c.after || c.before).time;
+    return out.sort((a, b) => d(a).localeCompare(d(b)));
+  }
+
+  window.cpShowChanges = function (btn) {
+    const key = btn.dataset.key, info = cp.teams[key];
+    if (!info) return;
+    const line = (m) => `${fmtDay(m.date)} ${m.time && m.time !== "00:00" ? m.time : "(sin hora)"} · ${m.home ? "🏠 vs" : "✈️ en"} ${esc(m.rival)}${m.venue ? `<br><small>${esc(m.venue)}</small>` : ""}`;
+    const what = (a, b) => [a.date !== b.date && "fecha", a.time !== b.time && "hora", a.venue !== b.venue && "pabellón"].filter(Boolean).join(", ");
+    const list = info.changes;
+    const body = !list ? `<div class="cp-modal-txt">No hay detalle guardado de este cambio (se detectó antes de que la app guardara el detalle). La próxima vez que cambie se podrá ver aquí.</div>`
+      : !list.length ? `<div class="cp-modal-txt">Solo han cambiado datos que no afectan a los partidos (por ejemplo, resultados).</div>`
+      : `<div class="cp-chg-list">${list.map(c => c.type === "add" ? `<div class="cp-chg-item add"><b>➕ Nuevo</b><br>${line(c.after)}</div>`
+          : c.type === "del" ? `<div class="cp-chg-item del"><b>➖ Ya no está</b><br>${line(c.before)}</div>`
+          : `<div class="cp-chg-item mod"><b>✏️ Cambia ${what(c.before, c.after)}</b><br><s>${line(c.before)}</s><br>${line(c.after)}</div>`).join("")}</div>`;
+    const o = document.createElement("div");
+    o.className = "cp-modal";
+    o.innerHTML = `<div class="cp-modal-box imp-box">
+      <div class="cp-modal-title">Cambios · ${esc(key)}</div>
+      <div class="cp-modal-txt"><small>Detectados el ${fmtDay((info.changedAt || info.uploadedAt).slice(0, 10))}</small></div>
+      ${body}
+      <button class="cp-modal-btn cp-modal-main">Cerrar</button>
+    </div>`;
+    o.addEventListener("click", (e) => { if (e.target === o || e.target.classList.contains("cp-modal-main")) o.remove(); });
+    document.body.appendChild(o);
+  };
 
   // Compara dos listas de partidos sin tener en cuenta el orden.
   function sameMatches(a, b) {
@@ -1034,7 +1079,7 @@
       try { localStorage.setItem(AUTO_SEEN, JSON.stringify(seen)); } catch (e) {}
     }
     const when = new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
-    setAutoMsg(done.length ? `✅ ${when} · leídos ${done.length} PDF nuevos de GitHub` : `✅ ${when} · los PDF de GitHub no han cambiado desde la última revisión`);
+    setAutoMsg(done.length ? `✅ ${when} · ${done.length === 1 ? "leído 1 PDF nuevo" : `leídos ${done.length} PDF nuevos`} de GitHub` : `✅ ${when} · los PDF de GitHub no han cambiado desde la última revisión`);
   }
 
   let updating = false;
