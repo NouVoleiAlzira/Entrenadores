@@ -1736,19 +1736,33 @@
             if (scaleX < 1 || scaleY < 1) span.style.transform = `scale(${scaleX}, ${scaleY})`;
         }
 
-        function refreshAllTeamTexts() {
-            document.querySelectorAll('.match-card-container').forEach(card => {
-                fitCategoryText(card.querySelector('.text-category'));
-                const homeScoreBox = card.querySelector('.text-score-home');
-                const awayScoreBox = card.querySelector('.text-score-away');
+        function refitCardTexts(card) {
+            fitCategoryText(card.querySelector('.text-category'));
+            const homeScoreBox = card.querySelector('.text-score-home');
+            const awayScoreBox = card.querySelector('.text-score-away');
 
-                autoFitTeamText(card.querySelector('.team-home-container'), card.querySelector('.team-home-container .team-inner-text'));
-                autoFitTeamText(card.querySelector('.team-away-container'), card.querySelector('.team-away-container .team-inner-text'));
-                
-                if (homeScoreBox) autoFitScoreText(homeScoreBox);
-                if (awayScoreBox) autoFitScoreText(awayScoreBox);
-            });
+            autoFitTeamText(card.querySelector('.team-home-container'), card.querySelector('.team-home-container .team-inner-text'));
+            autoFitTeamText(card.querySelector('.team-away-container'), card.querySelector('.team-away-container .team-inner-text'));
+            
+            if (homeScoreBox) autoFitScoreText(homeScoreBox);
+            if (awayScoreBox) autoFitScoreText(awayScoreBox);
         }
+
+        function refreshAllTeamTexts() {
+            document.querySelectorAll('.match-card-container').forEach(refitCardTexts);
+        }
+
+        // La altura de la tarjeta la marca la imagen de fondo: si todavía no se ha cargado
+        // (p. ej. en la carga automática) los textos se miden mal. Se reajustan cuando la
+        // tarjeta cambia de tamaño y cuando terminan de cargar las fuentes.
+        const cardResizeObserver = ('ResizeObserver' in window) ? new ResizeObserver(entries => {
+            entries.forEach(e => { if (e.contentRect.width > 0 && e.contentRect.height > 0) refitCardTexts(e.target); });
+        }) : null;
+        function observarAjusteTarjeta(card) {
+            if (cardResizeObserver) cardResizeObserver.observe(card);
+        }
+        if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => refreshAllTeamTexts());
+        window.addEventListener('load', () => refreshAllTeamTexts());
 
         window.addEventListener('resize', () => { fitCalendarText(); refreshAllTeamTexts(); });
 
@@ -2041,6 +2055,7 @@
 
             if (insertAfterElement) insertAfterElement.after(cardContainer);
             else mainContent.appendChild(cardContainer);
+            observarAjusteTarjeta(cardContainer);
 
             autoFitTeamText(homeCont, homeSpan);
             autoFitTeamText(awayCont, awaySpan);

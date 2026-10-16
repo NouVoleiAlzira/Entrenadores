@@ -202,9 +202,32 @@
       }, () => {});
     }
 
+
+    // ---------- Encabezado: saque del escudo + reflejo en el nombre ----------
+    function initHeadPlay() {
+      const header = document.querySelector("header");
+      const title = header && header.querySelector(".header-title-container");
+      if (!title) return;
+      const play = () => {
+        header.classList.remove("nva-head-play");
+        void header.offsetWidth;             // reinicia la animación
+        header.classList.add("nva-head-play");
+      };
+      header.addEventListener("animationend", e => {
+        if (e.animationName === "nvaSheen" || (reduce.matches && e.animationName === "nvaPop")) header.classList.remove("nva-head-play");
+      });
+      // Tocar el escudo o el nombre (cualquier zona de la cabecera que no sea un botón)
+      header.addEventListener("click", e => {
+        if (!e.target.closest("button, .network-badge")) play();
+      });
+      // Al entrar: tras la intro (2,6 s) o enseguida si ya se vio
+      setTimeout(play, html.classList.contains("nva-intro-on") ? 2600 : 500);
+    }
+
     function init() {
       initIntro();
       initHeader();
+      initHeadPlay();
       wrapCoachSelection();
 
       const byClass = el => !el.classList.contains("collapsed");

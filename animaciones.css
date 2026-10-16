@@ -363,10 +363,51 @@ html.nva-reveal { --nva-d: 0.1s; }
 :is(html.nva-intro-on, html.nva-reveal) #screenCoachTeam > :nth-child(7)  { animation-delay: calc(var(--nva-d) + 0.50s); }
 :is(html.nva-intro-on, html.nva-reveal) #screenCoachTeam > :nth-child(n+8) { animation-delay: calc(var(--nva-d) + 0.55s); }
 
+
+/* ---------------------------------------------------------------------
+   Encabezado: el escudo "saca" (sube, gira y cae con rebote) y un reflejo
+   de luz de pabellón cruza el nombre del club. Se reproduce una vez al
+   entrar (tras la intro) y cada vez que se toca el escudo o el nombre.
+   animaciones.js pone/quita header.nva-head-play.
+   --------------------------------------------------------------------- */
+.header-title-container { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.header-title-container::before { transform-origin: 50% 50%; }
+header h1 {
+  background: linear-gradient(100deg, var(--tiza) 42%, #FFFFFF 50%, #FF8A95 54%, var(--tiza) 62%) no-repeat;
+  background-size: 260% 100%;
+  background-position: 100% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+html header.nva-head-play .header-title-container::before {
+  animation: nvaServe 1200ms var(--ease-out) both;
+}
+html header.nva-head-play h1 {
+  animation: nvaSheen 1100ms var(--ease-in-out) 700ms both;
+}
+@keyframes nvaServe {
+  0%   { transform: none; }
+  15%  { transform: scale(2.2); }
+  40%  { transform: translateY(-6px) rotate(140deg) scale(1.7); }
+  70%  { transform: rotate(300deg) scale(1.15); }
+  86%  { transform: rotate(360deg) scale(0.92, 0.88); }
+  100% { transform: rotate(360deg); }
+}
+html header.nva-head-play { overflow: visible; }
+html header.nva-head-play .header-title-container::before { position: relative; z-index: 3; }
+
+@keyframes nvaSheen {
+  from { background-position: 100% 0; }
+  to   { background-position: 0% 0; }
+}
+
 /* ---------------------------------------------------------------------
    Movimiento reducido: sin desplazamientos, solo fundidos suaves
    --------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
+  html header.nva-head-play .header-title-container::before { animation: nvaPop 300ms ease both; }
+  html header.nva-head-play h1 { animation: none; }
   html.nva-intro-on .nva-intro { animation: nvaIntroSkip 300ms ease 1.1s forwards; }
   .nva-intro-center { animation: none; }
   .nva-intro-court * { animation: none; stroke-dashoffset: 0; }
