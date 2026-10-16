@@ -3088,6 +3088,11 @@
   let matchInitialized = false;
   let matchTeamKey = null;
 
+  document.addEventListener("DOMContentLoaded", () => {
+    const picker = document.getElementById("matchDatePicker");
+    if (picker) picker.addEventListener("change", () => { loadMatchScoreForDate(); renderMatchScoreboard(); });
+  });
+
   function resetMatchToTodayDate() {
     const today = new Date().toISOString().split('T')[0];
     document.getElementById("matchDatePicker").value = today;
@@ -3284,48 +3289,50 @@
     else startMatchVoice();
   }
 
+  // El marcador ya no se rellena a mano: se muestra (solo lectura) cuando el registro
+  // del partido de esa fecha tiene resultado, que llega con la carga automática de
+  // «Resultados de la semana» (Dirección NVA > Carteles). Sin datos, no se ve.
+  function hasMatchScoreData() {
+    return !!(matchScore.local || matchScore.visitante ||
+      matchScore.sets.some(s => s.local !== "" || s.visitante !== ""));
+  }
+
+  function loadMatchScoreForDate() {
+    const picker = document.getElementById("matchDatePicker");
+    const fecha = picker ? picker.value : "";
+    const log = allMatchLogs.find(l => l.equipo === currentTeam && l.fecha === fecha);
+    loadMatchScoreFromLog(log);
+  }
+
   function renderMatchScoreboard() {
     const box = document.getElementById("matchScoreboard");
     if (!box) return;
     if (matchVoice.active) stopMatchVoice();
+    if (!hasMatchScoreData()) { box.innerHTML = ""; box.style.display = "none"; return; }
+    box.style.display = "";
     const t = computeMatchSets();
 
-    const teamBtn = (side, name, placeholder) => `
-      <button type="button" class="ms-box ms-team ${name ? '' : 'placeholder'}"
-              onclick="withLoading(() => openLeagueTeamsModal('${side}'), 'Cargando equipos de la liga...')">
-        ${name ? escapeHtmlMatch(name) : placeholder + ' ▾'}
-      </button>`;
-
-    const rows = matchScore.sets.map((s, i) => `
+    const teamBox = (name, placeholder) => `<div class="ms-box ms-team ${name ? '' : 'placeholder'}">${name ? escapeHtmlMatch(name) : placeholder}</div>`;
+    const rows = matchScore.sets
+      .filter(s => s.local !== "" || s.visitante !== "")
+      .map(s => `
       <div class="ms-set-row">
-        <input type="text" inputmode="numeric" maxlength="2" class="ms-set-input" value="${escapeHtmlMatch(s.local)}"
-               oninput="onMatchSetInput(${i}, 'local', this)" aria-label="Set ${i + 1} local">
+        <span class="ms-set-input ms-set-ro">${escapeHtmlMatch(s.local)}</span>
         <span class="ms-dash">-</span>
-        <input type="text" inputmode="numeric" maxlength="2" class="ms-set-input" value="${escapeHtmlMatch(s.visitante)}"
-               oninput="onMatchSetInput(${i}, 'visitante', this)" aria-label="Set ${i + 1} visitante">
+        <span class="ms-set-input ms-set-ro">${escapeHtmlMatch(s.visitante)}</span>
       </div>`).join("");
 
     box.innerHTML = `
       <div class="ms-side">
-        ${teamBtn('home', matchScore.local, 'HOME')}
+        ${teamBox(matchScore.local, 'HOME')}
         <div class="ms-box ms-score" id="msScoreLocal">${t.local}</div>
       </div>
       <div class="ms-mid">
-        <div class="ms-box ms-sets-title">
-          <span>SETS</span>
-          <button type="button" id="msVoiceBtn" class="ms-voice-btn ${matchVoice.active ? 'recording' : ''}"
-                  onclick="toggleMatchVoice()" aria-label="Dictar puntuaciones por voz" title="Dictar puntuaciones por voz">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="9" y="2" width="6" height="12" rx="3"></rect>
-              <path d="M5 11a7 7 0 0 0 14 0"></path>
-              <line x1="12" y1="18" x2="12" y2="22"></line>
-            </svg>
-          </button>
-        </div>
+        <div class="ms-box ms-sets-title"><span>SETS</span></div>
         ${rows}
       </div>
       <div class="ms-side">
-        ${teamBtn('visit', matchScore.visitante, 'VISIT')}
+        ${teamBox(matchScore.visitante, 'VISIT')}
         <div class="ms-box ms-score" id="msScoreVisit">${t.visitante}</div>
       </div>
     `;
@@ -3899,6 +3906,7 @@
     const trainingTitle = document.getElementById("sessionTitle").innerText;
     document.getElementById("matchTitle").innerText = `Partido: ${trainingTitle}`;
 
+    loadMatchScoreForDate();
     renderMatchScoreboard();
     renderMatchPlayers();
     showScreen("screenMatch");
@@ -4119,12 +4127,25 @@
       return;
     }
 
+    const prevLog = allMatchLogs.find(l => l.equipo === currentTeam && l.fecha === dateVal);
+    let marcador = (prevLog && prevLog.marcador) || null;
+    if (!marcador && ghSettings.user && ghSettings.repo && navigator.onLine) {
+      // Puede que el resultado se cargara desde otro dispositivo: se mira el registro en GitHub
+      try {
+        const headers = {};
+        if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
+        const r = await fetch(`https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${MATCH_LOGS_FOLDER}/Partidos_${sanitizeFileName(currentTeam)}_${dateVal}.json`, { headers, cache: "no-store" });
+        if (r.ok) { const remote = JSON.parse(b64_to_utf8((await r.json()).content)); if (remote && remote.marcador) marcador = remote.marcador; }
+      } catch (e) { console.warn("No se pudo leer el registro del partido en GitHub:", e); }
+    }
+    if (!marcador && hasMatchScoreData()) marcador = buildMatchMarcador();
+
     const logEntry = {
       fecha: dateVal,
       equipo: currentTeam,
       entrenador: currentCoach ? currentCoach.name : "",
       jugadores: playersForSave(matchData),
-      marcador: buildMatchMarcador()
+      marcador: marcador
     };
 
     const existingIndex = allMatchLogs.findIndex(l => l.equipo === currentTeam && l.fecha === dateVal);
@@ -4230,7 +4251,7 @@
           <div style="font-weight:700; font-size:0.85rem; color:var(--azul-dark);">📅 ${escapeHtml(log.fecha)}</div>
           <div style="font-size:0.75rem; color:#64748b;">Entrenador: ${escapeHtml(log.entrenador)}</div>
           <div style="font-size:0.72rem; color:#0284c7; margin-top:2px;">
-            Jugadoras: ${presentes} Presentes / ${faltas} Faltas / ${noConv} No convocadas
+            ${log.jugadores.length ? `Jugadoras: ${presentes} Presentes / ${faltas} Faltas / ${noConv} No convocadas` : "Solo resultado (sin asistencia registrada)"}
           </div>
           ${resultHtml}
         </div>
@@ -4244,7 +4265,8 @@
     const log = allMatchLogs.find(l => l.equipo === currentTeam && l.fecha === fecha);
     if (!log) return;
     document.getElementById("matchDatePicker").value = log.fecha;
-    matchData = JSON.parse(JSON.stringify(log.jugadores));
+    if (log.jugadores && log.jugadores.length) matchData = JSON.parse(JSON.stringify(log.jugadores));
+    else initMatchData();
     matchCommentBoxOpen = {};
     loadMatchScoreFromLog(log);
     renderMatchScoreboard();

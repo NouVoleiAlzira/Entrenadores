@@ -4149,6 +4149,64 @@
             }
             mostrarAviso(mensaje, equiposNoEncontrados.length > 0 || tarjetasCreadas === 0);
         }
+
+        // ---- Carga automática desde la página principal (Dirección NVA > Carteles) ----
+        // index.html deja en localStorage (NVA_CARTEL_AUTO) los partidos elegidos de
+        // «Calendario de partidos» y abre esta página con ?auto=1.
+        async function cargarPartidosAutomaticos(datos) {
+            if (!datosCargados) await intentarCargarExcelOUsarRespaldo();
+            resetearSeleccion();
+            const fallos = [], fechas = [], usados = new Set(), repetidos = [];
+            let tarjetas = 0;
+            (datos.partidos || []).forEach(p => {
+                const eq = { name: p.team.name, category: p.team.category, key: p.key, etiqueta: p.key };
+                const idx = encontrarIndiceFichaEquipoConfig(eq, { division: '' });
+                if (idx === -1) { fallos.push(p.key); return; }
+                if (usados.has(idx)) { repetidos.push(p.key); return; }   // una ficha por equipo
+                usados.add(idx);
+                const [anio, mes, dia] = p.fecha.split('-').map(Number);
+                const partes = { dia, mes, anio };
+                fechas.push(new Date(anio, mes - 1, dia));
+                const categoriaFicha = obtenerCategoria(listaEquiposGlobal[idx]);
+                const { catRank, divRank } = obtenerRangoCategoriaJornada(categoriaFicha);
+                const fechaCorta = `${dia}/${mes}/${anio}`;
+                const r = rellenarTarjetaDesdeJornada(
+                    obtenerNombreEquipo(listaEquiposGlobal[idx]), p.home ? 'casa' : 'fuera',
+                    corregirApostrofes(normalizarNombreClub(p.rival)),
+                    fechaLargaDesdePartes(partes), p.hora ? formatearHora(p.hora) : '',
+                    corregirApostrofes(p.campo || ''), categoriaFicha, catRank, divRank,
+                    obtenerOrdenFechaHoraJornada(fechaCorta, p.hora || ''), null, idx
+                );
+                if (r !== -1) tarjetas++; else fallos.push(p.key);
+            });
+            if (fechas.length) {
+                fechas.sort((a, b) => a - b);
+                calFechaInicioEfectiva = fechas[0];
+                calFechaFinEfectiva = fechas[fechas.length - 1];
+                escribirTextoFechaEnCabecera(fechas[0], fechas[fechas.length - 1]);
+            }
+            if (tarjetas > 0) {
+                generarRecuadros();
+                reordenarRecuadrosPorCategoria();
+            }
+            let mensaje = `✅ Se han cargado ${tarjetas} partido${tarjetas === 1 ? '' : 's'} desde el calendario de partidos.`;
+            if (fallos.length) mensaje += `\n• Sin ficha en la lista de equipos (DATOS.xls): ${[...new Set(fallos)].join(', ')}.`;
+            if (repetidos.length) mensaje += `\n• Con más de un partido (se ha usado el primero): ${[...new Set(repetidos)].join(', ')}.`;
+            mostrarAviso(mensaje, fallos.length > 0 || repetidos.length > 0 || tarjetas === 0);
+        }
+
+        (function () {
+            if (new URLSearchParams(location.search).get('auto') !== '1') return;
+            let datos = null;
+            try { datos = JSON.parse(localStorage.getItem('NVA_CARTEL_AUTO') || 'null'); } catch (e) { datos = null; }
+            try { history.replaceState(history.state, '', location.pathname); } catch (e) {}
+            if (!datos || datos.tipo !== 'partidos') return;
+            localStorage.removeItem('NVA_CARTEL_AUTO');
+            cargarPartidosAutomaticos(datos).catch(err => {
+                console.error(err);
+                alert('No se ha podido hacer la carga automática: ' + (err && err.message ? err.message : err));
+            });
+        })();
     </script>
 
 <script>

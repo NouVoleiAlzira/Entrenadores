@@ -1888,3 +1888,16 @@
     .imp-ren { color: #fde68a; }
     .imp-league { color: var(--tiza); }
     .imp-notes { margin-top: 6px; } .imp-notes summary { cursor: pointer; color: var(--niebla); font-size: 0.8rem; }
+
+/* ---------- Carteles: partidos y resultados de la semana ---------- */
+    .cartel-sub { font-size: 0.82rem; font-weight: 700; color: var(--tiza); margin: 8px 0 6px; }
+    .cartel-row { display: flex; gap: 8px; margin-bottom: 10px; }
+    .cartel-row .btn-pdf-mode2 { flex: 1; min-width: 0; margin-bottom: 0; }
+    .ca-range { display: flex; gap: 8px; flex-wrap: wrap; font-size: 0.8rem; }
+    .ca-range label { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 130px; }
+    .ca-range input { font: inherit; border-radius: 8px; border: 1px solid var(--linea); padding: 6px; background: #fff; color: #0f172a; }
+    .ca-item { border-bottom: 1px solid var(--linea); padding: 6px 0; }
+    .ca-item small { color: var(--niebla); }
+    .ca-off { opacity: 0.5; }
+    .ca-score { color: #fde68a; }
+    .ms-set-ro { display: flex; align-items: center; justify-content: center; }

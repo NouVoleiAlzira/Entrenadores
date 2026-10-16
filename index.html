@@ -87,7 +87,6 @@
       <div style="display:flex; gap:6px; margin-top:10px;">
         <button class="btn-pdf-mode" id="btnPdfMode" onclick="togglePdfMode()" style="flex:1; min-width:0; margin-bottom:0; font-size:0.7rem; padding:8px 4px;">📊 PDF ENTRENAMIENTOS</button>
         <button class="btn-pdf-mode" id="btnPdfJugadora" onclick="openPlayerPdfModal()" style="flex:1; min-width:0; margin-bottom:0; font-size:0.7rem; padding:8px 4px;">🧑 PDF JUGADORA</button>
-        <button class="btn-pdf-mode" id="btnPdfResultados" onclick="openResultsRangeModal()" style="flex:1; min-width:0; margin-bottom:0; font-size:0.7rem; padding:8px 4px;">🏆 PDF RESULTADOS</button>
       </div>
     </div>
 
@@ -136,9 +135,15 @@
     </div>
 
     <div class="section-subtitle">Carteles</div>
-    <div style="display:flex; gap:8px;">
-      <button class="btn-pdf-mode2" style="flex:1; min-width:0; margin-bottom:20;" onclick="location.href='Partidos.html'">📅 Partidos de la semana</button>
-      <button class="btn-pdf-mode2" style="flex:1; min-width:0; margin-bottom:20;" onclick="location.href='Resultados.html'">🏆 Resultados de la semana</button>
+    <div class="cartel-sub">📅 Partidos de la semana</div>
+    <div class="cartel-row">
+      <button class="btn-pdf-mode2" onclick="cartelAuto('partidos')">⚡ Carga automática</button>
+      <button class="btn-pdf-mode2" onclick="location.href='Partidos.html'">✍️ Introducción manual</button>
+    </div>
+    <div class="cartel-sub">🏆 Resultados de la semana</div>
+    <div class="cartel-row">
+      <button class="btn-pdf-mode2" onclick="cartelAuto('resultados')">⚡ Carga automática</button>
+      <button class="btn-pdf-mode2" onclick="location.href='Resultados.html'">✍️ Introducción manual</button>
     </div>
 
     <div class="section-subtitle">Horarios de entrenamiento</div>
@@ -709,6 +714,7 @@
 <script src="app.js" defer></script>
 <script src="calendario-partidos.js" defer></script>
 <script src="importar-datos.js" defer></script>
+<script src="carteles-auto.js" defer></script>
 
 
 <!-- Botón ATRÁS: vuelve a la pantalla principal y, ya en ella, pregunta antes de salir -->

@@ -684,7 +684,7 @@
       let parts = [];
       l.cells.forEach(c => {
         if (isDataCell(c) || RE_JOR.test(c)) return;
-        c.replace(RE_DATE, "").replace(RE_TIME, "").split(/\s+-\s+/).forEach(p => { p = p.trim(); if (/[A-Za-zÀ-ÿ]{2,}/.test(p)) parts.push(p); });
+        c.replace(RE_DATE, "").replace(RE_TIME, "").split(/\s+-\s+(?=[A-Za-zÀ-ÿ0-9]{2,})/).forEach(p => { p = p.trim(); if (/[A-Za-zÀ-ÿ]{2,}/.test(p)) parts.push(p); });
       });
       const own = parts.findIndex(p => normalizeTeamName(p).includes(fedN));
       let rival = "", home = null, venue = "";
@@ -698,6 +698,11 @@
           if (own > 0 && (own === parts.length - 1 || own % 2 === 1)) { rival = parts[own - 1]; home = false; venue = parts.slice(own + 1).join(" · "); }
           else if (parts[own + 1]) { rival = parts[own + 1]; home = true; venue = parts.slice(own + 2).join(" · "); }
         } else venue = parts.slice(own + 1).join(" · ");
+      }
+      // Rival y pabellón pegados en la misma celda ("NOU ALGEMESÍ PAV. 9 OCTUBRE (ALGEMESÍ)")
+      if (rival && !venue) {
+        const vm = rival.match(/^(.+?)\s+((?:PAB|PAV|PABELL[OÓ]N|POLIDEPORTIVO|POLIESPORTIU|PALAU|PISTAS?|CAMPO|COMPLEJO|CIUTAT|ESTADI|CENTRO|CENTRE|COLEGIO|INSTITUTO|IES|CEIP)\b.*)$/i);
+        if (vm && /[A-Za-zÀ-ÿ]{2,}/.test(vm[1])) { rival = vm[1].trim(); venue = vm[2].trim(); }
       }
       if (/DESCANS/i.test(rival) || /\bDESCANSA\b/i.test(l.text)) return;   // jornada de descanso
       matches.push({ date, time, rival, home, venue, jornada: curJor, raw: l.text });
@@ -755,6 +760,7 @@
     if (same) {
       const now = new Date().toISOString();
       prev.changeStatus = "sin";
+      prev.matches = matches;   // mismos partidos; se guarda el texto nuevo (p. ej. con los resultados)
       prev.changedAt = prev.changedAt || prev.uploadedAt;
       prev.checkedAt = now;
       cp.updated = now;
@@ -1174,6 +1180,11 @@
       if (data && data.teams) { cp = data; saveLocal(); render(); }
     } catch (e) { console.error(`Error al cargar ${CP_FILE}:`, e); }
   }
+
+  // Acceso para otras partes de la app (carga automática de carteles)
+  window.cpGetData = () => cp;
+  window.cpGetRange = () => ({ from: (document.getElementById("cpFrom") || {}).value || "", to: (document.getElementById("cpTo") || {}).value || "" });
+  window.cpRefreshFromGitHub = () => autoCheckPdfs();
 
   function init() {
     const from = document.getElementById("cpFrom"), to = document.getElementById("cpTo");

@@ -2400,11 +2400,89 @@
             }
         }
 
+        // === CARGA AUTOMÁTICA DESDE LA PÁGINA PRINCIPAL (Dirección NVA > Carteles) ===
+        // index.html deja en localStorage (NVA_CARTEL_AUTO) los resultados elegidos de
+        // «Calendario de partidos» y abre esta página con ?auto=1.
+        function normEquipoAuto(t) {
+            return (t || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]+/g, ' ').trim();
+        }
+        function catBaseAuto(t) {
+            const n = normEquipoAuto(t);
+            return ['ALEVIN', 'INFANTIL', 'CADETE', 'JUVENIL', 'JUNIOR', 'SENIOR'].find(c => n.includes(c)) || '';
+        }
+        // Ficha del equipo del club en «Equipos NVA» (DATOS.xls): mismo nombre y misma categoría
+        function fichaClubAuto(team) {
+            const n = normEquipoAuto(team.name), base = catBaseAuto(team.category);
+            const porNombre = EQUIPOS_NVA_DATA.filter(f => normEquipoAuto(f.EQUIPO || f.equipo) === n);
+            return porNombre.find(f => base && catBaseAuto(f.CATEGORIA || f.categoria) === base) || (porNombre.length === 1 ? porNombre[0] : null);
+        }
+        function textoRangoAuto(desde, hasta) {
+            const a = new Date(desde + 'T12:00:00'), b = new Date(hasta + 'T12:00:00');
+            const txt = (a.getTime() === b.getTime())
+                ? `${a.getDate()} de ${MONTH_NAMES[a.getMonth()]} del ${a.getFullYear()}`
+                : `del ${a.getDate()} de ${MONTH_NAMES[a.getMonth()]} al ${b.getDate()} de ${MONTH_NAMES[b.getMonth()]} del ${b.getFullYear()}`;
+            return txt.toLowerCase();
+        }
+        async function cargarResultadosAutomaticos(datos) {
+            await tryAutoLoadExcel();
+            mainContent.innerHTML = '';
+            const partidos = (datos.partidos || []).slice();
+            const fechas = partidos.map(p => p.fecha).sort();
+            if (fechas.length) {
+                document.getElementById('date-text').textContent = textoRangoAuto(fechas[0], fechas[fechas.length - 1]);
+                fitCalendarText();
+            }
+            const sinFicha = [];
+            partidos.forEach(p => {
+                const ficha = fichaClubAuto(p.team);
+                if (!ficha) sinFicha.push(p.key);
+                const club = ficha ? String(ficha.EQUIPO || ficha.equipo) : p.team.name.toUpperCase();
+                const categoria = ficha ? String(ficha.CATEGORIA || ficha.categoria || '') : (p.team.category || '').toUpperCase();
+                const rival = (p.rival || '').replace(/([A-Za-zÀ-ÿ]),(?=[A-Za-zÀ-ÿ])/g, "$1'");
+                const home = p.home ? club : rival, away = p.home ? rival : club;
+                createNewCard();
+                const card = mainContent.lastElementChild;
+                applyMatchDataToCard(card, home, away, categoria);
+                const sh = card.querySelector('.text-score-home'), sa = card.querySelector('.text-score-away');
+                sh.querySelector('.score-inner-text').textContent = p.setsL == null ? '' : String(p.setsL);
+                sa.querySelector('.score-inner-text').textContent = p.setsV == null ? '' : String(p.setsV);
+                autoFitScoreText(sh);
+                autoFitScoreText(sa);
+                const [y, m, d] = p.fecha.split('-').map(Number);
+                card.dataset.matchDate = `${d} de ${MONTH_NAMES[m - 1]} de ${y}`;
+                card.dataset.matchTime = p.hora || '';
+                card.dataset.venue = p.campo || '';
+                updateMatchGlow(card);
+            });
+            if (!partidos.length) createNewCard();
+            updateAddFirstButtonVisibility();
+            saveAppState();
+            requestAnimationFrame(() => setTimeout(() => { fitCalendarText(); refreshAllTeamTexts(); }, 150));
+            showToast(`Cargados ${partidos.length} resultado(s) desde el calendario de partidos.` +
+                (sinFicha.length ? ` Sin ficha en DATOS.xls: ${sinFicha.join(', ')}.` : ''), sinFicha.length > 0);
+        }
+
         // === INICIALIZACIÓN DE LA APLICACIÓN ===
         renderTeamModalList();
-        tryAutoLoadExcel();
+        const datosAuto = (function () {
+            if (new URLSearchParams(location.search).get('auto') !== '1') return null;
+            let d = null;
+            try { d = JSON.parse(localStorage.getItem('NVA_CARTEL_AUTO') || 'null'); } catch (e) { d = null; }
+            try { history.replaceState(history.state, '', location.pathname); } catch (e) {}
+            if (!d || d.tipo !== 'resultados') return null;
+            localStorage.removeItem('NVA_CARTEL_AUTO');
+            return d;
+        })();
+        if (datosAuto) {
+            cargarResultadosAutomaticos(datosAuto).catch(err => {
+                console.error(err);
+                alert('No se ha podido hacer la carga automática: ' + (err && err.message ? err.message : err));
+            });
+        } else tryAutoLoadExcel();
 
-        if (!loadAppState()) {
+        if (datosAuto) {
+            // la carga automática crea las tarjetas
+        } else if (!loadAppState()) {
             createNewCard();
         } else {
             // Forzar el reajuste de textos una vez que el navegador ha calculated el layout/geometría
