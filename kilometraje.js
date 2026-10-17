@@ -8,16 +8,75 @@
 //  campo al otro sin pasar por casa.
 // =====================================================================
 (function () {
-  const CAMPOS = ["Pab. El Raval (Gandía)", "Pab. Usos Múltiples (Gandía)", "Pab. Mun. Real de Gandía", "Pav. 9 d'Octubre (Algemesí)", "Col. Santa Ana (Algemesí)", "Palau d'Esports (Alzira)", "Pab. Ricardo Tormo (Canals)", "Pab. Mun. Cullera", "Pab. Mun. Ontinyent", "Pista al aire libre (La Pobla del Duc)", "Pab. CP S. Ignacio (Picassent)", "Gimnasio Polid. Mun. Picassent", "Pab. Mun. Sedaví", "Pab. Pablo Herrera (Castellón)", "Pab. Polid. La Cañada (Paterna)", "Resort Mas Camarena (Bétera)", "Pab. Mun. Vinaròs", "C.E. Toll L'Alberca (Torrent)", "Pab. Nou Moles (Valencia)", "Pab. Benicalap Sur (Valencia)", "Pav. Colegio Larrodé (Catarroja)", "Pistas Naranjas (Paterna)", "Pab. de la Fuensanta (Valencia)", "C.E. Cheste", "Pab. Georgina Blanes (UPV Alcoy)", "IES Albal", "Pab. Mun. Requena", "P.M. Benifaió", "Pab. Voleibol (Xàtiva)", "IES Cid Campeador (Valencia)", "Meta Club Deportivo (Massanassa)"];
-  const DIST = [[0, 0.4, 2.2, 39.7, 39.6, 36.5, 44, 28.5, 49.8, 32.7, 67.7, 67.5, 72.7, 154, 91.7, 93.5, 238.2, 77.8, 79.6, 82.7, 70.1, 86.1, 78.2, 96.3, 48.1, 72.5, 132.5, 46, 37.1, 79.1, 71.2], [0.4, 0, 1.9, 39.6, 39.6, 36.5, 44.2, 28.3, 54.2, 33, 67.5, 67.3, 72.4, 153.7, 91.6, 93.3, 237.9, 77.6, 79.4, 82.5, 69.9, 85.9, 78, 96.2, 48.5, 72.3, 132.5, 45.9, 37.3, 78.9, 71], [2.2, 1.9, 0, 40.2, 40.1, 37.3, 45.9, 28.1, 56.2, 34.9, 67.8, 67.6, 72.4, 152.8, 91.6, 93.3, 236.6, 77.8, 79.3, 82.4, 70, 85.8, 77.9, 96.6, 54.2, 72.4, 133.6, 46.4, 39, 78.7, 71], [39.7, 39.6, 40.2, 0, 0.4, 6.4, 35.3, 18, 59.9, 42.7, 24.4, 24.2, 32.7, 126.9, 47.8, 54.7, 217.4, 34.5, 38.4, 41.9, 29.2, 43.6, 37.7, 49.6, 73.3, 31, 91.9, 6.3, 30.6, 39.8, 30.5], [39.6, 39.6, 40.1, 0.4, 0, 6.1, 34.9, 18.2, 59.5, 42.4, 24.6, 24.5, 33, 127.2, 48, 55, 217.8, 34.7, 38.6, 42.2, 29.5, 43.9, 38, 49.7, 73, 31.3, 91.8, 6.5, 30.2, 40.1, 30.8], [36.5, 36.5, 37.3, 6.4, 6.1, 0, 29.2, 19.8, 49.1, 36.4, 30.1, 29.9, 39, 133.8, 57.8, 61.1, 224.2, 40.3, 44.5, 48.1, 35.4, 49.6, 44, 58.2, 66.6, 37.1, 93.5, 11.7, 24.2, 46.2, 36.7], [44, 44.2, 45.9, 35.3, 34.9, 29.2, 0, 45.2, 21.9, 18.4, 59.4, 59.3, 71.2, 164.1, 83.4, 87.9, 255.3, 69.9, 76.3, 80.3, 67, 80.7, 76.2, 77.5, 40.1, 68.4, 96.9, 38.7, 7.2, 79.1, 68.4], [28.5, 28.3, 28.1, 18, 18.2, 19.8, 45.2, 0, 66.4, 45.5, 35.8, 35.7, 38.9, 125.6, 61.5, 63, 212.8, 44.5, 45.4, 48.2, 36.9, 55.6, 44, 68.4, 74, 39.1, 110.6, 22.6, 38.7, 44.8, 37.8], [49.8, 54.2, 56.2, 59.9, 59.5, 49.1, 21.9, 66.4, 0, 17.4, 82.8, 82.7, 94.2, 186.7, 107, 111.4, 277.1, 93.4, 99.5, 103.5, 90, 104.2, 99.3, 100.9, 21.5, 91.6, 115.5, 64.4, 24.9, 102.1, 91.5], [32.7, 33, 34.9, 42.7, 42.4, 36.4, 18.4, 45.5, 17.4, 0, 71.3, 71.2, 81.4, 172.3, 96.4, 100.1, 261.4, 82.3, 87.4, 91.2, 77.5, 92.7, 86.8, 93.5, 25.3, 79.3, 116.5, 47.9, 15.6, 89.2, 78.9], [67.7, 67.5, 67.8, 24.4, 24.6, 30.1, 59.4, 35.8, 82.8, 71.3, 0, 0.2, 12.3, 105.7, 23.4, 26.7, 198.1, 10.2, 15.7, 19.4, 8.3, 19.9, 16, 27.7, 98.6, 8.7, 76.7, 18.4, 56.3, 19.1, 9.5], [67.5, 67.3, 67.6, 24.2, 24.5, 29.9, 59.3, 35.7, 82.7, 71.2, 0.2, 0, 12.3, 105.7, 23.6, 26.9, 198.2, 10.3, 15.8, 19.5, 8.3, 20, 16, 27.8, 98.5, 8.8, 76.8, 18.2, 56.2, 19.1, 9.5], [72.7, 72.4, 72.4, 32.7, 33, 39, 71.2, 38.9, 94.2, 81.4, 12.3, 12.3, 0, 93.1, 18.6, 19.4, 185.2, 9.4, 6.5, 9.4, 4.1, 12.6, 5.2, 30.9, 108.6, 4.1, 84.1, 27.7, 67.4, 7.3, 2.8], [154, 153.7, 152.8, 126.9, 127.2, 133.8, 164.1, 125.6, 186.7, 172.3, 105.7, 105.7, 93.1, 0, 86.2, 80.3, 93.4, 96.5, 88.8, 84.8, 97.4, 85.9, 88.4, 102.7, 198.9, 96.3, 143.8, 122.4, 159.8, 85.2, 95.9], [91.7, 91.6, 91.6, 47.8, 48, 57.8, 83.4, 61.5, 107, 96.4, 23.4, 23.6, 18.6, 86.2, 0, 5.6, 179.5, 13.3, 12.4, 11.4, 20.1, 6.5, 14.4, 18.4, 123.7, 17.8, 71.1, 41.8, 81, 15.8, 19.3], [93.5, 93.3, 93.3, 54.7, 55, 61.1, 87.9, 63, 111.4, 100.1, 26.7, 26.9, 19.4, 80.3, 5.6, 0, 173.7, 16.7, 12.9, 10.4, 21.8, 7, 14.4, 23.7, 127.5, 19.8, 76.3, 44.9, 85.1, 14.5, 20.7], [238.2, 237.9, 236.6, 217.4, 217.8, 224.2, 255.3, 212.8, 277.1, 261.4, 198.1, 198.2, 185.2, 93.4, 179.5, 173.7, 0, 189.4, 181.5, 177.6, 189.6, 179, 180.9, 195.8, 286.8, 188.7, 233.6, 213.6, 250.3, 177.5, 188.1], [77.8, 77.6, 77.8, 34.5, 34.7, 40.3, 69.9, 44.5, 93.4, 82.3, 10.2, 10.3, 9.4, 96.5, 13.3, 16.7, 189.4, 0, 7.9, 11.1, 8.4, 10.1, 9.4, 21.6, 109.6, 6.3, 73.9, 28.5, 67.1, 12.9, 8.3], [79.6, 79.4, 79.3, 38.4, 38.6, 44.5, 76.3, 45.4, 99.5, 87.4, 15.7, 15.8, 6.5, 88.8, 12.4, 12.9, 181.5, 7.9, 0, 3.7, 9.2, 6.2, 2.2, 26.9, 114.7, 7.4, 80.6, 33, 72.9, 5.2, 8], [82.7, 82.5, 82.4, 41.9, 42.2, 48.1, 80.3, 48.2, 103.5, 91.2, 19.4, 19.5, 9.4, 84.8, 11.4, 10.4, 177.6, 11.1, 3.7, 0, 12.7, 5, 4.2, 27.9, 118.5, 11.1, 81.9, 36.6, 76.9, 4.4, 11.4], [70.1, 69.9, 70, 29.2, 29.5, 35.4, 67, 36.9, 90, 77.5, 8.3, 8.3, 4.1, 97.4, 20.1, 21.8, 189.6, 8.4, 9.2, 12.7, 0, 14.8, 8.6, 29.9, 104.8, 2.3, 82.1, 23.9, 63.3, 11.3, 1.4], [86.1, 85.9, 85.8, 43.6, 43.9, 49.6, 80.7, 55.6, 104.2, 92.7, 19.9, 20, 12.6, 85.9, 6.5, 7, 179, 10.1, 6.2, 5, 14.8, 0, 8, 23.2, 120, 12.8, 76.8, 37.9, 77.8, 9.4, 13.8], [78.2, 78, 77.9, 37.7, 38, 44, 76.2, 44, 99.3, 86.8, 16, 16, 5.2, 88.4, 14.4, 14.4, 180.9, 9.4, 2.2, 4.2, 8.6, 8, 0, 29, 114.1, 7.3, 82.8, 32.6, 72.6, 3.5, 7.3], [96.3, 96.2, 96.6, 49.6, 49.7, 58.2, 77.5, 68.4, 100.9, 93.5, 27.7, 27.8, 30.9, 102.7, 18.4, 23.7, 195.8, 21.6, 26.9, 27.9, 29.9, 23.2, 29, 0, 120.1, 27.9, 48, 43.2, 77, 31.7, 29.9], [48.1, 48.5, 54.2, 73.3, 73, 66.6, 40.1, 74, 21.5, 25.3, 98.6, 98.5, 108.6, 198.9, 123.7, 127.5, 286.8, 109.6, 114.7, 118.5, 104.8, 120, 114.1, 120.1, 0, 106.7, 138.4, 79.1, 40, 116.4, 106.2], [72.5, 72.3, 72.4, 31, 31.3, 37.1, 68.4, 39.1, 91.6, 79.3, 8.7, 8.8, 4.1, 96.3, 17.8, 19.8, 188.7, 6.3, 7.4, 11.1, 2.3, 12.8, 7.3, 27.9, 106.7, 0, 80.3, 25.5, 64.9, 10.4, 2], [132.5, 132.5, 133.6, 91.9, 91.8, 93.5, 96.9, 110.6, 115.5, 116.5, 76.7, 76.8, 84.1, 143.8, 71.1, 76.3, 233.6, 73.9, 80.6, 81.9, 82.1, 76.8, 82.8, 48, 138.4, 80.3, 0, 86.2, 100.4, 86, 82.4], [46, 45.9, 46.4, 6.3, 6.5, 11.7, 38.7, 22.6, 64.4, 47.9, 18.4, 18.2, 27.7, 122.4, 41.8, 44.9, 213.6, 28.5, 33, 36.6, 23.9, 37.9, 32.6, 43.2, 79.1, 25.5, 86.2, 0, 34.8, 34.9, 25.2], [37.1, 37.3, 39, 30.6, 30.2, 24.2, 7.2, 38.7, 24.9, 15.6, 56.3, 56.2, 67.4, 159.8, 81, 85.1, 250.3, 67.1, 72.9, 76.9, 63.3, 77.8, 72.6, 77, 40, 64.9, 100.4, 34.8, 0, 75.3, 64.8], [79.1, 78.9, 78.7, 39.8, 40.1, 46.2, 79.1, 44.8, 102.1, 89.2, 19.1, 19.1, 7.3, 85.2, 15.8, 14.5, 177.5, 12.9, 5.2, 4.4, 11.3, 9.4, 3.5, 31.7, 116.4, 10.4, 86, 34.9, 75.3, 0, 9.9], [71.2, 71, 71, 30.5, 30.8, 36.7, 68.4, 37.8, 91.5, 78.9, 9.5, 9.5, 2.8, 95.9, 19.3, 20.7, 188.1, 8.3, 8, 11.4, 1.4, 13.8, 7.3, 29.9, 106.2, 2, 82.4, 25.2, 64.8, 9.9, 0]];
-  const CASA = CAMPOS.findIndex(c => /Palau d'Esports/i.test(c));
+  let CAMPOS = ["Pab. El Raval (Gandía)", "Pab. Usos Múltiples (Gandía)", "Pab. Mun. Real de Gandía", "Pav. 9 d'Octubre (Algemesí)", "Col. Santa Ana (Algemesí)", "Palau d'Esports (Alzira)", "Pab. Ricardo Tormo (Canals)", "Pab. Mun. Cullera", "Pab. Mun. Ontinyent", "Pista al aire libre (La Pobla del Duc)", "Pab. CP S. Ignacio (Picassent)", "Gimnasio Polid. Mun. Picassent", "Pab. Mun. Sedaví", "Pab. Pablo Herrera (Castellón)", "Pab. Polid. La Cañada (Paterna)", "Resort Mas Camarena (Bétera)", "Pab. Mun. Vinaròs", "C.E. Toll L'Alberca (Torrent)", "Pab. Nou Moles (Valencia)", "Pab. Benicalap Sur (Valencia)", "Pav. Colegio Larrodé (Catarroja)", "Pistas Naranjas (Paterna)", "Pab. de la Fuensanta (Valencia)", "C.E. Cheste", "Pab. Georgina Blanes (UPV Alcoy)", "IES Albal", "Pab. Mun. Requena", "P.M. Benifaió", "Pab. Voleibol (Xàtiva)", "IES Cid Campeador (Valencia)", "Meta Club Deportivo (Massanassa)"];
+  let DIST = [[0, 0.4, 2.2, 39.7, 39.6, 36.5, 44, 28.5, 49.8, 32.7, 67.7, 67.5, 72.7, 154, 91.7, 93.5, 238.2, 77.8, 79.6, 82.7, 70.1, 86.1, 78.2, 96.3, 48.1, 72.5, 132.5, 46, 37.1, 79.1, 71.2], [0.4, 0, 1.9, 39.6, 39.6, 36.5, 44.2, 28.3, 54.2, 33, 67.5, 67.3, 72.4, 153.7, 91.6, 93.3, 237.9, 77.6, 79.4, 82.5, 69.9, 85.9, 78, 96.2, 48.5, 72.3, 132.5, 45.9, 37.3, 78.9, 71], [2.2, 1.9, 0, 40.2, 40.1, 37.3, 45.9, 28.1, 56.2, 34.9, 67.8, 67.6, 72.4, 152.8, 91.6, 93.3, 236.6, 77.8, 79.3, 82.4, 70, 85.8, 77.9, 96.6, 54.2, 72.4, 133.6, 46.4, 39, 78.7, 71], [39.7, 39.6, 40.2, 0, 0.4, 6.4, 35.3, 18, 59.9, 42.7, 24.4, 24.2, 32.7, 126.9, 47.8, 54.7, 217.4, 34.5, 38.4, 41.9, 29.2, 43.6, 37.7, 49.6, 73.3, 31, 91.9, 6.3, 30.6, 39.8, 30.5], [39.6, 39.6, 40.1, 0.4, 0, 6.1, 34.9, 18.2, 59.5, 42.4, 24.6, 24.5, 33, 127.2, 48, 55, 217.8, 34.7, 38.6, 42.2, 29.5, 43.9, 38, 49.7, 73, 31.3, 91.8, 6.5, 30.2, 40.1, 30.8], [36.5, 36.5, 37.3, 6.4, 6.1, 0, 29.2, 19.8, 49.1, 36.4, 30.1, 29.9, 39, 133.8, 57.8, 61.1, 224.2, 40.3, 44.5, 48.1, 35.4, 49.6, 44, 58.2, 66.6, 37.1, 93.5, 11.7, 24.2, 46.2, 36.7], [44, 44.2, 45.9, 35.3, 34.9, 29.2, 0, 45.2, 21.9, 18.4, 59.4, 59.3, 71.2, 164.1, 83.4, 87.9, 255.3, 69.9, 76.3, 80.3, 67, 80.7, 76.2, 77.5, 40.1, 68.4, 96.9, 38.7, 7.2, 79.1, 68.4], [28.5, 28.3, 28.1, 18, 18.2, 19.8, 45.2, 0, 66.4, 45.5, 35.8, 35.7, 38.9, 125.6, 61.5, 63, 212.8, 44.5, 45.4, 48.2, 36.9, 55.6, 44, 68.4, 74, 39.1, 110.6, 22.6, 38.7, 44.8, 37.8], [49.8, 54.2, 56.2, 59.9, 59.5, 49.1, 21.9, 66.4, 0, 17.4, 82.8, 82.7, 94.2, 186.7, 107, 111.4, 277.1, 93.4, 99.5, 103.5, 90, 104.2, 99.3, 100.9, 21.5, 91.6, 115.5, 64.4, 24.9, 102.1, 91.5], [32.7, 33, 34.9, 42.7, 42.4, 36.4, 18.4, 45.5, 17.4, 0, 71.3, 71.2, 81.4, 172.3, 96.4, 100.1, 261.4, 82.3, 87.4, 91.2, 77.5, 92.7, 86.8, 93.5, 25.3, 79.3, 116.5, 47.9, 15.6, 89.2, 78.9], [67.7, 67.5, 67.8, 24.4, 24.6, 30.1, 59.4, 35.8, 82.8, 71.3, 0, 0.2, 12.3, 105.7, 23.4, 26.7, 198.1, 10.2, 15.7, 19.4, 8.3, 19.9, 16, 27.7, 98.6, 8.7, 76.7, 18.4, 56.3, 19.1, 9.5], [67.5, 67.3, 67.6, 24.2, 24.5, 29.9, 59.3, 35.7, 82.7, 71.2, 0.2, 0, 12.3, 105.7, 23.6, 26.9, 198.2, 10.3, 15.8, 19.5, 8.3, 20, 16, 27.8, 98.5, 8.8, 76.8, 18.2, 56.2, 19.1, 9.5], [72.7, 72.4, 72.4, 32.7, 33, 39, 71.2, 38.9, 94.2, 81.4, 12.3, 12.3, 0, 93.1, 18.6, 19.4, 185.2, 9.4, 6.5, 9.4, 4.1, 12.6, 5.2, 30.9, 108.6, 4.1, 84.1, 27.7, 67.4, 7.3, 2.8], [154, 153.7, 152.8, 126.9, 127.2, 133.8, 164.1, 125.6, 186.7, 172.3, 105.7, 105.7, 93.1, 0, 86.2, 80.3, 93.4, 96.5, 88.8, 84.8, 97.4, 85.9, 88.4, 102.7, 198.9, 96.3, 143.8, 122.4, 159.8, 85.2, 95.9], [91.7, 91.6, 91.6, 47.8, 48, 57.8, 83.4, 61.5, 107, 96.4, 23.4, 23.6, 18.6, 86.2, 0, 5.6, 179.5, 13.3, 12.4, 11.4, 20.1, 6.5, 14.4, 18.4, 123.7, 17.8, 71.1, 41.8, 81, 15.8, 19.3], [93.5, 93.3, 93.3, 54.7, 55, 61.1, 87.9, 63, 111.4, 100.1, 26.7, 26.9, 19.4, 80.3, 5.6, 0, 173.7, 16.7, 12.9, 10.4, 21.8, 7, 14.4, 23.7, 127.5, 19.8, 76.3, 44.9, 85.1, 14.5, 20.7], [238.2, 237.9, 236.6, 217.4, 217.8, 224.2, 255.3, 212.8, 277.1, 261.4, 198.1, 198.2, 185.2, 93.4, 179.5, 173.7, 0, 189.4, 181.5, 177.6, 189.6, 179, 180.9, 195.8, 286.8, 188.7, 233.6, 213.6, 250.3, 177.5, 188.1], [77.8, 77.6, 77.8, 34.5, 34.7, 40.3, 69.9, 44.5, 93.4, 82.3, 10.2, 10.3, 9.4, 96.5, 13.3, 16.7, 189.4, 0, 7.9, 11.1, 8.4, 10.1, 9.4, 21.6, 109.6, 6.3, 73.9, 28.5, 67.1, 12.9, 8.3], [79.6, 79.4, 79.3, 38.4, 38.6, 44.5, 76.3, 45.4, 99.5, 87.4, 15.7, 15.8, 6.5, 88.8, 12.4, 12.9, 181.5, 7.9, 0, 3.7, 9.2, 6.2, 2.2, 26.9, 114.7, 7.4, 80.6, 33, 72.9, 5.2, 8], [82.7, 82.5, 82.4, 41.9, 42.2, 48.1, 80.3, 48.2, 103.5, 91.2, 19.4, 19.5, 9.4, 84.8, 11.4, 10.4, 177.6, 11.1, 3.7, 0, 12.7, 5, 4.2, 27.9, 118.5, 11.1, 81.9, 36.6, 76.9, 4.4, 11.4], [70.1, 69.9, 70, 29.2, 29.5, 35.4, 67, 36.9, 90, 77.5, 8.3, 8.3, 4.1, 97.4, 20.1, 21.8, 189.6, 8.4, 9.2, 12.7, 0, 14.8, 8.6, 29.9, 104.8, 2.3, 82.1, 23.9, 63.3, 11.3, 1.4], [86.1, 85.9, 85.8, 43.6, 43.9, 49.6, 80.7, 55.6, 104.2, 92.7, 19.9, 20, 12.6, 85.9, 6.5, 7, 179, 10.1, 6.2, 5, 14.8, 0, 8, 23.2, 120, 12.8, 76.8, 37.9, 77.8, 9.4, 13.8], [78.2, 78, 77.9, 37.7, 38, 44, 76.2, 44, 99.3, 86.8, 16, 16, 5.2, 88.4, 14.4, 14.4, 180.9, 9.4, 2.2, 4.2, 8.6, 8, 0, 29, 114.1, 7.3, 82.8, 32.6, 72.6, 3.5, 7.3], [96.3, 96.2, 96.6, 49.6, 49.7, 58.2, 77.5, 68.4, 100.9, 93.5, 27.7, 27.8, 30.9, 102.7, 18.4, 23.7, 195.8, 21.6, 26.9, 27.9, 29.9, 23.2, 29, 0, 120.1, 27.9, 48, 43.2, 77, 31.7, 29.9], [48.1, 48.5, 54.2, 73.3, 73, 66.6, 40.1, 74, 21.5, 25.3, 98.6, 98.5, 108.6, 198.9, 123.7, 127.5, 286.8, 109.6, 114.7, 118.5, 104.8, 120, 114.1, 120.1, 0, 106.7, 138.4, 79.1, 40, 116.4, 106.2], [72.5, 72.3, 72.4, 31, 31.3, 37.1, 68.4, 39.1, 91.6, 79.3, 8.7, 8.8, 4.1, 96.3, 17.8, 19.8, 188.7, 6.3, 7.4, 11.1, 2.3, 12.8, 7.3, 27.9, 106.7, 0, 80.3, 25.5, 64.9, 10.4, 2], [132.5, 132.5, 133.6, 91.9, 91.8, 93.5, 96.9, 110.6, 115.5, 116.5, 76.7, 76.8, 84.1, 143.8, 71.1, 76.3, 233.6, 73.9, 80.6, 81.9, 82.1, 76.8, 82.8, 48, 138.4, 80.3, 0, 86.2, 100.4, 86, 82.4], [46, 45.9, 46.4, 6.3, 6.5, 11.7, 38.7, 22.6, 64.4, 47.9, 18.4, 18.2, 27.7, 122.4, 41.8, 44.9, 213.6, 28.5, 33, 36.6, 23.9, 37.9, 32.6, 43.2, 79.1, 25.5, 86.2, 0, 34.8, 34.9, 25.2], [37.1, 37.3, 39, 30.6, 30.2, 24.2, 7.2, 38.7, 24.9, 15.6, 56.3, 56.2, 67.4, 159.8, 81, 85.1, 250.3, 67.1, 72.9, 76.9, 63.3, 77.8, 72.6, 77, 40, 64.9, 100.4, 34.8, 0, 75.3, 64.8], [79.1, 78.9, 78.7, 39.8, 40.1, 46.2, 79.1, 44.8, 102.1, 89.2, 19.1, 19.1, 7.3, 85.2, 15.8, 14.5, 177.5, 12.9, 5.2, 4.4, 11.3, 9.4, 3.5, 31.7, 116.4, 10.4, 86, 34.9, 75.3, 0, 9.9], [71.2, 71, 71, 30.5, 30.8, 36.7, 68.4, 37.8, 91.5, 78.9, 9.5, 9.5, 2.8, 95.9, 19.3, 20.7, 188.1, 8.3, 8, 11.4, 1.4, 13.8, 7.3, 29.9, 106.2, 2, 82.4, 25.2, 64.8, 9.9, 0]];
+  let CASA = CAMPOS.findIndex(c => /Palau d'Esports/i.test(c));
   const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
   // ---------- Campo del partido -> fila de la matriz (búsqueda flexible) ----------
   const VACIAS = new Set(["pab", "pav", "pabellon", "pavello", "mun", "municipal", "polid", "polideportivo", "poliesportiu", "de", "del", "la", "el", "l", "d", "les", "els", "c", "e", "p", "m", "ies", "col", "colegio", "cp", "y", "i", "pista", "pistas", "gimnasio"]);
   const fichas = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
     .replace(/[^a-z0-9]+/g, " ").split(" ").filter(w => w.length > 1 && !VACIAS.has(w));
-  const FICHAS_CAMPOS = CAMPOS.map(fichas);
+  let FICHAS_CAMPOS = CAMPOS.map(fichas);
+
+  // ---------- Matriz actualizada desde el Excel (opcional) ----------
+  // Si se ha cargado una versión nueva de Matriz_Distancias_Campos.xlsx, se usa
+  // esa (guardada en el navegador y en GitHub Kilometraje/matriz.json).
+  const MATRIZ_GH = "Kilometraje/matriz.json";
+  let matrizFecha = "";
+  function usarMatriz(d) {
+    if (!d || !Array.isArray(d.campos) || !Array.isArray(d.dist) || d.dist.length !== d.campos.length) return false;
+    const casa = d.campos.findIndex(c => /Palau d'Esports/i.test(c));
+    if (casa < 0) return false;
+    CAMPOS = d.campos; DIST = d.dist; CASA = casa; FICHAS_CAMPOS = CAMPOS.map(fichas); matrizFecha = d.fecha || "";
+    return true;
+  }
+  try { usarMatriz(JSON.parse(localStorage.getItem("NVA_KM_MATRIZ") || "null")); } catch (e) {}
+  async function matrizGitHub() {
+    if (!ghSettings.user || !ghSettings.repo || !ghSettings.token || !navigator.onLine) return false;
+    try {
+      const r = await fetch(`https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${MATRIZ_GH}`, {
+        cache: "no-store", headers: { "Authorization": `token ${ghSettings.token}`, "Accept": "application/vnd.github.raw" } });
+      if (!r.ok) return false;
+      const d = await r.json();
+      if ((d.fecha || "") <= matrizFecha || !usarMatriz(d)) return false;
+      try { localStorage.setItem("NVA_KM_MATRIZ", JSON.stringify(d)); } catch (e) {}
+      return true;
+    } catch (e) { return false; }
+  }
+  const XLSX_URL = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
+  const XLSX_SRI = "sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw";
+  function cargarXlsx() {
+    if (window.XLSX) return Promise.resolve();
+    return new Promise((ok, ko) => {
+      const s = document.createElement("script");
+      s.src = XLSX_URL; s.integrity = XLSX_SRI; s.crossOrigin = "anonymous";
+      s.onload = ok; s.onerror = () => ko(new Error("No se pudo cargar el lector de Excel"));
+      document.head.appendChild(s);
+    });
+  }
+  async function actualizarMatriz(file) {
+    await cargarXlsx();
+    const wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
+    const ws = wb.Sheets[wb.SheetNames.find(n => /matriz|distanc/i.test(n)) || wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" }).filter(r => r.some(c => String(c).trim()));
+    const campos = rows[0].slice(1).map(c => String(c).trim()).filter(Boolean);
+    const num = (v) => typeof v === "number" ? v : parseFloat(String(v).replace(",", "."));
+    const dist = campos.map((c, i) => {
+      const r = rows.find(x => String(x[0]).trim() === c) || rows[i + 1] || [];
+      return campos.map((_, j) => { const n = num(r[j + 1]); return isNaN(n) ? 0 : n; });
+    });
+    const d = { campos, dist, fecha: new Date().toISOString(), archivo: file.name };
+    if (!campos.length) throw new Error("no encuentro la fila de campos en la primera hoja");
+    if (!campos.some(c => /Palau d'Esports/i.test(c))) throw new Error("falta el campo «Palau d'Esports (Alzira)»");
+    const nuevos = campos.filter(c => !CAMPOS.includes(c)).length, quitados = CAMPOS.filter(c => !campos.includes(c)).length;
+    if (!confirm(`Matriz leída: ${campos.length} campos (${nuevos} nuevos, ${quitados} quitados).\n\n¿Usar estas distancias a partir de ahora?`)) return false;
+    usarMatriz(d);
+    try { localStorage.setItem("NVA_KM_MATRIZ", JSON.stringify(d)); } catch (e) {}
+    const ok = await writeGitHubFile(MATRIZ_GH, d, "Actualizar matriz de distancias");
+    alert(ok ? "Distancias actualizadas y guardadas en GitHub." : "Distancias actualizadas en este dispositivo. Se subirán a GitHub cuando haya conexión.");
+    return true;
+  }
   function campoDe(m) {
     if (m.home) return CASA;
     const f = fichas(m.venue);
@@ -74,12 +133,13 @@
   const claveLocal = () => "NVA_KM_" + archivo();
   function datosGuardar() {
     return { coaches: st.coaches.slice(), mes: st.mes, guardado: new Date().toISOString(),
-      filas: st.filas.map(f => Object.assign({ id: f.id }, pick(f))), total: +calcular().reduce((a, f) => a + f._km, 0).toFixed(1) };
+      filas: st.filas.map(f => Object.assign({ id: f.id }, pick(f), { campoN: CAMPOS[f.campo] || "", salidaN: CAMPOS[f.salida] || "" })), total: +calcular().reduce((a, f) => a + f._km, 0).toFixed(1) };
   }
   function aplicar(d) {
     if (!d || !Array.isArray(d.filas)) return false;
     st.coaches = [st.coaches[0]].concat((d.coaches || []).slice(1).filter(id => appData.coaches.some(c => String(c.id) === String(id))));
-    st.filas = d.filas.map(f => Object.assign({}, f));   // cargar() toma de aquí lo marcado
+    st.filas = d.filas.map(f => { const x = Object.assign({}, f), ci = CAMPOS.indexOf(f.campoN), si = CAMPOS.indexOf(f.salidaN);
+      if (f.campoN !== undefined) x.campo = ci; if (f.salidaN !== undefined) x.salida = si >= 0 ? si : CASA; return x; });   // cargar() toma de aquí lo marcado
     st.guardado = d.guardado || "";
     return true;
   }
@@ -203,7 +263,11 @@
       <div class="km-top"><button type="button" class="cp-modal-btn km-otro" style="flex:none;font-size:0.72rem;padding:5px 8px;">➕ Partidos de otro entrenador</button><span class="km-chips"></span></div>
       <div class="km-list"></div>
       <div class="km-total"><span>TOTAL <small class="km-num" style="font-size:0.8rem;color:var(--niebla)"></small></span><b class="km-sum"></b></div>
-      <div class="km-aviso km-est" style="text-align:right;color:var(--niebla)"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <button type="button" class="km-matriz" title="Cargar Matriz_Distancias_Campos.xlsx modificado" style="background:none;border:0;padding:0;color:var(--niebla);font-size:0.65rem;text-decoration:underline;cursor:pointer">📏 Actualizar distancias</button>
+        <input type="file" class="km-matriz-file" accept=".xlsx,.xls" hidden>
+        <div class="km-aviso km-est" style="text-align:right;color:var(--niebla)"></div>
+      </div>
       <div class="cp-modal-row">
         <button class="cp-modal-btn cp-modal-stop">Cerrar</button>
         <button class="cp-modal-btn km-guardar">💾 Guardar</button>
@@ -250,6 +314,14 @@
     });
     o.querySelector(".cp-modal-stop").onclick = () => o.remove();
     o.querySelector(".km-guardar").onclick = () => guardar(o);
+    const fMatriz = o.querySelector(".km-matriz-file");
+    o.querySelector(".km-matriz").onclick = () => { fMatriz.value = ""; fMatriz.click(); };
+    fMatriz.onchange = async () => {
+      if (!fMatriz.files[0]) return;
+      try { if (await actualizarMatriz(fMatriz.files[0])) { st.filas.forEach(f => { f.campo = campoDe(f); }); recargar(true); } }
+      catch (e) { alert("No se pudo leer la matriz: " + (e.message || e)); }
+    };
+    matrizGitHub().then(n => { if (n) recargar(true); });
     o.querySelector(".cp-modal-main").onclick = () => guardarPdf();
     recargar(true);
   };
