@@ -286,9 +286,7 @@
         } catch (e) { console.warn(key, e); fallos.push(`- ${key}: ${e.message}`); }
       }
       if (paginas) { if (typeof nvaPdfFooters === "function") nvaPdfFooters(pdf); const nombre = `Partidos_y_Resultados_${nombreArchivo}.pdf`;
-        pdf.save(nombre);
-        ocultarCargando();
-        ventanaWhatsApp(nombreArchivo, new File([pdf.output("blob")], nombre, { type: "application/pdf" }));
+        pdf.save(nombre);   // la ventana de compartir sale sola (ver más abajo)
       }
       if (fallos.length) alert((paginas ? "Algunos equipos no se han incluido:\n" : "No se pudo generar el PDF:\n") + fallos.join("\n"));
     } catch (e) {
@@ -298,72 +296,52 @@
   }
 
   // ---------- Enviar el PDF por WhatsApp ----------
-  // Una web no puede publicar sola en un grupo: se abre el menú «Compartir» del
-  // sistema con el PDF y se elige WhatsApp y el chat. Los chats guardados por
-  // informe (nombre + enlace opcional) sirven de recordatorio y para abrirlos.
-  const WA_KEY = "NVA_CUADRANTE_WHATSAPP";
-  const waLeer = () => { try { return JSON.parse(localStorage.getItem(WA_KEY)) || {}; } catch (e) { return {}; } };
-  const waGuardar = (o) => { try { localStorage.setItem(WA_KEY, JSON.stringify(o)); } catch (e) {} };
-  const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  // Enlace de grupo (chat.whatsapp.com/...) o teléfono → enlace que abre el chat
-  function waEnlace(v) {
-    v = (v || "").trim();
-    if (/^https:\/\/(chat\.whatsapp\.com|wa\.me|api\.whatsapp\.com)\//i.test(v)) return v;
-    const tel = v.replace(/[^\d+]/g, "").replace(/^\+/, "");
-    if (/^\d{9,15}$/.test(tel)) return "https://wa.me/" + (tel.length === 9 ? "34" + tel : tel);
-    return "";
-  }
-
-  function ventanaWhatsApp(informe, file) {
+  // Se abre el menú «Compartir» del sistema con el PDF: se elige WhatsApp y el chat.
+  // Sale en TODOS los PDF de la app: se envuelve jsPDF.save en cuanto jsPDF se carga.
+  function ventanaWhatsApp(file) {
     const o = document.createElement("div");
     o.className = "cp-modal";
     o.innerHTML = `<div class="cp-modal-box">
       <div class="cp-modal-title">📲 Enviar por WhatsApp</div>
       <div class="cp-modal-txt">PDF descargado. Pulsa <b>Compartir PDF</b>, elige <b>WhatsApp</b> y después el chat o grupo.</div>
-      <div class="wa-list" style="display:flex; flex-direction:column; gap:6px;"></div>
-      <details><summary class="cp-modal-txt" style="cursor:pointer;">➕ Guardar un chat o grupo para este informe</summary>
-        <div style="display:flex; flex-direction:column; gap:6px; margin-top:6px;">
-          <input class="wa-nombre" placeholder="Nombre (p. ej. Familias Juvenil)" style="padding:8px; border-radius:8px; border:1px solid #ccc;">
-          <input class="wa-link" placeholder="Enlace del grupo o teléfono (opcional)" style="padding:8px; border-radius:8px; border:1px solid #ccc;">
-          <button class="cp-modal-btn wa-add">Guardar chat</button>
-        </div></details>
       <div class="cp-modal-row">
         <button class="cp-modal-btn cp-modal-stop">Cerrar</button>
         <button class="cp-modal-btn cp-modal-main wa-share">📤 Compartir PDF</button>
       </div>
     </div>`;
     document.body.appendChild(o);
-    const pintar = () => {
-      const chats = waLeer()[informe] || [];
-      o.querySelector(".wa-list").innerHTML = chats.length
-        ? `<div class="cp-modal-txt">Chats guardados para este informe:</div>` + chats.map((c, i) => `<div style="display:flex; gap:6px; align-items:center;">
-            <span style="flex:1;">💬 <b>${esc(c.nombre)}</b></span>
-            ${waEnlace(c.link) ? `<a class="cp-modal-btn" style="padding:6px 10px;" href="${esc(waEnlace(c.link))}" target="_blank" rel="noopener">Abrir chat</a>` : ""}
-            <button class="cp-modal-btn wa-del" data-i="${i}" style="padding:6px 10px;" title="Quitar">✕</button></div>`).join("")
-        : `<div class="cp-modal-txt" style="opacity:.75;">Aún no hay chats guardados para este informe.</div>`;
-      o.querySelectorAll(".wa-del").forEach(b => b.onclick = () => {
-        const all = waLeer(); (all[informe] || []).splice(+b.dataset.i, 1); waGuardar(all); pintar();
-      });
-    };
-    pintar();
-    o.querySelector(".wa-add").onclick = () => {
-      const nombre = o.querySelector(".wa-nombre").value.trim(), link = o.querySelector(".wa-link").value.trim();
-      if (!nombre) { alert("Escribe un nombre para el chat."); return; }
-      if (link && !waEnlace(link)) { alert("El enlace debe ser de chat.whatsapp.com o wa.me, o un número de teléfono."); return; }
-      const all = waLeer(); (all[informe] = all[informe] || []).push({ nombre, link }); waGuardar(all);
-      o.querySelector(".wa-nombre").value = ""; o.querySelector(".wa-link").value = ""; pintar();
-    };
     o.querySelector(".wa-share").onclick = async () => {
-      const chats = (waLeer()[informe] || []).map(c => c.nombre).join(", ");
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try { await navigator.share({ files: [file], title: file.name, text: "Partidos y resultados" }); }
+        try { await navigator.share({ files: [file], title: file.name, text: file.name.replace(/\.pdf$/i, "").replace(/_/g, " ") }); o.remove(); }
         catch (e) { if (e.name !== "AbortError") alert("No se pudo compartir: " + e.message); }
       } else {
-        alert(`Este navegador no deja compartir archivos directamente.\nEl PDF ya está en Descargas: ${chats ? "abre el chat (" + chats + ") con «Abrir chat»" : "abre WhatsApp"} y adjúntalo con el clip 📎.`);
+        alert("Este navegador no deja compartir archivos directamente.\nEl PDF ya está en Descargas: abre WhatsApp y adjúntalo con el clip 📎.");
+        o.remove();
       }
     };
     o.querySelector(".cp-modal-stop").onclick = () => o.remove();
   }
+
+  function engancharJsPdf() {
+    const J = window.jspdf && window.jspdf.jsPDF;
+    if (!J || J.API.__nvaShare) return;
+    const orig = J.API.save;
+    J.API.save = function (nombre) {
+      const r = orig.apply(this, arguments);
+      try {
+        const n = String(nombre || "documento.pdf").replace(/\.pdf$/i, "") + ".pdf";
+        const file = new File([this.output("blob")], n, { type: "application/pdf" });
+        setTimeout(() => ventanaWhatsApp(file), 300);
+      } catch (e) { console.warn("Compartir PDF:", e); }
+      return r;
+    };
+    J.API.__nvaShare = true;
+  }
+  if (typeof loadScriptOnce === "function") {
+    const origLoad = window.loadScriptOnce;
+    window.loadScriptOnce = function () { return Promise.resolve(origLoad.apply(this, arguments)).then(v => { engancharJsPdf(); return v; }); };
+  }
+  engancharJsPdf();
 
   window.nvaCuadrante = { analizar, dibujar, generar };
 })();
