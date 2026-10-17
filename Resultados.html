@@ -2537,6 +2537,7 @@
             }
             showToast(`Cargados ${partidos.length} resultado(s) desde el calendario de partidos.` +
                 (nFotos ? ` Recuperada(s) ${nFotos} foto(s) de un guardado anterior.` : '') +
+                (datos.resumenRegistro ? ' ' + datos.resumenRegistro : '') +
                 (sinFicha.length ? ` Sin ficha en DATOS.xls: ${sinFicha.join(', ')}.` : ''), sinFicha.length > 0);
         }
 
