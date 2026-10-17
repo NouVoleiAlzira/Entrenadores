@@ -661,66 +661,84 @@
     const q = queriesData.find(x => x.id === queryId);
     if (!q) return;
 
+    const color = safeColor(q.color, "#1B3A8C");
     document.getElementById("pdfQueryTextHeader").innerText = q.text;
+    const fechaQ = q.id && !isNaN(Number(q.id)) && Number(q.id) > 1e11 ? new Date(Number(q.id)) : new Date();
+    document.getElementById("pdfQueryDate").innerText = fechaQ.toLocaleDateString("es-ES");
     const container = document.getElementById("pdfQueryTeamsContent");
     container.innerHTML = "";
 
+    let tSi = 0, tNo = 0, tPend = 0, tOtro = 0;
     q.teams.forEach(teamKey => {
       const players = getPlayersForTeamKey(teamKey);
-      const teamBox = document.createElement("div");
-      teamBox.style.marginBottom = "20px";
+      let si = 0, no = 0, pend = 0, otro = 0;
 
       let rowsHtml = "";
       players.forEach(p => {
         const resp = q.responses ? q.responses[p] : null;
-        let badge = `<span style="color:#64748b; font-weight:bold;">Pendiente</span>`;
-        if (resp === 'V') badge = `<span style="color:#22c55e; font-weight:bold;">✔ (V)</span>`;
-        else if (resp === 'X') badge = `<span style="color:#ef4444; font-weight:bold;">✖ (X)</span>`;
-        else if (resp) badge = `<span style="color:#0284c7; font-weight:bold;">${escapeHtml(resp)}</span>`;
+        let badge = `<span class="nva-chip grey">Pendiente</span>`;
+        if (resp === 'V') { badge = `<span class="nva-chip green">✔ Sí</span>`; si++; }
+        else if (resp === 'X') { badge = `<span class="nva-chip red">✖ No</span>`; no++; }
+        else if (resp) { badge = `<span class="nva-chip blue">${escapeHtml(resp)}</span>`; otro++; }
+        else pend++;
 
         rowsHtml += `
           <tr>
-            <td style="font-weight:600; padding:6px 10px; border-bottom:1px solid #cbd5e1;">${escapeHtml(p)}</td>
-            <td style="text-align:center; padding:6px 10px; border-bottom:1px solid #cbd5e1;">${badge}</td>
+            <td class="nva-name">${escapeHtml(p)}</td>
+            <td style="text-align:right;">${badge}</td>
           </tr>
         `;
       });
+      tSi += si; tNo += no; tPend += pend; tOtro += otro;
 
+      const teamBox = document.createElement("div");
+      teamBox.className = "nva-team-block";
       teamBox.innerHTML = `
-        <h4 style="font-size:16px; color:#1e3c72; margin-bottom:8px; border-bottom:2px solid ${safeColor(q.color, "#0284c7")}; padding-bottom:4px;">${escapeHtml(teamKey)}</h4>
-        <table class="pdf-table" style="margin-top:0; margin-bottom:10px;">
+        <div class="nva-team-head">
+          <h4 style="--q:${color}"><i></i>${escapeHtml(teamKey)}</h4>
+          <div class="nva-team-sum">
+            <span class="nva-chip green">✔ ${si}</span>
+            <span class="nva-chip red">✖ ${no}</span>
+            ${otro ? `<span class="nva-chip blue">Otras ${otro}</span>` : ""}
+            <span class="nva-chip grey">Pend. ${pend}</span>
+          </div>
+        </div>
+        <table class="pdf-table">
           <thead>
             <tr>
               <th>Jugadora</th>
-              <th style="text-align:center;">Respuesta</th>
+              <th style="text-align:right; width:180px;">Respuesta</th>
             </tr>
           </thead>
           <tbody>
-            ${rowsHtml}
+            ${rowsHtml || `<tr><td colspan="2" class="nva-na" style="text-align:center;">Sin jugadoras</td></tr>`}
           </tbody>
         </table>
       `;
       container.appendChild(teamBox);
     });
 
+    const total = tSi + tNo + tPend + tOtro;
+    const pct = (n) => total ? Math.round(n * 100 / total) + "%" : "-";
+    document.getElementById("pdfQueryKpis").innerHTML =
+      nvaKpi("Convocadas", total, `${q.teams.length} equipo${q.teams.length === 1 ? "" : "s"}`, NVA_PDF_COL.pista) +
+      nvaKpi("Sí", tSi, pct(tSi) + " del total", NVA_PDF_COL.verde) +
+      nvaKpi("No", tNo, pct(tNo) + " del total", NVA_PDF_COL.alzira) +
+      nvaKpi(tOtro ? "Pendientes / otras" : "Pendientes", tOtro ? `${tPend}<small>/ ${tOtro}</small>` : tPend, pct(tPend) + " sin responder", NVA_PDF_COL.balon);
+
     const exportArea = document.getElementById("pdfQueryExportArea");
 
-    setTimeout(async () => {
-      try {
-        await ensureExportLibs();
-        const canvas = await html2canvas(exportArea, { scale: 2, useCORS: true });
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-
-        const imgData = canvas.toDataURL('image/png');
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, (canvas.height * pdfWidth) / canvas.width);
-        pdf.save(`Consulta_${q.id}.pdf`);
-      } catch (e) {
-        console.error("Error al generar PDF de consulta:", e);
-        alert("Ocurrió un error al generar el PDF de la consulta.");
-      }
-    }, 300);
+    try {
+      await ensureExportLibs();
+      await nvaPdfReady(exportArea);
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: true });
+      await addAreaAsPdfPages(pdf, exportArea);
+      pdf.save(`Consulta_${q.id}.pdf`);
+    } catch (e) {
+      console.error("Error al generar PDF de consulta:", e);
+      alert("Ocurrió un error al generar el PDF de la consulta.");
+    }
   }
 
   function togglePdfMode() {
@@ -1025,82 +1043,98 @@
     await ensureExportLibs();
 
     const esc = (v) => escapeHtmlMatch(v);
-    const fmtDate = (d) => { const [y, m, dd] = d.split("-"); return `${dd}/${m}/${y}`; };
+    const DIAS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+    const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 
+    let gan = 0, perd = 0, sf = 0, sc = 0, conRes = 0;
     const rowsHtml = logs.map(log => {
       const m = log.marcador;
       const hasScore = !!(m && (m.local || m.visitante || (m.sets || []).some(s => s && (s.local != null || s.visitante != null))));
-      const parciales = hasScore
-        ? (m.sets || []).filter(s => s && s.local != null && s.visitante != null).map(s => `${s.local}-${s.visitante}`).join(", ")
-        : "";
       const clubEsLocal = hasScore && m.local === log.equipo;
       const clubEsVisit = hasScore && m.visitante === log.equipo;
       const sl = hasScore ? (m.setsLocal ?? 0) : 0;
       const sv = hasScore ? (m.setsVisitante ?? 0) : 0;
-      let color = "#0f172a";
-      if (hasScore && (clubEsLocal || clubEsVisit) && sl !== sv) {
-        const clubGana = clubEsLocal ? sl > sv : sv > sl;
-        color = clubGana ? "#15803d" : "#b91c1c";
+      let color = "#64748B";
+      if (hasScore) {
+        conRes++;
+        if ((clubEsLocal || clubEsVisit) && sl !== sv) {
+          const clubGana = clubEsLocal ? sl > sv : sv > sl;
+          color = clubGana ? "#15803D" : "#D62839";
+          if (clubGana) gan++; else perd++;
+          sf += clubEsLocal ? sl : sv;
+          sc += clubEsLocal ? sv : sl;
+        }
       }
-      const cell = "padding:8px 10px; border-bottom:1px solid rgba(203,213,225,0.7); vertical-align:middle;";
+      const sets = hasScore
+        ? (m.sets || []).filter(s => s && s.local != null && s.visitante != null).map(s => {
+            const a = Number(s.local), b = Number(s.visitante);
+            let cls = "";
+            if (clubEsLocal || clubEsVisit) {
+              const clubPts = clubEsLocal ? a : b, rivPts = clubEsLocal ? b : a;
+              cls = clubPts > rivPts ? "w" : (clubPts < rivPts ? "l" : "");
+            }
+            return `<span class="nva-set ${cls}">${s.local}-${s.visitante}</span>`;
+          }).join("")
+        : "";
+      const d = new Date(log.fecha + "T12:00:00");
       return `
-        <tr>
-          <td style="${cell} white-space:nowrap;">${fmtDate(log.fecha)}</td>
-          <td style="${cell} font-weight:600;">${esc(log.equipo)}</td>
-          <td style="${cell}">${hasScore ? esc(m.local || "Home") : "—"}</td>
-          <td style="${cell} text-align:center; font-weight:800; font-size:15px; color:${color}; white-space:nowrap;">${hasScore ? `${sl} - ${sv}` : "Sin resultado"}</td>
-          <td style="${cell}">${hasScore ? esc(m.visitante || "VISIT") : "—"}</td>
-          <td style="${cell} font-size:11px; color:#475569;">${esc(parciales)}</td>
-        </tr>`;
+        <div class="nva-match" style="--r:${color}">
+          <div class="nva-match-date"><b>${d.getDate()}</b><span>${DIAS[d.getDay()]} · ${MES[d.getMonth()]}</span></div>
+          <div class="nva-match-team"><span>Equipo</span><b>${esc(log.equipo)}</b></div>
+          <div class="nva-match-game">
+            <div class="nva-match-side home${clubEsLocal ? " club" : ""}">${hasScore ? esc(m.local || "Home") : "—"}</div>
+            ${hasScore ? `<div class="nva-score">${sl} - ${sv}</div>` : `<div class="nva-score none">Sin resultado</div>`}
+            <div class="nva-match-side${clubEsVisit ? " club" : ""}">${hasScore ? esc(m.visitante || "VISIT") : "—"}</div>
+          </div>
+          <div class="nva-match-sets">${sets}</div>
+        </div>`;
     });
 
-    const FIRST_PAGE_ROWS = 12;
-    const NEXT_PAGE_ROWS = 17;
+    const FIRST_PAGE_ROWS = 11;
+    const NEXT_PAGE_ROWS = 14;
     const chunks = [rowsHtml.slice(0, FIRST_PAGE_ROWS)];
     for (let i = FIRST_PAGE_ROWS; i < rowsHtml.length; i += NEXT_PAGE_ROWS) {
       chunks.push(rowsHtml.slice(i, i + NEXT_PAGE_ROWS));
     }
 
-    const tableHead = `
-      <thead>
-        <tr>
-          <th>Fecha</th><th>Equipo</th><th>Home</th>
-          <th style="text-align:center;">Sets</th><th>Visit</th><th>Parciales</th>
-        </tr>
-      </thead>`;
+    const periodo = nvaPeriodo();
+    const kpis =
+      nvaKpi("Partidos", logs.length, `${conRes} con resultado`, NVA_PDF_COL.pista) +
+      nvaKpi("Victorias", gan, conRes ? Math.round(gan * 100 / Math.max(1, gan + perd)) + "% de los decididos" : "-", NVA_PDF_COL.verde) +
+      nvaKpi("Derrotas", perd, conRes ? Math.round(perd * 100 / Math.max(1, gan + perd)) + "% de los decididos" : "-", NVA_PDF_COL.alzira) +
+      nvaKpi("Sets", `${sf}<small>- ${sc}</small>`, "a favor - en contra", NVA_PDF_COL.balon);
+
+    const head = (compact) => `
+      <div class="nva-pdf-head${compact ? " compact" : ""}">
+        <div class="nva-pdf-bigtxt"${compact ? ' style="font-size:150px; top:-30px;"' : ""}>NVA</div>
+        <div class="nva-pdf-logo"><img src="LOGO-NVA.png" alt="Logo"></div>
+        <div class="nva-pdf-head-txt">
+          ${compact ? "" : `<div class="nva-pdf-club">Club Nou Vòlei Alzira</div>`}
+          <div class="nva-pdf-kicker">${compact ? "Club Nou Vòlei Alzira" : "Informe de competición"}</div>
+          <h1 class="nva-pdf-title">Resultados de partidos</h1>
+        </div>
+        <div class="nva-pdf-period"><span>Período</span><b>${periodo}</b></div>
+      </div>
+      <div class="nva-pdf-attack"></div>`;
 
     const exportArea = document.getElementById("pdfResultsExportArea");
     exportArea.innerHTML = chunks.map((rows, idx) => `
       <div class="pdf-results-page">
-        ${idx === 0 ? `
-          <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:3px solid #0052d4; padding-bottom:12px; margin-bottom:18px;">
-            <img src="LOGO-NVA.png" alt="Logo" style="height:65px; width:auto;">
-            <h1 style="font-size:24px; color:#0052d4; flex:1; text-align:center; font-weight:800; margin:0 10px; letter-spacing:0.5px;">Club Nou Vòlei Alzira</h1>
-          </div>
-          <div style="text-align:center; margin-bottom:6px;">
-            <h2 style="font-size:24px; color:#0f172a; margin:0 0 8px 0; font-weight:800;">Resultados de Partidos</h2>
-            <p style="font-size:16px; color:#334155; margin:0; font-weight:700;">Período: ${rangeStart} al ${rangeEnd}</p>
-            <p style="font-size:13px; color:#64748b; margin:4px 0 0 0;">${logs.length} partido${logs.length === 1 ? "" : "s"}</p>
-          </div>` : `
-          <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:2px solid #0052d4; padding-bottom:8px; margin-bottom:8px;">
-            <span style="font-size:15px; font-weight:800; color:#0052d4;">Resultados de Partidos</span>
-            <span style="font-size:12px; color:#334155; font-weight:700;">${rangeStart} al ${rangeEnd}</span>
-          </div>`}
-        <table class="pdf-table" style="margin-top:12px; margin-bottom:0;">
-          ${tableHead}
-          <tbody>${rows.join("")}</tbody>
-        </table>
-        <div style="position:absolute; bottom:18px; left:0; right:0; text-align:center; font-size:11px; color:#94a3b8;">Página ${idx + 1} de ${chunks.length}</div>
+        <img src="LOGO-NVA.png" alt="" class="pdf-watermark">
+        ${head(idx > 0)}
+        <div class="nva-pdf-body">
+          ${idx === 0 ? `<div class="nva-kpis">${kpis}</div><div class="nva-sec">Partidos del período</div>` : `<div style="height:4px"></div>`}
+          ${rows.join("")}
+        </div>
+        <div class="nva-pdf-foot"><span class="nva-pdf-gen"></span><span>Página ${idx + 1} de ${chunks.length}</span><span class="nva-pdf-brand"><i></i>Nou Vòlei Alzira</span></div>
       </div>
     `).join("");
 
-    // Espera a que carguen los logos antes de capturar
-    const imgs = Array.from(exportArea.querySelectorAll("img"));
-    await Promise.all(imgs.map(img => img.complete ? Promise.resolve() : new Promise(r => { img.onload = img.onerror = r; })));
+    await nvaPdfReady(exportArea);
 
     try {
       const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: true });
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       const pages = exportArea.querySelectorAll(".pdf-results-page");
@@ -1108,7 +1142,7 @@
       for (let i = 0; i < pages.length; i++) {
         const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
         if (i > 0) pdf.addPage();
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.88), 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
       }
       pdf.save(`Resultados_Partidos_${rangeStart}_al_${rangeEnd}.pdf`);
     } catch (e) {
@@ -1139,13 +1173,14 @@
 
   // Pinta en el área oculta el informe de UN equipo y lo añade como página al PDF
   async function addTeamReportPage(pdf, teamKey, teamName, logs, isFirstPage) {
-    document.getElementById("pdfReportTeamTitle").innerText = `Informe de Entrenamiento: ${teamName}`;
-    document.getElementById("pdfReportDateRange").innerText = `Período: ${rangeStart} al ${rangeEnd}`;
+    document.getElementById("pdfReportTeamTitle").innerText = teamName;
+    document.getElementById("pdfReportDateRange").innerText = nvaPeriodo();
 
     const teamPlayers = getPlayersForTeamKey(teamKey);
     const tableBody = document.getElementById("pdfReportTableBody");
     tableBody.innerHTML = "";
 
+    let totPres = 0, totAsig = 0, totQ = 0, totQn = 0, totStrikes = 0;
     teamPlayers.forEach(playerName => {
       let attended = 0;
       let totalAssigned = 0;
@@ -1165,20 +1200,38 @@
           strikesSum += (pData.strikes || 0);
         }
       });
+      totPres += attended; totAsig += totalAssigned; totQ += qualitySum; totQn += qualityCount; totStrikes += strikesSum;
 
-      const qualityAvg = qualityCount > 0 ? (qualitySum / qualityCount).toFixed(1) + " ★" : "N/A";
+      const pct = totalAssigned ? Math.round(attended * 100 / totalAssigned) : 0;
+      const barCol = pct >= 80 ? NVA_PDF_COL.azul : (pct >= 50 ? "#E0A800" : NVA_PDF_COL.alzira);
+      const qualityAvg = qualityCount > 0
+        ? `<span class="nva-q">${(qualitySum / qualityCount).toFixed(1)}<i>★</i></span>`
+        : `<span class="nva-na">—</span>`;
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td style="font-weight:600;">${escapeHtml(playerName)}</td>
-        <td style="text-align:center; font-weight:700; color:#0284c7;">${attended}/${totalAssigned}</td>
-        <td style="text-align:center; font-weight:700; color:#f59e0b;">${qualityAvg}</td>
-        <td style="text-align:center; font-weight:700; color:#ef4444;">${strikesSum}</td>
+        <td class="nva-name">${escapeHtml(playerName)}</td>
+        <td><div class="nva-bar">
+          <span class="nva-bar-n">${attended}/${totalAssigned}</span>
+          <span class="nva-bar-t"><span class="nva-bar-f" style="display:block; width:${pct}%; background:${barCol};"></span></span>
+          <span class="nva-bar-p">${totalAssigned ? pct + "%" : "—"}</span>
+        </div></td>
+        <td style="text-align:center;">${qualityAvg}</td>
+        <td style="text-align:center;"><span class="nva-chip ${strikesSum > 0 ? "red" : "grey"}">${strikesSum}</span></td>
       `;
       tableBody.appendChild(tr);
     });
 
-    const labels = logs.map(l => l.fecha);
+    // Marcadores del informe
+    const pctEq = totAsig ? Math.round(totPres * 100 / totAsig) : 0;
+    const mediaPres = logs.length ? (logs.reduce((a, l) => a + l.jugadores.filter(j => j.attendance === "presente").length, 0) / logs.length) : 0;
+    document.getElementById("pdfReportKpis").innerHTML =
+      nvaKpi("Sesiones", logs.length, `${teamPlayers.length} jugadoras en plantilla`, NVA_PDF_COL.pista) +
+      nvaKpi("Asistencia", `${pctEq}<small>%</small>`, `${mediaPres.toFixed(1).replace(".", ",")} presentes por sesión`, NVA_PDF_COL.azul) +
+      nvaKpi("Calidad media", totQn ? `${(totQ / totQn).toFixed(1).replace(".", ",")}<small>/ 5</small>` : "—", "de las jugadoras presentes", NVA_PDF_COL.balon) +
+      nvaKpi("Strikes", totStrikes, "acumulados en el período", NVA_PDF_COL.alzira);
+
+    const labels = logs.map(l => pdfFechaCorta(l.fecha).slice(0, 5));
     const attendanceData = logs.map(l => l.jugadores.filter(j => j.attendance === "presente").length);
     const qualityData = logs.map(l => {
       const present = l.jugadores.filter(j => j.attendance === "presente");
@@ -1189,10 +1242,13 @@
 
     if (pdfChart1) pdfChart1.destroy();
     if (pdfChart2) pdfChart2.destroy();
+    nvaChartDefaults();
 
+    const pocos = labels.length <= 16;
     const chartValueLabelPlugin = {
       id: 'chartValueLabel',
       afterDatasetsDraw(chart) {
+        if (!pocos) return;   // con muchas sesiones las cifras se pisarían
         const { ctx } = chart;
         chart.data.datasets.forEach((dataset, i) => {
           const meta = chart.getDatasetMeta(i);
@@ -1200,8 +1256,8 @@
             const val = dataset.data[index];
             if (val !== null && val !== undefined) {
               ctx.save();
-              ctx.fillStyle = '#0f172a';
-              ctx.font = 'bold 11px -apple-system, sans-serif';
+              ctx.fillStyle = NVA_PDF_COL.noche;
+              ctx.font = '700 11px Barlow, sans-serif';
               ctx.textAlign = 'center';
               ctx.textBaseline = 'bottom';
               const pos = element.tooltipPosition();
@@ -1214,9 +1270,9 @@
     };
 
     const ctx1 = document.getElementById("chartAttendanceCanvas").getContext("2d");
-    const grad1 = ctx1.createLinearGradient(0, 0, 0, 200);
-    grad1.addColorStop(0, '#0052d4');
-    grad1.addColorStop(1, '#4364f7');
+    const grad1 = ctx1.createLinearGradient(0, 0, 0, 190);
+    grad1.addColorStop(0, '#2450C8');
+    grad1.addColorStop(1, '#0D1B45');
 
     pdfChart1 = new Chart(ctx1, {
       type: 'bar',
@@ -1226,8 +1282,9 @@
           label: 'Jugadoras Presentes',
           data: attendanceData,
           backgroundColor: grad1,
-          borderRadius: 6,
-          borderSkipped: false
+          borderRadius: 5,
+          borderSkipped: false,
+          maxBarThickness: 26
         }]
       },
       plugins: [chartValueLabelPlugin],
@@ -1235,16 +1292,19 @@
         responsive: true,
         maintainAspectRatio: false,
         animation: false,
-        layout: { padding: { top: 20 } },
+        layout: { padding: { top: 18 } },
         plugins: { legend: { display: false }, tooltip: { enabled: false } },
-        scales: { x: { grid: { display: false } }, y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,0.05)' } } }
+        scales: {
+          x: { grid: { display: false }, border: { color: '#E3E8F4' }, ticks: { maxRotation: 0, autoSkip: true, font: { size: 10 } } },
+          y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } }, border: { display: false }, grid: { color: '#EEF2F8' } }
+        }
       }
     });
 
     const ctx2 = document.getElementById("chartQualityCanvas").getContext("2d");
-    const grad2 = ctx2.createLinearGradient(0, 0, 0, 200);
-    grad2.addColorStop(0, 'rgba(0, 82, 212, 0.4)');
-    grad2.addColorStop(1, 'rgba(0, 82, 212, 0.03)');
+    const grad2 = ctx2.createLinearGradient(0, 0, 0, 190);
+    grad2.addColorStop(0, 'rgba(245, 197, 24, 0.40)');
+    grad2.addColorStop(1, 'rgba(245, 197, 24, 0.02)');
 
     pdfChart2 = new Chart(ctx2, {
       type: 'line',
@@ -1253,14 +1313,14 @@
         datasets: [{
           label: 'Media Calidad',
           data: qualityData,
-          borderColor: '#0052d4',
-          borderWidth: 3,
+          borderColor: '#1B3A8C',
+          borderWidth: 2.5,
           backgroundColor: grad2,
           fill: true,
           tension: 0.35,
-          pointRadius: 5,
-          pointBackgroundColor: '#0066ff',
-          pointBorderColor: '#ffffff',
+          pointRadius: 4,
+          pointBackgroundColor: '#F5C518',
+          pointBorderColor: '#0D1B45',
           pointBorderWidth: 2
         }]
       },
@@ -1269,54 +1329,21 @@
         responsive: true,
         maintainAspectRatio: false,
         animation: false,
-        layout: { padding: { top: 20 } },
+        layout: { padding: { top: 18 } },
         plugins: { legend: { display: false }, tooltip: { enabled: false } },
-        scales: { x: { grid: { display: false } }, y: { min: 1, max: 5, grid: { color: 'rgba(0,0,0,0.05)' } } }
+        scales: {
+          x: { grid: { display: false }, border: { color: '#E3E8F4' }, ticks: { maxRotation: 0, autoSkip: true, font: { size: 10 } } },
+          y: { min: 1, max: 5, ticks: { stepSize: 1, font: { size: 10 } }, border: { display: false }, grid: { color: '#EEF2F8' } }
+        }
       }
     });
 
     const exportArea = document.getElementById("pdfReportExportArea");
+    await nvaPdfReady(exportArea);
+    await new Promise(r => setTimeout(r, 150));
 
-    await new Promise(r => setTimeout(r, 300));
-
-    const canvas = await html2canvas(exportArea, { scale: 1.5, useCORS: true });
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-
-    const fullCanvas = document.createElement("canvas");
-    const scale = 1.5;   // ~144 ppp: nítido en pantalla/impresión y mucho más ligero
-    fullCanvas.width = pdfWidth * 3.7795275591 * scale; 
-    fullCanvas.height = pdfHeight * 3.7795275591 * scale;
-    const ctx = fullCanvas.getContext("2d");
-
-    // JPEG no admite transparencia: se parte de un fondo blanco (antes lo daba el PNG transparente)
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, fullCanvas.width, fullCanvas.height);
-
-    const bgGradient = ctx.createLinearGradient(0, 0, fullCanvas.width, fullCanvas.height);
-    bgGradient.addColorStop(0, 'rgba(0, 102, 255, 0.3)');
-    bgGradient.addColorStop(0.5, 'rgba(67, 100, 247, 0.3)');
-    bgGradient.addColorStop(1, 'rgba(0, 210, 255, 0.3)');
-    ctx.fillStyle = bgGradient;
-    ctx.fillRect(0, 0, fullCanvas.width, fullCanvas.height);
-
-    const watermarkImg = exportArea.querySelector('.pdf-watermark');
-    if (watermarkImg && watermarkImg.complete) {
-      ctx.save();
-      ctx.globalAlpha = 0.12;
-      const wmWidth = 380 * scale;
-      const wmHeight = (watermarkImg.naturalHeight / watermarkImg.naturalWidth) * wmWidth || wmWidth;
-      const wmX = (fullCanvas.width - wmWidth) / 2;
-      const wmY = (fullCanvas.height - wmHeight) / 2;
-      ctx.drawImage(watermarkImg, wmX, wmY, wmWidth, wmHeight);
-      ctx.restore();
-    }
-
-    ctx.drawImage(canvas, 0, 0, fullCanvas.width, (canvas.height * fullCanvas.width) / canvas.width);
-
-    const imgData = fullCanvas.toDataURL('image/jpeg', 0.85);
     if (!isFirstPage) pdf.addPage();
-    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+    await addAreaAsPdfPages(pdf, exportArea);
   }
 
   async function generatePDF() {
@@ -1446,6 +1473,14 @@
     document.getElementById("modalDateRange").classList.add("active");
   }
 
+  // =====================================================================
+  //  UTILIDADES COMUNES DE LOS INFORMES PDF (diseño "Línea de Ataque")
+  // =====================================================================
+  const NVA_PDF_COL = {
+    noche: "#0D1B45", pista: "#1B3A8C", azul: "#2450C8", balon: "#F5C518",
+    alzira: "#D62839", verde: "#15803D", gris: "#64748B"
+  };
+
   function pdfEscape(v) {
     return String(v == null ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
@@ -1453,11 +1488,108 @@
     const p = String(f).split("-");
     return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : f;
   }
+  function nvaPeriodo() {
+    return `${pdfFechaCorta(rangeStart)}  –  ${pdfFechaCorta(rangeEnd)}`;
+  }
+  // Tarjeta de marcador (KPI): etiqueta, valor grande, texto pequeño y color de acento
+  function nvaKpi(label, value, sub, color) {
+    return `<div class="nva-kpi" style="--k:${color}">
+      <div class="nva-kpi-l">${label}</div>
+      <div class="nva-kpi-v">${value}</div>
+      <div class="nva-kpi-s">${sub || "&nbsp;"}</div>
+    </div>`;
+  }
+  // Espera a logos y tipografías del club y pone la fecha en el pie
+  async function nvaPdfReady(area) {
+    const hoy = new Date().toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" });
+    area.querySelectorAll(".nva-pdf-gen").forEach(el => { el.textContent = "Generado el " + hoy; });
+    try {
+      if (document.fonts && document.fonts.load) {
+        await Promise.all([
+          document.fonts.load('400 13px "Barlow"'),
+          document.fonts.load('600 13px "Barlow"'),
+          document.fonts.load('700 13px "Barlow"'),
+          document.fonts.load('700 20px "Barlow Condensed"'),
+          document.fonts.load('italic 800 20px "Barlow Condensed"')
+        ]);
+      }
+    } catch (e) { /* si no cargan, se usa la tipografía del sistema */ }
+    await Promise.all(Array.from(area.querySelectorAll("img")).map(img =>
+      img.complete ? Promise.resolve() : new Promise(r => { img.onload = img.onerror = r; })));
+  }
+  function nvaChartDefaults() {
+    if (!window.Chart) return;
+    Chart.defaults.font.family = "Barlow, -apple-system, 'Segoe UI', Roboto, sans-serif";
+    Chart.defaults.color = "#64748B";
+  }
+
+  // --- Para los PDF dibujados directamente con jsPDF (cuadrante, kilometraje...) ---
+  let _nvaLogoPromise = null;
+  // Escudo del club como PNG (data URL) para jsPDF. Se prepara una sola vez.
+  function nvaLogoDataUrl() {
+    if (!_nvaLogoPromise) {
+      _nvaLogoPromise = new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const c = document.createElement("canvas");
+            c.width = c.height = 240;
+            c.getContext("2d").drawImage(img, 0, 0, 240, 240);
+            resolve(c.toDataURL("image/png"));
+          } catch (e) { resolve(null); }
+        };
+        img.onerror = () => resolve(null);
+        img.src = "LOGO-NVA.png";
+      });
+    }
+    return _nvaLogoPromise;
+  }
+  // Banda de cabecera: azul noche, escudo en disco blanco, título y línea de ataque amarilla.
+  // Devuelve la coordenada Y (mm) donde empieza el contenido.
+  function nvaPdfBand(pdf, logo, { kicker, title, sub, h = 26 }) {
+    const W = pdf.internal.pageSize.getWidth();
+    pdf.setFillColor(13, 27, 69); pdf.rect(0, 0, W, h, "F");
+    pdf.setFillColor(21, 41, 106); pdf.triangle(W * 0.55, 0, W, 0, W, h, "F");
+    pdf.setFillColor(29, 53, 128); pdf.triangle(W * 0.78, 0, W, 0, W, h, "F");
+    pdf.setFillColor(245, 197, 24); pdf.rect(0, h, W, 1.4, "F");
+    const r = h * 0.36, cx = 12 + r, cy = h / 2;
+    pdf.setFillColor(255, 255, 255); pdf.setDrawColor(245, 197, 24); pdf.setLineWidth(0.7);
+    pdf.circle(cx, cy, r, "FD");
+    if (logo) pdf.addImage(logo, "PNG", cx - r * 0.88, cy - r * 0.88, r * 1.76, r * 1.76, "nvalogo", "FAST");
+    const tx = cx + r + 5;
+    pdf.setFont("helvetica", "bold"); pdf.setFontSize(7.5); pdf.setTextColor(245, 197, 24);
+    pdf.text(String(kicker || "CLUB NOU VÒLEI ALZIRA").toUpperCase(), tx, cy - 3.6, { charSpace: 0.6 });
+    pdf.setFontSize(h > 22 ? 16 : 13); pdf.setTextColor(255, 255, 255);
+    pdf.text(String(title || "").toUpperCase(), tx, cy + 2.6);
+    if (sub) {
+      pdf.setFont("helvetica", "normal"); pdf.setFontSize(8); pdf.setTextColor(147, 163, 207);
+      pdf.text(String(sub), tx, cy + 7.6);
+    }
+    pdf.setLineWidth(0.2);
+    return h + 1.4;
+  }
+  // Pie: fecha de generación, página y marca del club
+  function nvaPdfFooter(pdf, page, total) {
+    const W = pdf.internal.pageSize.getWidth(), H = pdf.internal.pageSize.getHeight(), M = 12;
+    pdf.setDrawColor(227, 232, 244); pdf.setLineWidth(0.25); pdf.line(M, H - 9, W - M, H - 9);
+    pdf.setFont("helvetica", "normal"); pdf.setFontSize(7); pdf.setTextColor(148, 163, 184);
+    pdf.text("Generado el " + new Date().toLocaleDateString("es-ES"), M, H - 5);
+    if (total > 1) pdf.text(`Página ${page} de ${total}`, W / 2, H - 5, { align: "center" });
+    pdf.setFillColor(245, 197, 24); pdf.rect(W - M - 44, H - 6.4, 3.5, 1.1, "F");
+    pdf.setFillColor(214, 40, 57); pdf.rect(W - M - 39.5, H - 6.4, 3.5, 1.1, "F");
+    pdf.setFont("helvetica", "bold"); pdf.setTextColor(27, 58, 140);
+    pdf.text("NOU VÒLEI ALZIRA", W - M, H - 5, { align: "right", charSpace: 0.4 });
+  }
+  // Recorre todas las páginas al final y pone el pie
+  function nvaPdfFooters(pdf) {
+    const n = pdf.getNumberOfPages();
+    for (let i = 1; i <= n; i++) { pdf.setPage(i); nvaPdfFooter(pdf, i, n); }
+  }
 
   // Captura el área oculta y la coloca en UNA sola página A4: si el contenido es más
   // alto que la página, se reduce proporcionalmente hasta que quepa.
   async function addAreaAsPdfPages(pdf, exportArea) {
-    const SC = 1.5;
+    const SC = 1.5;                                      // ~144 ppp: nítido y ligero
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
     const W = Math.round(pdfWidth * 3.7795275591 * SC);
@@ -1466,16 +1598,15 @@
     const cssW = exportArea.getBoundingClientRect().width;
     const total = exportArea.getBoundingClientRect().height;
     const pageCssH = cssW * pdfHeight / pdfWidth;
-    const MARGEN = 14;                                   // px CSS arriba y abajo si se reduce
-    const reducir = total > pageCssH + 2;                // tolerancia por redondeos (el área mide justo 1 página como mínimo)
-    const f = reducir ? (pageCssH - 2 * MARGEN) / total : 1;
+    const reducir = total > pageCssH + 2;                // tolerancia por redondeos
+    const f = reducir ? pageCssH / total : 1;
 
+    // Al reducir, la marca de agua quedaría cortada a media página: se oculta
     const wm = exportArea.querySelector(".pdf-watermark");
-    // Al reducir, la marca de agua capturada se descentraría: se oculta y se dibuja centrada en la página
     if (reducir && wm) wm.style.visibility = "hidden";
     let canvas;
     try {
-      canvas = await html2canvas(exportArea, { scale: SC, useCORS: true });
+      canvas = await html2canvas(exportArea, { scale: SC, useCORS: true, backgroundColor: "#ffffff" });
     } finally {
       if (wm) wm.style.visibility = "";
     }
@@ -1486,32 +1617,25 @@
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, W, H);
 
-    const bg = ctx.createLinearGradient(0, 0, W, H);
-    bg.addColorStop(0, "rgba(0, 102, 255, 0.3)");
-    bg.addColorStop(0.5, "rgba(67, 100, 247, 0.3)");
-    bg.addColorStop(1, "rgba(0, 210, 255, 0.3)");
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, W, H);
-
-    if (wm && wm.complete && wm.naturalWidth) {
-      const wmW = 380 * SC;
-      const wmH = (wm.naturalHeight / wm.naturalWidth) * wmW || wmW;
-      ctx.save();
-      ctx.globalAlpha = 0.12;
-      // Mismo tono que en el informe de entrenamientos (marca capturada + marca de página)
-      const veces = reducir ? 2 : 1;
-      for (let n = 0; n < veces; n++) ctx.drawImage(wm, (W - wmW) / 2, (H - wmH) / 2, wmW, wmH);
-      ctx.restore();
-    }
-
     const ko = W / cssW;                                 // px de página por px CSS
     const destW = W * f;
     const destH = total * ko * f;
     const dx = (W - destW) / 2;
-    const dy = reducir ? MARGEN * ko : 0;
-    ctx.drawImage(canvas, 0, 0, canvas.width, canvas.height, dx, dy, destW, destH);
+    if (reducir) {
+      // Las franjas laterales que deja la reducción se rellenan con la banda de cabecera
+      // para que la página siga viéndose a sangre.
+      const headEl = exportArea.querySelector(".nva-pdf-head");
+      if (headEl) {
+        const hh = (headEl.offsetHeight + 5) * ko * f;
+        const g = ctx.createLinearGradient(0, 0, W, 0);
+        g.addColorStop(0, "#0D1B45"); g.addColorStop(1, "#1D3580");
+        ctx.fillStyle = g; ctx.fillRect(0, 0, W, hh - 5 * ko * f);
+        ctx.fillStyle = "#F5C518"; ctx.fillRect(0, hh - 5 * ko * f, W, 5 * ko * f);
+      }
+    }
+    ctx.drawImage(canvas, 0, 0, canvas.width, canvas.height, dx, 0, destW, destH);
 
-    pdf.addImage(full.toDataURL("image/jpeg", 0.85), "JPEG", 0, 0, pdfWidth, pdfHeight, undefined, "FAST");
+    pdf.addImage(full.toDataURL("image/jpeg", 0.86), "JPEG", 0, 0, pdfWidth, pdfHeight, undefined, "FAST");
   }
 
   async function generatePlayerPDF() {
@@ -1530,10 +1654,10 @@
       return;
     }
 
-    document.getElementById("pdfPlayerTitle").innerText = `Informe de jugadora: ${sel.player}`;
+    document.getElementById("pdfPlayerTitle").innerText = sel.player;
     document.getElementById("pdfPlayerCoach").innerText = sel.coachName;
     document.getElementById("pdfPlayerTeam").innerText = sel.teamLabel;
-    document.getElementById("pdfPlayerPeriod").innerText = `${rangeStart} al ${rangeEnd}`;
+    document.getElementById("pdfPlayerPeriod").innerText = nvaPeriodo();
 
     // --- Datos de los gráficos ---
     const labels = registros.map(r => pdfFechaCorta(r.fecha).slice(0, 5));
@@ -1542,7 +1666,14 @@
     const media = presentes.length ? presentes.reduce((a, b) => a + b, 0) / presentes.length : null;
     const strikes = registros.map(r => r.p.strikes || 0);
     const totalStrikes = strikes.reduce((a, b) => a + b, 0);
-    document.getElementById("pdfPlayerChartTitle").innerText = `Tendencia de Calidad de Entrenamiento y Strikes (total strikes: ${totalStrikes})`;
+    document.getElementById("pdfPlayerChartTitle").innerText = "Calidad de entrenamiento y strikes por sesión";
+    const pctAsis = registros.length ? Math.round(presentes.length * 100 / registros.length) : 0;
+    const nComent = registros.filter(r => (r.p.comments || "").trim()).length;
+    document.getElementById("pdfPlayerKpis").innerHTML =
+      nvaKpi("Asistencia", `${pctAsis}<small>%</small>`, `${presentes.length} de ${registros.length} sesiones`, NVA_PDF_COL.azul) +
+      nvaKpi("Calidad media", media !== null ? `${media.toFixed(1).replace(".", ",")}<small>/ 5</small>` : "—", "en las sesiones asistidas", NVA_PDF_COL.balon) +
+      nvaKpi("Strikes", totalStrikes, "acumulados en el período", NVA_PDF_COL.alzira) +
+      nvaKpi("Comentarios", nComent, "anotados por el entrenador/a", NVA_PDF_COL.pista);
 
     // --- Comentarios con fecha ---
     const body = document.getElementById("pdfPlayerCommentsBody");
@@ -1552,11 +1683,12 @@
     tablaCom.style.fontSize = nCom > 16 ? "10px" : (nCom > 8 ? "11px" : "");
     tablaCom.classList.toggle("pdf-table-compact", nCom > 8);
     body.innerHTML = conComentario.length
-      ? conComentario.map(r => `<tr data-pdf-row><td style="white-space:nowrap; font-weight:600;">${pdfFechaCorta(r.fecha)}</td><td>${pdfEscape(r.p.comments.trim())}</td></tr>`).join("")
-      : `<tr data-pdf-row><td colspan="2" style="text-align:center; color:#64748b;">Sin comentarios en el período</td></tr>`;
+      ? conComentario.map(r => `<tr data-pdf-row><td style="white-space:nowrap; font-weight:700;">${pdfFechaCorta(r.fecha)}</td><td>${pdfEscape(r.p.comments.trim())}</td></tr>`).join("")
+      : `<tr data-pdf-row><td colspan="2" class="nva-na" style="text-align:center;">Sin comentarios en el período</td></tr>`;
 
     // --- Gráficos ---
     if (pdfPlayerChart1) pdfPlayerChart1.destroy();
+    nvaChartDefaults();
 
     const labelPlugin = {
       id: "playerValueLabel",
@@ -1570,8 +1702,8 @@
             if (val === null || val === undefined) return;
             if (esBarra && !val) return;   // sin etiqueta en 0 strikes
             ctx.save();
-            ctx.fillStyle = esBarra ? "#b91c1c" : "#0f172a";
-            ctx.font = "bold 11px -apple-system, sans-serif";
+            ctx.fillStyle = esBarra ? "#B4172A" : "#0D1B45";
+            ctx.font = "700 11px Barlow, sans-serif";
             ctx.textAlign = "center";
             ctx.textBaseline = "bottom";
             const pos = el.tooltipPosition();
@@ -1584,8 +1716,8 @@
 
     const ctx1 = document.getElementById("chartPlayerQualityCanvas").getContext("2d");
     const grad1 = ctx1.createLinearGradient(0, 0, 0, 300);
-    grad1.addColorStop(0, "rgba(0, 82, 212, 0.35)");
-    grad1.addColorStop(1, "rgba(0, 82, 212, 0.03)");
+    grad1.addColorStop(0, "rgba(36, 80, 200, 0.28)");
+    grad1.addColorStop(1, "rgba(36, 80, 200, 0.02)");
     const maxStrikes = Math.max(0, ...strikes);
     const dsCombinado = [
       {
@@ -1594,9 +1726,9 @@
         data: strikes,
         yAxisID: "y",
         pointStyle: "rect",
-        backgroundColor: "rgba(239, 68, 68, 0.55)",
-        borderColor: "#ef4444",
-        borderWidth: 1,
+        backgroundColor: "rgba(214, 40, 57, 0.78)",
+        borderColor: "#D62839",
+        borderWidth: 0,
         borderRadius: 5,
         borderSkipped: false,
         maxBarThickness: 28,
@@ -1608,15 +1740,15 @@
         data: calidad,
         yAxisID: "y",
         pointStyle: "line",
-        borderColor: "#0052d4",
-        borderWidth: 3,
+        borderColor: "#1B3A8C",
+        borderWidth: 2.5,
         backgroundColor: grad1,
         fill: true,
         spanGaps: true,
         tension: 0.35,
         pointRadius: 5,
-        pointBackgroundColor: "#0066ff",
-        pointBorderColor: "#ffffff",
+        pointBackgroundColor: "#F5C518",
+        pointBorderColor: "#0D1B45",
         pointBorderWidth: 2,
         order: 2
       }
@@ -1628,9 +1760,9 @@
         data: labels.map(() => parseFloat(media.toFixed(2))),
         yAxisID: "y",
         pointStyle: "line",
-        borderColor: "#f59e0b",
+        borderColor: "#E0A800",
         borderWidth: 2,
-        borderDash: [8, 5],
+        borderDash: [6, 5],
         pointRadius: 0,
         fill: false,
         noLabel: true,
@@ -1648,9 +1780,9 @@
       pointStyle: "crossRot",
       pointRadius: 9,
       pointHoverRadius: 9,
-      borderColor: "#dc2626",
+      borderColor: "#D62839",
       borderWidth: 3,
-      pointBorderColor: "#dc2626",
+      pointBorderColor: "#D62839",
       pointBorderWidth: 3,
       noLabel: true,
       order: 0
@@ -1663,16 +1795,17 @@
         maintainAspectRatio: false,
         animation: false,
         layout: { padding: { top: 20 } },
-        plugins: { legend: { display: true, position: "bottom", labels: { usePointStyle: true, boxWidth: 12 } }, tooltip: { enabled: false } },
+        plugins: { legend: { display: true, position: "bottom", labels: { usePointStyle: true, boxWidth: 12, padding: 16, color: "#0D1B45", font: { size: 11, weight: "600" } } }, tooltip: { enabled: false } },
         scales: {
-          x: { grid: { display: false } },
+          x: { grid: { display: false }, border: { color: "#E3E8F4" }, ticks: { maxRotation: 0, autoSkip: true, font: { size: 10 } } },
           // Un único eje para calidad (1-5) y strikes (0-3): misma escala
           y: {
             min: 0,
             max: Math.max(5, maxStrikes),
             ticks: { stepSize: 1, precision: 0 },
-            title: { display: true, text: "Calidad (1-5) · Strikes (0-3)" },
-            grid: { color: "rgba(0,0,0,0.05)" }
+            title: { display: true, text: "Calidad (1-5) · Strikes (0-3)", font: { size: 10, weight: "600" } },
+            border: { display: false },
+            grid: { color: "#EEF2F8" }
           }
         }
       }
@@ -1680,11 +1813,8 @@
 
     // --- Captura y PDF ---
     const exportArea = document.getElementById("pdfPlayerExportArea");
-    const wmImg = exportArea.querySelector(".pdf-watermark");
-    if (wmImg) wmImg.style.top = (800 * 297 / 210 / 2) + "px";   // centrada en la 1ª página
-    await Promise.all(Array.from(exportArea.querySelectorAll("img")).map(img =>
-      img.complete ? Promise.resolve() : new Promise(r => { img.onload = img.onerror = r; })));
-    await new Promise(r => setTimeout(r, 300));
+    await nvaPdfReady(exportArea);
+    await new Promise(r => setTimeout(r, 150));
 
     try {
       const { jsPDF } = window.jspdf;

@@ -142,8 +142,9 @@
 
   // ---------- Dibujo con jsPDF (A4 apaisado, una página por equipo) ----------
   const C = {
-    gris: [128, 128, 128], grisOsc: [90, 90, 90], borde: [40, 40, 40], azul: [68, 114, 196], gris2: [160, 160, 160],
-    rojo: [220, 38, 38], propio: [204, 255, 153], propioCel: [226, 255, 204], club: [255, 204, 153], clubCel: [255, 255, 204]
+    gris: [27, 58, 140], grisOsc: [90, 90, 90], borde: [190, 199, 220], azul: [27, 58, 140], gris2: [160, 168, 184],
+    rojo: [214, 40, 57], propio: [245, 197, 24], propioCel: [254, 245, 205], club: [190, 210, 250], clubCel: [234, 241, 254],
+    noche: [13, 27, 69], diag: [226, 231, 243]
   };
   const fmtFecha = (iso) => { const [y, m, d] = iso.split("-"); return `${+d}-${+m}-${y.slice(2)}`; };
 
@@ -155,7 +156,7 @@
     return txt + "…";
   }
 
-  function dibujar(pdf, key, d) {
+  function dibujar(pdf, key, d, logo) {
     const W = 297, H = 210, M = 7;
     const propio = equipoPropio(key, d.clasificacion.map(c => c.nombre));
     const equipos = d.clasificacion.map(c => c.nombre).filter(n => n !== "DESCANSA");
@@ -165,25 +166,24 @@
     const cat = ((d.titulo.match(/ALEV[IÍ]N|INFANTIL|CADETE|JUVENIL|J[UÚ]NIOR|SENIOR|S[EÉ]NIOR/i) || [])[0] || (t ? t.category : "")).toUpperCase();
 
     // Cabecera
-    pdf.setFont("helvetica", "bold"); pdf.setTextColor(30, 60, 114);
-    pdf.setFontSize(13); pdf.text(`${key} · Partidos y Resultados`, M, M + 4);
-    pdf.setFont("helvetica", "normal"); pdf.setFontSize(8); pdf.setTextColor(80);
-    pdf.text(`${d.titulo}${d.impreso ? "   ·   Datos fvbcv.com del " + d.impreso : ""}`, M, M + 9);
+    const yBand = typeof nvaPdfBand === "function"
+      ? nvaPdfBand(pdf, logo, { kicker: "Club Nou Vòlei Alzira · Partidos y resultados", title: key, sub: `${d.titulo}${d.impreso ? "   ·   Datos fvbcv.com del " + d.impreso : ""}`, h: 20 })
+      : M + 10;
 
     // Cuadrante
-    const x0 = M, y0 = M + 13, anchoGrid = 205;
+    const x0 = M, y0 = yBand + 4, anchoGrid = 205;
     const cab = 30, cabX = 32;
     const cw = (anchoGrid - cabX) / n;
-    const ch = Math.min(15, (H - M - y0 - cab) / n);
+    const ch = Math.min(15, (H - 12 - y0 - cab) / n);
     const fondo = (nom, cel) => nom === propio ? (cel ? C.propioCel : C.propio) : esClub(nom) ? (cel ? C.clubCel : C.club) : null;
     pdf.setDrawColor(...C.borde); pdf.setLineWidth(0.15);
 
     // Esquina con diagonal
-    pdf.setFillColor(...C.gris); pdf.rect(x0, y0, cabX, cab, "FD");
-    pdf.line(x0, y0, x0 + cabX, y0 + cab);
-    pdf.setTextColor(0); pdf.setFont("helvetica", "bold");
+    pdf.setFillColor(...C.noche); pdf.rect(x0, y0, cabX, cab, "FD");
+    pdf.setDrawColor(255); pdf.line(x0, y0, x0 + cabX, y0 + cab); pdf.setDrawColor(...C.borde);
+    pdf.setTextColor(245, 197, 24); pdf.setFont("helvetica", "bold");
     pdf.text(encajar(pdf, cat || "LIGA", cabX - 3, 12, 6), x0 + 1.5, y0 + 6);
-    pdf.setFont("helvetica", "normal"); pdf.setFontSize(6.5);
+    pdf.setFont("helvetica", "normal"); pdf.setFontSize(6.5); pdf.setTextColor(233, 238, 250);
     const ang = Math.atan(cab / cabX) * 180 / Math.PI;
     pdf.text("VISITANTE", x0 + cabX * 0.55, y0 + cab * 0.42, { angle: -ang });
     pdf.text("LOCAL", x0 + cabX * 0.30, y0 + cab * 0.62, { angle: -ang });
@@ -204,7 +204,7 @@
 
     equipos.forEach((loc, i) => equipos.forEach((vis, j) => {
       const cx = x0 + cabX + j * cw, ry = y0 + cab + i * ch;
-      if (i === j) { pdf.setFillColor(...C.gris); pdf.rect(cx, ry, cw, ch, "FD"); return; }
+      if (i === j) { pdf.setFillColor(...C.diag); pdf.rect(cx, ry, cw, ch, "FD"); return; }
       const bg = (loc === propio || vis === propio) ? C.propioCel : (esClub(loc) || esClub(vis)) ? C.clubCel : [255, 255, 255];
       pdf.setFillColor(...bg); pdf.rect(cx, ry, cw, ch, "FD");
       const ps = d.partidos.filter(p => p.local === loc && p.visitante === vis);
@@ -224,7 +224,7 @@
         pdf.text(encajar(pdf, `(${p.sets})`, cw - 1, 3.6, 2.5), cx + cw / 2, ry + ch - 0.9, { align: "center" });
       }
     }));
-    pdf.setLineWidth(0.5); pdf.rect(x0, y0, anchoGrid, cab + n * ch);
+    pdf.setDrawColor(...C.noche); pdf.setLineWidth(0.5); pdf.rect(x0, y0, anchoGrid, cab + n * ch);
     pdf.line(x0 + cabX, y0, x0 + cabX, y0 + cab + n * ch); pdf.line(x0, y0 + cab, x0 + anchoGrid, y0 + cab);
 
     // Clasificación
@@ -234,15 +234,15 @@
     const rh = 6.5;
     let y = y0;
     pdf.setLineWidth(0.15);
-    pdf.setFillColor(30, 60, 114); pdf.rect(tx, y, tw, rh, "F");
+    pdf.setFillColor(...C.noche); pdf.rect(tx, y, tw, rh, "F"); pdf.setFillColor(245, 197, 24); pdf.rect(tx, y + rh - 0.6, tw, 0.6, "F");
     pdf.setFont("helvetica", "bold"); pdf.setFontSize(7); pdf.setTextColor(255);
     let cx = tx;
     cols.forEach(([h, w], k) => { pdf.text(k === 1 ? "CLASIFICACIÓN" : h, k === 1 ? cx + 1 : cx + w / 2, y + 4.4, { align: k === 1 ? "left" : "center" }); cx += w; });
     y += rh;
     d.clasificacion.filter(c => c.nombre !== "DESCANSA").forEach((c, k) => {
-      const bg = fondo(c.nombre) || (k % 2 ? [242, 242, 242] : [255, 255, 255]);
+      const bg = (fondo(c.nombre) && fondo(c.nombre, true)) || (k % 2 ? [246, 248, 253] : [255, 255, 255]);
       pdf.setFillColor(...bg); pdf.rect(tx, y, tw, rh, "F");
-      pdf.setDrawColor(200); pdf.line(tx, y + rh, tx + tw, y + rh);
+      pdf.setDrawColor(227, 232, 244); pdf.line(tx, y + rh, tx + tw, y + rh);
       const vals = [`${k + 1}º`, c.nombre, c.pj, c.pg, c.pp, c.sf, c.sc, c.pts];
       cx = tx; pdf.setTextColor(0);
       vals.forEach((v, q) => {
@@ -273,6 +273,7 @@
       await ensureExportLibs();
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4", compress: true });
+      const logo = typeof nvaLogoDataUrl === "function" ? await nvaLogoDataUrl() : null;
       let paginas = 0;
       for (const key of keys) {
         mostrarCargando(`Preparando ${key}...`);
@@ -280,11 +281,11 @@
           const d = analizar(await lineasPdf(await leerPdfGitHub(key)));
           if (!d.partidos.length) throw new Error("no se encontraron partidos en el PDF");
           if (paginas) pdf.addPage();
-          dibujar(pdf, key, d);
+          dibujar(pdf, key, d, logo);
           paginas++;
         } catch (e) { console.warn(key, e); fallos.push(`- ${key}: ${e.message}`); }
       }
-      if (paginas) pdf.save(`Partidos_y_Resultados_${nombreArchivo}.pdf`);
+      if (paginas) { if (typeof nvaPdfFooters === "function") nvaPdfFooters(pdf); pdf.save(`Partidos_y_Resultados_${nombreArchivo}.pdf`); }
       if (fallos.length) alert((paginas ? "Algunos equipos no se han incluido:\n" : "No se pudo generar el PDF:\n") + fallos.join("\n"));
     } catch (e) {
       console.error(e);

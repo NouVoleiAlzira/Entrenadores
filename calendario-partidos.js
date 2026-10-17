@@ -410,40 +410,49 @@
       if (typeof mostrarCargando === "function") mostrarCargando("Creando PDF...");
       await ensureExportLibs();
       const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF("p", "mm", "a4");
+      const pdf = new jsPDF({ orientation: "p", unit: "mm", format: "a4", compress: true });
       const W = 210, M = 15;
-      let y = 18;
-      pdf.setFont("helvetica", "bold"); pdf.setFontSize(16);
-      pdf.text("Nou Volei Alzira - Cambios en el calendario de partidos", M, y); y += 7;
-      pdf.setFont("helvetica", "normal"); pdf.setFontSize(10);
+      const logo = typeof nvaLogoDataUrl === "function" ? await nvaLogoDataUrl() : null;
       const from = document.getElementById("cpFrom").value, to = document.getElementById("cpTo").value;
-      pdf.text(`Generado el ${fmtDay(isoDay(new Date()))}${from && to ? ` · Fechas consultadas: ${fmtDay(from)} - ${fmtDay(to)}` : ""}`, M, y); y += 4;
-      pdf.setDrawColor(200); pdf.line(M, y, W - M, y); y += 7;
-      pdf.setFont("helvetica", "bold"); pdf.setFontSize(13);
-      pdf.text(`Cambios realizados${changesAll ? " (todos)" : ""}`, M, y); y += 7;
+      const cab = () => nvaPdfBand(pdf, logo, { kicker: "Club Nou Vòlei Alzira", title: "Cambios en el calendario", sub: from && to ? `Fechas consultadas: ${fmtDay(from)} - ${fmtDay(to)}` : "" });
+      const seccion = (txt) => {
+        pdf.setFillColor(214, 40, 57); pdf.rect(M, y - 3.6, 5, 1.2, "F");
+        pdf.setFont("helvetica", "bold"); pdf.setFontSize(12); pdf.setTextColor(27, 58, 140);
+        pdf.text(txt.toUpperCase(), M + 7, y - 2.2, { charSpace: 0.4 });
+        pdf.setDrawColor(227, 232, 244); pdf.line(M + 7 + pdf.getTextWidth(txt.toUpperCase()) + 8, y - 3, W - M, y - 3);
+        pdf.setTextColor(13, 27, 69); y += 6;
+      };
+      let y = cab() + 12;
+      seccion(`Cambios realizados${changesAll ? " (todos)" : ""}`);
       if (!ch.length) { pdf.setFont("helvetica", "normal"); pdf.setFontSize(10); pdf.text("Sin cambios.", M, y); y += 7; }
       ch.forEach((c, i) => {
         const lines = [c.vs].concat(c.items.map(t => "   " + t.replace("→", "->")));
-        if (y + lines.length * 5.5 > 285) { pdf.addPage(); y = 18; }
-        pdf.setFont("helvetica", "bold"); pdf.setFontSize(11);
-        pdf.text(`${i + 1}. ${lines[0]}`, M, y); y += 5.5;
-        pdf.setFont("helvetica", "normal"); pdf.setFontSize(10);
-        lines.slice(1).forEach(l => { pdf.text(pdf.splitTextToSize(l, W - 2 * M), M, y); y += 5.5; });
-        y += 2;
+        if (y + lines.length * 5.5 > 278) { pdf.addPage(); y = cab() + 12; }
+        pdf.setFillColor(13, 27, 69); pdf.circle(M + 2.6, y - 1.3, 2.6, "F");
+        pdf.setFont("helvetica", "bold"); pdf.setFontSize(7.5); pdf.setTextColor(245, 197, 24);
+        pdf.text(String(i + 1), M + 2.6, y - 0.2, { align: "center" });
+        pdf.setFontSize(11); pdf.setTextColor(13, 27, 69);
+        pdf.text(lines[0], M + 8, y); y += 5.5;
+        pdf.setFont("helvetica", "normal"); pdf.setFontSize(10); pdf.setTextColor(51, 65, 85);
+        lines.slice(1).forEach(l => { pdf.text(pdf.splitTextToSize(l.trim(), W - 2 * M - 8), M + 8, y); y += 5.5; });
+        y += 2.5;
       });
       if (props.length) {
-        if (y + 20 > 285) { pdf.addPage(); y = 18; }
-        y += 3;
-        pdf.setFont("helvetica", "bold"); pdf.setFontSize(13);
-        pdf.text("Propuestas de partidos (sin hora oficial)", M, y); y += 7;
+        if (y + 20 > 278) { pdf.addPage(); y = cab() + 12; }
+        y += 4;
+        seccion("Propuestas de partidos (sin hora oficial)");
         props.forEach((m, i) => {
-          if (y + 11 > 285) { pdf.addPage(); y = 18; }
-          pdf.setFont("helvetica", "bold"); pdf.setFontSize(11);
-          pdf.text(`${i + 1}. ${m.team} ${isHome(m) ? "vs" : "en"} ${m.rival || "?"}`, M, y); y += 5.5;
-          pdf.setFont("helvetica", "normal"); pdf.setFontSize(10);
-          pdf.text(`   Propuesta: ${whenTxt(m.date, toHHMM(m.start))}${isHome(m) ? " (local)" : " (visitante)"}`, M, y); y += 7.5;
+          if (y + 11 > 278) { pdf.addPage(); y = cab() + 12; }
+          pdf.setFillColor(245, 197, 24); pdf.circle(M + 2.6, y - 1.3, 2.6, "F");
+          pdf.setFont("helvetica", "bold"); pdf.setFontSize(7.5); pdf.setTextColor(13, 27, 69);
+          pdf.text(String(i + 1), M + 2.6, y - 0.2, { align: "center" });
+          pdf.setFontSize(11);
+          pdf.text(`${m.team} ${isHome(m) ? "vs" : "en"} ${m.rival || "?"}`, M + 8, y); y += 5.5;
+          pdf.setFont("helvetica", "normal"); pdf.setFontSize(10); pdf.setTextColor(51, 65, 85);
+          pdf.text(`Propuesta: ${whenTxt(m.date, toHHMM(m.start))}${isHome(m) ? " (local)" : " (visitante)"}`, M + 8, y); y += 7.5;
         });
       }
+      nvaPdfFooters(pdf);
       pdf.save(`Cambios_partidos_${isoDay(new Date())}.pdf`);
     } catch (e) {
       console.error(e);

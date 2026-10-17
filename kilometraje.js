@@ -338,16 +338,15 @@
       const coach = appData.coaches.find(c => String(c.id) === st.coaches[0]);
       const [y, m] = st.mes.split("-");
       const W = 210, X = 12;
-      const cab = () => {
-        pdf.setFillColor(13, 27, 69); pdf.rect(0, 0, W, 26, "F");
-        pdf.setTextColor(245, 197, 24); pdf.setFont("helvetica", "bold"); pdf.setFontSize(17);
-        pdf.text("REPORTE DE KILOMETRAJE", X, 12);
-        pdf.setTextColor(233, 238, 250); pdf.setFont("helvetica", "normal"); pdf.setFontSize(10);
-        pdf.text(`Nou Volei Alzira · Entrenador/a: ${coach ? coach.name : ""} · ${MESES[+m - 1]} ${y}`, X, 20);
-      };
+      const logo = typeof nvaLogoDataUrl === "function" ? await nvaLogoDataUrl() : null;
+      const cab = () => nvaPdfBand(pdf, logo, {
+        kicker: "Club Nou Vòlei Alzira",
+        title: "Reporte de kilometraje",
+        sub: `Entrenador/a: ${coach ? coach.name : ""}  ·  ${MESES[+m - 1]} ${y}`
+      });
       const cols = [{ t: "Fecha", w: 20 }, { t: "Hora", w: 11 }, { t: "Equipo", w: 36 }, { t: "Partido", w: 38 }, { t: "Recorrido", w: 64 }, { t: "Km", w: 17 }];
       const filaCab = (yy) => {
-        pdf.setFillColor(27, 58, 140); pdf.rect(X, yy - 4.5, W - 2 * X, 6.5, "F");
+        pdf.setFillColor(13, 27, 69); pdf.roundedRect(X, yy - 4.5, W - 2 * X, 6.5, 1.2, 1.2, "F");
         pdf.setTextColor(255); pdf.setFont("helvetica", "bold"); pdf.setFontSize(8.5);
         let x = X + 1.5; cols.forEach((c, i) => { pdf.text(c.t, i === cols.length - 1 ? x + c.w - 3 : x, yy, i === cols.length - 1 ? { align: "right" } : undefined); x += c.w; });
         return yy + 6;
@@ -360,8 +359,8 @@
         const celdas = [new Date(f.date + "T12:00:00").toLocaleDateString("es-ES"), f.time || "-", f.equipo, partido, f._ruta.join(" > "), f._km.toFixed(1).replace(".", ",")];
         const lineas = celdas.map((t, k) => pdf.splitTextToSize(String(t), cols[k].w - 3));
         const h = Math.max(...lineas.map(l => l.length)) * 3.6 + 2.4;
-        if (yy + h > 280) { pdf.addPage(); cab(); yy = filaCab(36); pdf.setFontSize(8); }
-        if (i % 2 === 0) { pdf.setFillColor(240, 243, 250); pdf.rect(X, yy - 3.6, W - 2 * X, h, "F"); }
+        if (yy + h > 278) { pdf.addPage(); cab(); yy = filaCab(36); pdf.setFontSize(8); }
+        if (i % 2 === 1) { pdf.setFillColor(246, 248, 253); pdf.rect(X, yy - 3.6, W - 2 * X, h, "F"); }
         if (f._encadenado) { pdf.setDrawColor(245, 197, 24); pdf.setLineWidth(0.8); pdf.line(X, yy - 3.6, X, yy - 3.6 + h); }
         pdf.setTextColor(30, 41, 59); pdf.setFont("helvetica", "normal");
         let x = X + 1.5;
@@ -373,15 +372,20 @@
         yy += h;
       });
       const total = s.reduce((a, f) => a + f._km, 0);
-      if (yy + 14 > 285) { pdf.addPage(); cab(); yy = 36; }
-      pdf.setDrawColor(13, 27, 69); pdf.setLineWidth(0.5); pdf.line(X, yy - 1, W - X, yy - 1);
-      pdf.setFont("helvetica", "bold"); pdf.setFontSize(12); pdf.setTextColor(13, 27, 69);
-      pdf.text(`TOTAL (${s.length} partido${s.length === 1 ? "" : "s"})`, X + 1.5, yy + 6);
-      pdf.setTextColor(214, 40, 57);
-      pdf.text(total.toFixed(1).replace(".", ",") + " km", W - X - 1.5, yy + 6, { align: "right" });
+      if (yy + 26 > 278) { pdf.addPage(); cab(); yy = 36; }
+      // Marcador del total
+      yy += 2;
+      pdf.setFillColor(13, 27, 69); pdf.roundedRect(X, yy, W - 2 * X, 14, 2, 2, "F");
+      pdf.setFillColor(245, 197, 24); pdf.rect(X, yy, 1.6, 14, "F");
+      pdf.setFont("helvetica", "bold"); pdf.setFontSize(7.5); pdf.setTextColor(245, 197, 24);
+      pdf.text("TOTAL DEL MES", X + 6, yy + 5.6, { charSpace: 0.5 });
+      pdf.setFont("helvetica", "normal"); pdf.setFontSize(9); pdf.setTextColor(233, 238, 250);
+      pdf.text(`${s.length} partido${s.length === 1 ? "" : "s"}`, X + 6, yy + 10.6);
+      pdf.setFont("helvetica", "bold"); pdf.setFontSize(18); pdf.setTextColor(255, 255, 255);
+      pdf.text(total.toFixed(1).replace(".", ",") + " km", W - X - 5, yy + 9.6, { align: "right" });
       pdf.setFont("helvetica", "normal"); pdf.setFontSize(7.5); pdf.setTextColor(110);
-      pdf.text("Salida y vuelta: Palau d'Esports (Alzira) salvo indicación. Partidos encadenados (barra amarilla): se va directo desde el campo anterior.", X, yy + 13);
-      pdf.text("Generado el " + new Date().toLocaleDateString("es-ES"), X, yy + 17);
+      pdf.text(pdf.splitTextToSize("Salida y vuelta: Palau d'Esports (Alzira) salvo indicación. Partidos encadenados (barra amarilla): se va directo desde el campo anterior.", W - 2 * X), X, yy + 19);
+      nvaPdfFooters(pdf);
       pdf.save(`Kilometraje_${sanitizeFileName(coach ? coach.name : "")}_${y}-${m}.pdf`);
     } catch (e) { alert("No se pudo crear el PDF: " + (e.message || e)); }
   }

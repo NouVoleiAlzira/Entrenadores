@@ -640,28 +640,39 @@
 
 </div>
 
+<!-- =====================================================================
+     PLANTILLAS OCULTAS DE LOS INFORMES PDF (diseño "Línea de Ataque")
+     Banda azul noche con el escudo, línea de ataque amarilla, marcadores
+     (KPI) y tablas/gráficos con la paleta del club. Se capturan con
+     html2canvas y se encajan en una página A4.
+     ===================================================================== -->
+
 <!-- CONTENEDOR OCULTO PARA EXPORTACIÓN A PDF ENTRENAMIENTO -->
-<div id="pdfReportExportArea">
-  <img src="LOGO-NVA.png" alt="Marca de Agua" class="pdf-watermark">
-
-  <div class="pdf-content-wrapper">
-    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #0052d4; padding-bottom: 12px; margin-bottom: 18px;">
-      <img src="LOGO-NVA.png" alt="Logo" style="height: 65px; width: auto;" id="pdfLogoImg">
-      <h1 style="font-size: 24px; color: #0052d4; flex: 1; text-align: center; font-weight: 800; margin: 0 10px; letter-spacing: 0.5px;">Club Nou Vòlei Alzira</h1>
+<div id="pdfReportExportArea" class="nva-pdf">
+  <img src="LOGO-NVA.png" alt="" class="pdf-watermark">
+  <div class="nva-pdf-head">
+    <div class="nva-pdf-bigtxt">NVA</div>
+    <div class="nva-pdf-logo"><img src="LOGO-NVA.png" alt="Logo" id="pdfLogoImg"></div>
+    <div class="nva-pdf-head-txt">
+      <div class="nva-pdf-club">Club Nou Vòlei Alzira</div>
+      <div class="nva-pdf-kicker">Informe de entrenamiento</div>
+      <h1 class="nva-pdf-title" id="pdfReportTeamTitle">Equipo</h1>
     </div>
+    <div class="nva-pdf-period"><span>Período</span><b id="pdfReportDateRange">-</b></div>
+  </div>
+  <div class="nva-pdf-attack"></div>
 
-    <div style="text-align: center; margin-bottom: 20px;">
-      <h2 id="pdfReportTeamTitle" style="font-size: 24px; color: #0f172a; margin-bottom: 8px; font-weight: 800;">Informe de Entrenamiento</h2>
-      <p id="pdfReportDateRange" style="font-size: 16px; color: #334155; margin: 0; font-weight: 700;">Período: -</p>
-    </div>
+  <div class="pdf-content-wrapper nva-pdf-body">
+    <div class="nva-kpis" id="pdfReportKpis"></div>
 
+    <div class="nva-sec">Resumen por jugadora</div>
     <table class="pdf-table">
       <thead>
         <tr>
           <th>Jugadora</th>
-          <th style="text-align: center;">Asistencia</th>
-          <th style="text-align: center;">Calidad Media</th>
-          <th style="text-align: center;">Strikes Totales</th>
+          <th style="width: 190px;">Asistencia</th>
+          <th style="text-align: center; width: 120px;">Calidad media</th>
+          <th style="text-align: center; width: 110px;">Strikes</th>
         </tr>
       </thead>
       <tbody id="pdfReportTableBody"></tbody>
@@ -669,72 +680,86 @@
 
     <div class="pdf-charts-row">
       <div class="pdf-chart-box">
-        <h4>Asistencia de Jugadoras por Día</h4>
-        <div style="height: 200px; position: relative;">
+        <h4>Jugadoras presentes por día</h4>
+        <div style="height: 190px; position: relative;">
           <canvas id="chartAttendanceCanvas"></canvas>
         </div>
       </div>
       <div class="pdf-chart-box">
-        <h4>Tendencia de Calidad de Entrenamientos</h4>
-        <div style="height: 200px; position: relative;">
+        <h4>Calidad media por sesión</h4>
+        <div style="height: 190px; position: relative;">
           <canvas id="chartQualityCanvas"></canvas>
         </div>
       </div>
     </div>
   </div>
+  <div class="nva-pdf-foot"><span class="nva-pdf-gen"></span><span class="nva-pdf-brand"><i></i>Nou Vòlei Alzira</span></div>
 </div>
 
 <!-- CONTENEDOR OCULTO PARA EXPORTACIÓN A PDF DE JUGADORA -->
-<div id="pdfPlayerExportArea">
-  <img src="LOGO-NVA.png" alt="Marca de Agua" class="pdf-watermark">
-
-  <div class="pdf-content-wrapper">
-    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #0052d4; padding-bottom: 12px; margin-bottom: 18px;">
-      <img src="LOGO-NVA.png" alt="Logo" style="height: 65px; width: auto;">
-      <h1 style="font-size: 24px; color: #0052d4; flex: 1; text-align: center; font-weight: 800; margin: 0 10px; letter-spacing: 0.5px;">Club Nou Vòlei Alzira</h1>
+<div id="pdfPlayerExportArea" class="nva-pdf">
+  <img src="LOGO-NVA.png" alt="" class="pdf-watermark">
+  <div class="nva-pdf-head">
+    <div class="nva-pdf-bigtxt">NVA</div>
+    <div class="nva-pdf-logo"><img src="LOGO-NVA.png" alt="Logo"></div>
+    <div class="nva-pdf-head-txt">
+      <div class="nva-pdf-club">Club Nou Vòlei Alzira</div>
+      <div class="nva-pdf-kicker">Informe de jugadora</div>
+      <h1 class="nva-pdf-title" id="pdfPlayerTitle">Jugadora</h1>
     </div>
-
-    <div style="text-align: center; margin-bottom: 16px;">
-      <h2 id="pdfPlayerTitle" style="font-size: 24px; color: #0f172a; margin: 0; font-weight: 800;">Informe de jugadora</h2>
-    </div>
-
-    <div class="pdf-player-info">
-      <p><b>Entrenador:</b> <span id="pdfPlayerCoach">-</span></p>
-      <p><b>Equipo y categoría:</b> <span id="pdfPlayerTeam">-</span></p>
-      <p><b>Período:</b> <span id="pdfPlayerPeriod">-</span></p>
-    </div>
-
-    <div class="pdf-chart-box" style="margin-top: 20px;">
-      <h4 id="pdfPlayerChartTitle">Tendencia de Calidad de Entrenamiento</h4>
-      <div style="height: 300px; position: relative;"><canvas id="chartPlayerQualityCanvas"></canvas></div>
-    </div>
-
-    <div class="pdf-chart-box" style="margin-top: 20px; text-align: left;">
-      <h4 style="text-align: center;">Comentarios</h4>
-      <table class="pdf-table" style="margin: 0;">
-        <thead><tr><th style="width: 105px;">Fecha</th><th>Comentario</th></tr></thead>
-        <tbody id="pdfPlayerCommentsBody"></tbody>
-      </table>
-    </div>
+    <div class="nva-pdf-period"><span>Período</span><b id="pdfPlayerPeriod">-</b></div>
   </div>
+  <div class="nva-pdf-attack"></div>
+
+  <div class="pdf-content-wrapper nva-pdf-body">
+    <div class="pdf-player-info">
+      <div><span>Equipo y categoría</span><b id="pdfPlayerTeam">-</b></div>
+      <div><span>Entrenador/a</span><b id="pdfPlayerCoach">-</b></div>
+    </div>
+
+    <div class="nva-kpis" id="pdfPlayerKpis"></div>
+
+    <div class="pdf-chart-box" style="margin-top: 18px;">
+      <h4 id="pdfPlayerChartTitle">Calidad de entrenamiento y strikes</h4>
+      <div style="height: 280px; position: relative;"><canvas id="chartPlayerQualityCanvas"></canvas></div>
+    </div>
+
+    <div class="nva-sec" style="margin-top: 22px;">Comentarios del entrenador/a</div>
+    <table class="pdf-table pdf-table-comments" style="margin: 0;">
+      <thead><tr><th style="width: 110px;">Fecha</th><th>Comentario</th></tr></thead>
+      <tbody id="pdfPlayerCommentsBody"></tbody>
+    </table>
+  </div>
+  <div class="nva-pdf-foot"><span class="nva-pdf-gen"></span><span class="nva-pdf-brand"><i></i>Nou Vòlei Alzira</span></div>
 </div>
 
 <!-- CONTENEDOR OCULTO PARA EXPORTACIÓN A PDF RESULTADOS DE PARTIDOS -->
 <div id="pdfResultsExportArea"></div>
 
 <!-- CONTENEDOR OCULTO PARA EXPORTACIÓN A PDF CONSULTAS -->
-<div id="pdfQueryExportArea">
-  <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #7e22ce; padding-bottom: 12px; margin-bottom: 18px;">
-    <img src="LOGO-NVA.png" alt="Logo" style="height: 65px; width: auto;">
-    <h1 style="font-size: 24px; color: #7e22ce; flex: 1; text-align: center; font-weight: 800; margin: 0 10px;">Club Nou Vòlei Alzira</h1>
+<div id="pdfQueryExportArea" class="nva-pdf">
+  <img src="LOGO-NVA.png" alt="" class="pdf-watermark">
+  <div class="nva-pdf-head">
+    <div class="nva-pdf-bigtxt">NVA</div>
+    <div class="nva-pdf-logo"><img src="LOGO-NVA.png" alt="Logo"></div>
+    <div class="nva-pdf-head-txt">
+      <div class="nva-pdf-club">Club Nou Vòlei Alzira</div>
+      <div class="nva-pdf-kicker">Consulta · Petición de dirección</div>
+      <h1 class="nva-pdf-title">Respuestas</h1>
+    </div>
+    <div class="nva-pdf-period"><span>Fecha</span><b id="pdfQueryDate">-</b></div>
   </div>
+  <div class="nva-pdf-attack"></div>
 
-  <div style="text-align: center; margin-bottom: 20px; background: #f8fafc; padding: 14px; border-radius: 10px; border: 1px solid #cbd5e1;">
-    <h3 style="font-size: 16px; color: #64748b; margin-bottom: 4px; font-weight: 700;">Consulta / Petición de Dirección</h3>
-    <h2 id="pdfQueryTextHeader" style="font-size: 20px; color: #0f172a; font-weight: 800;">-</h2>
+  <div class="pdf-content-wrapper nva-pdf-body">
+    <div class="nva-query-box">
+      <span>Consulta</span>
+      <h2 id="pdfQueryTextHeader">-</h2>
+    </div>
+    <div class="nva-kpis" id="pdfQueryKpis"></div>
+    <div id="pdfQueryTeamsContent"></div>
   </div>
-
-  <div id="pdfQueryTeamsContent"></div>
+  <div class="nva-pdf-foot"><span class="nva-pdf-gen"></span><span class="nva-pdf-brand"><i></i>Nou Vòlei Alzira</span></div>
 </div>
 
 
