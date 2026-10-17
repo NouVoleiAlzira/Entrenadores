@@ -325,15 +325,19 @@
   function engancharJsPdf() {
     const J = window.jspdf && window.jspdf.jsPDF;
     if (!J || J.API.__nvaShare) return;
-    const orig = J.API.save;
-    J.API.save = function (nombre) {
-      const r = orig.apply(this, arguments);
-      try {
-        const n = String(nombre || "documento.pdf").replace(/\.pdf$/i, "") + ".pdf";
-        const file = new File([this.output("blob")], n, { type: "application/pdf" });
-        setTimeout(() => ventanaWhatsApp(file), 300);
-      } catch (e) { console.warn("Compartir PDF:", e); }
-      return r;
+    // OJO: jsPDF crea «save» dentro de cada documento y luego copia encima lo de
+    // jsPDF.API, así que aquí no hay «save» original que llamar: se descarga a mano.
+    J.API.save = function (nombre, opciones) {
+      const n = String(nombre || "documento.pdf").replace(/\.pdf$/i, "") + ".pdf";
+      const blob = this.output("blob");
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = n; a.style.display = "none";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      try { setTimeout(() => ventanaWhatsApp(new File([blob], n, { type: "application/pdf" })), 300); }
+      catch (e) { console.warn("Compartir PDF:", e); }
+      return opciones && opciones.returnPromise ? Promise.resolve(this) : this;
     };
     J.API.__nvaShare = true;
   }
