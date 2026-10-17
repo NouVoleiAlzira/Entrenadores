@@ -105,7 +105,7 @@
         if (!m.date || m.date.slice(0, 7) !== mes || /DESCANSA/i.test(m.rival || "")) return;
         const home = m.home === true || /PALAU/i.test(m.venue || "");
         const c = campoDe(Object.assign({}, m, { home }));
-        out.push({ id: e.teamKey + "|" + m.date + "|" + m.time + "|" + m.rival, coach: coach.name, sust: !propio, equipo: e.name,
+        out.push({ id: e.teamKey + "|" + m.date + "|" + m.time + "|" + m.rival, key: e.teamKey, coach: coach.name, sust: !propio, equipo: e.name,
           date: m.date, time: m.time && m.time !== "00:00" ? m.time : "", rival: m.rival || "", home, venue: home ? CAMPOS[CASA] : (m.venue || ""),
           campo: c, kmMano: "", sel: propio, chain: false, salida: CASA });
       });
@@ -164,8 +164,15 @@
 
   // Km de cada partido elegido: ida (desde la salida o desde el partido anterior
   // si está encadenado) + vuelta a casa (si no se encadena con el siguiente).
+  // Partido bloqueado: no tiene registro del partido hecho (con jugadores/as).
+  // Un registro con solo el resultado no vale. Sus km no cuentan.
+  function tieneRegistro(f) {
+    const logs = typeof allMatchLogs !== "undefined" ? allMatchLogs : [];
+    return logs.some(l => l.equipo === f.key && l.fecha === f.date && Array.isArray(l.jugadores) && l.jugadores.length > 0);
+  }
   function calcular() {
-    const s = st.filas.filter(f => f.sel);
+    st.filas.forEach(f => { f._lock = !tieneRegistro(f); });
+    const s = st.filas.filter(f => f.sel && !f._lock);
     s.forEach((f, i) => {
       const prev = i > 0 && s[i - 1].chain ? s[i - 1] : null;
       const next = f.chain && i < s.length - 1;
@@ -195,6 +202,9 @@
       .km-list { overflow-y: auto; flex: 1; min-height: 120px; padding-right: 2px; }
       .km-row { position: relative; display: grid; grid-template-columns: 22px 1fr auto; gap: 6px; align-items: start; background: rgba(233,238,250,0.06); border: 1px solid var(--linea); border-radius: 10px; padding: 8px 8px 14px; margin-bottom: 10px; transition: margin .25s, border-radius .25s, opacity .2s; }
       .km-row.off { opacity: 0.45; }
+      .km-row.km-lock { opacity: 1; background: rgba(120,120,120,0.18); border-style: dashed; }
+      .km-row.km-lock .km-t, .km-row.km-lock .km-k { color: var(--niebla); }
+      .km-reg { margin-top: 6px; background: var(--balon); color: var(--noche); border: 0; border-radius: 8px; padding: 5px 10px; font: inherit; font-size: 0.72rem; font-weight: 700; cursor: pointer; filter: none; }
       .km-row.km-sigue { margin-bottom: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-bottom-color: transparent; }
       .km-row.km-viene { border-top-left-radius: 0; border-top-right-radius: 0; border-top: 1px dashed var(--balon); }
       .km-row .km-t { font-size: 0.8rem; line-height: 1.3; }
@@ -223,6 +233,16 @@
     const list = o.querySelector(".km-list");
     if (!st.filas.length) { list.innerHTML = `<div class="cp-modal-txt">No hay partidos de estos equipos en ${MESES[+st.mes.slice(5) - 1]}. Revisa que los calendarios estén cargados en «Equipos · PDF Competición».</div>`; }
     else list.innerHTML = st.filas.map((f, i) => {
+      if (f._lock) return `<div class="km-row km-lock" data-i="${i}">
+        <span title="Sin registro del partido">🔒</span>
+        <div>
+          <div class="km-t"><b>${esc(fmtDia(f.date))}${f.time ? " · " + esc(f.time) : ""}</b> · ${esc(f.equipo)}</div>
+          <div class="km-t">${f.home ? "🏠 vs " : "🚌 en "}${esc(f.rival)}${f.sust ? ` (sustituyendo a ${esc(f.coach)})` : ""}</div>
+          <div class="km-s">Sin registro del partido: sus km no cuentan.</div>
+          <button type="button" class="km-reg">📝 Hacer registro</button>
+        </div>
+        <div class="km-k">–<small>km</small></div>
+      </div>`;
       const k = f.sel ? s.indexOf(f) : -1;
       const hayNext = k >= 0 && k < s.length - 1;
       return `<div class="km-row${f.sel ? "" : " off"}${f._sigue && f.sel ? " km-sigue" : ""}${f._encadenado && f.sel ? " km-viene" : ""}" data-i="${i}">
@@ -248,12 +268,33 @@
     }).join("");
   }
 
-  window.openKilometrajeModal = function () {
+  // ---------- Ir al registro del partido y volver ----------
+  let volverAKm = false;
+  function abrirRegistro(f, o) {
+    const coach = appData.coaches.find(c => c.name === f.coach);
+    if (!coach) { alert("No encuentro al entrenador de este partido."); return; }
+    volverAKm = true;
+    o.remove();
+    selectCoachAndTeam(coach, f.key, f.equipo);
+    goToMatchScreen();
+    const picker = document.getElementById("matchDatePicker");
+    if (picker) { picker.value = f.date; initMatchData(); picker.dispatchEvent(new Event("change")); renderMatchPlayers(); }
+  }
+  const origGoBack = window.goBack;
+  window.goBack = async function () {
+    const vuelve = volverAKm && st;
+    volverAKm = false;
+    try { return await origGoBack.apply(this, arguments); }
+    finally { if (vuelve) window.openKilometrajeModal(true); }
+  };
+
+  window.openKilometrajeModal = function (volver) {
     if (!appData.coaches.length) { alert("No hay entrenadores."); return; }
     estilos();
     const hoy = new Date();
-    const primero = (typeof activeCoachId !== "undefined" && activeCoachId != null && appData.coaches.some(c => c.id == activeCoachId)) ? activeCoachId : appData.coaches[0].id;
-    st = { mes: `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`, coaches: [String(primero)], filas: [] };
+    const seguir = volver === true && st;
+    const primero = seguir ? st.coaches[0] : (typeof activeCoachId !== "undefined" && activeCoachId != null && appData.coaches.some(c => c.id == activeCoachId)) ? activeCoachId : appData.coaches[0].id;
+    if (!seguir) st = { mes: `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`, coaches: [String(primero)], filas: [] };
     const o = document.createElement("div");
     o.className = "cp-modal";
     const optsCoach = (sel) => appData.coaches.map(c => `<option value="${esc(c.id)}"${String(c.id) === String(sel) ? " selected" : ""}>${esc(c.name)}</option>`).join("");
@@ -303,6 +344,7 @@
     const fila = (e) => st.filas[+e.target.closest(".km-row").dataset.i];
     lista.addEventListener("click", (e) => {
       if (e.target.classList.contains("km-flecha")) { const f = fila(e); f.chain = !f.chain; pintar(o); }
+      if (e.target.classList.contains("km-reg")) abrirRegistro(fila(e), o);
     });
     lista.addEventListener("change", (e) => {
       const f = fila(e), t = e.target;
@@ -323,7 +365,9 @@
     };
     matrizGitHub().then(n => { if (n) recargar(true); });
     o.querySelector(".cp-modal-main").onclick = () => guardarPdf();
-    recargar(true);
+    if (seguir) { cargar(); pintar(o); } else recargar(true);
+    // Registros de partido al día (por si se hicieron desde otro dispositivo)
+    if (typeof fetchMatchLogsFromGitHub === "function") fetchMatchLogsFromGitHub().then(() => { if (o.isConnected) pintar(o); }).catch(() => {});
   };
 
   // ---------- PDF (jsPDF, A4 vertical) ----------
