@@ -2438,6 +2438,63 @@
                 : `del ${a.getDate()} de ${MONTH_NAMES[a.getMonth()]} al ${b.getDate()} de ${MONTH_NAMES[b.getMonth()]} del ${b.getFullYear()}`;
             return txt.toLowerCase();
         }
+        // Rango de fechas del nombre de un guardado: "Resultados del 26 de septiembre al 4 de octubre del 2026.json"
+        function rangoDeNombreGuardado(nombre) {
+            const txt = normEquipoAuto(nombre).toLowerCase();
+            const y = (txt.match(/\b(20\d\d)\b/) || [])[1];
+            const dias = [...txt.matchAll(/\b(\d{1,2}) de ([a-z]+)/g)]
+                .map(m => ({ d: +m[1], m: MONTH_NAMES.indexOf(m[2]) })).filter(x => x.m >= 0);
+            if (!y || !dias.length) return null;
+            const a = dias[0], b = dias[dias.length - 1];
+            const iso = (yy, x) => `${yy}-${String(x.m + 1).padStart(2, '0')}-${String(x.d).padStart(2, '0')}`;
+            return { desde: iso(a.m > b.m ? +y - 1 : +y, a), hasta: iso(+y, b) };
+        }
+        // Mismo equipo aunque el nombre esté escrito algo distinto ("CV VINAROS" / "GIL COMES CV VINARÒS")
+        function equipoParecido(a, b) {
+            const x = normEquipoAuto(a), y = normEquipoAuto(b);
+            return !!x && !!y && (x === y || x.includes(y) || y.includes(x));
+        }
+        // Si ya hay resultados guardados en GitHub de esas fechas, se recuperan las fotos de cada partido
+        async function recuperarFotosGuardadas(desde, hasta) {
+            const config = obtenerConfigGitHub();
+            if (!config || !navigator.onLine) return 0;
+            const resp = await fetch(ghContentsUrl(config), { headers: githubHeaders(config), cache: 'no-store' });
+            if (!resp.ok) return 0;
+            const archivos = (await resp.json() || []).filter(a => a.type === 'file' && /^Resultados.*\.json$/i.test(a.name))
+                .map(a => ({ name: a.name, r: rangoDeNombreGuardado(a.name) }))
+                .filter(a => a.r && a.r.desde <= hasta && a.r.hasta >= desde)
+                .sort((a, b) => b.name.localeCompare(a.name));
+            const guardadas = [];
+            for (const a of archivos) {
+                try {
+                    const d = JSON.parse(await ghDescargarArchivo(config, a.name, false));
+                    (d.cards || []).forEach(c => { if (c.photo && c.photo.file) guardadas.push(c); });
+                } catch (e) { console.warn('No se ha podido leer', a.name, e); }
+            }
+            if (!guardadas.length) return 0;
+            const usadas = new Set(), fotos = {};
+            let n = 0;
+            for (const card of mainContent.querySelectorAll('.match-card-container')) {
+                if (tarjetaTieneFoto(card)) continue;
+                const t = serializarTarjeta(card);
+                const g = guardadas.find(c => !usadas.has(c) &&
+                    (!c.category || !t.category || normEquipoAuto(c.category) === normEquipoAuto(t.category)) &&
+                    (!c.matchDate || !t.matchDate || normEquipoAuto(c.matchDate) === normEquipoAuto(t.matchDate)) &&
+                    ((equipoParecido(c.homeTeam, t.homeTeam) && equipoParecido(c.awayTeam, t.awayTeam)) ||
+                     (equipoParecido(c.homeTeam, t.awayTeam) && equipoParecido(c.awayTeam, t.homeTeam))));
+                if (!g) continue;
+                try {
+                    if (!fotos[g.photo.file]) {
+                        let blob = await ghDescargarArchivo(config, g.photo.file, true);
+                        if (!/^image\//.test(blob.type)) blob = new Blob([blob], { type: 'image/jpeg' });
+                        fotos[g.photo.file] = await blobADataUrl(blob);
+                    }
+                    aplicarFotoATarjeta(card, g.photo, fotos[g.photo.file]);
+                    usadas.add(g); n++;
+                } catch (e) { console.warn('No se ha podido descargar la foto', g.photo.file, e); }
+            }
+            return n;
+        }
         async function cargarResultadosAutomaticos(datos) {
             await tryAutoLoadExcel();
             mainContent.innerHTML = '';
@@ -2473,7 +2530,13 @@
             updateAddFirstButtonVisibility();
             saveAppState();
             requestAnimationFrame(() => setTimeout(() => { fitCalendarText(); refreshAllTeamTexts(); }, 150));
+            let nFotos = 0;
+            if (fechas.length) {
+                try { nFotos = await recuperarFotosGuardadas(fechas[0], fechas[fechas.length - 1]); }
+                catch (e) { console.warn('No se han podido recuperar las fotos guardadas', e); }
+            }
             showToast(`Cargados ${partidos.length} resultado(s) desde el calendario de partidos.` +
+                (nFotos ? ` Recuperada(s) ${nFotos} foto(s) de un guardado anterior.` : '') +
                 (sinFicha.length ? ` Sin ficha en DATOS.xls: ${sinFicha.join(', ')}.` : ''), sinFicha.length > 0);
         }
 

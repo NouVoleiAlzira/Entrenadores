@@ -12,6 +12,7 @@
   const CP_LOCAL = "NVA_CALENDARIO_PARTIDOS";
   const CP_OPEN = "NVA_SEC_CAL_OPEN";
   let cp = loadLocal();
+  setTimeout(() => { if (revisarEstadosCambios()) { saveLocal(); render(); } }, 0);
 
   function loadLocal() {
     try { const d = JSON.parse(localStorage.getItem(CP_LOCAL)); if (d && d.teams) return d; } catch (e) {}
@@ -760,6 +761,7 @@
     if (same) {
       const now = new Date().toISOString();
       prev.changeStatus = "sin";
+      migrarClaves(key, prev.matches, matches);
       prev.matches = matches;   // mismos partidos; se guarda el texto nuevo (p. ej. con los resultados)
       prev.changedAt = prev.changedAt || prev.uploadedAt;
       prev.checkedAt = now;
@@ -786,25 +788,62 @@
     return `«${fed}», ${matches.length} partidos · ${prev ? "con cambios" : "nuevo"}`;
   }
 
-  // Detalle de los cambios: se emparejan los partidos por rival y campo (local/visitante)
-  // y se anotan los añadidos, los quitados y los que cambian de fecha, hora o pabellón.
+  // Detalle de los cambios. Solo cuentan los cambios de FECHA, HORA o CAMPO (pabellón);
+  // otras diferencias del PDF (nombre del rival, resultados...) no son cambios.
+  // Los partidos se emparejan por jornada y local/visitante, o por rival parecido.
+  const nrm = (t) => normalizeTeamName(t || "");
+  function rivalLike(a, b) {
+    const x = nrm(a), y = nrm(b);
+    if (!x || !y) return x === y;   // los dos sin rival (p. ej. partido aún sin rival asignado)
+    return x === y || x.startsWith(y) || y.startsWith(x);
+  }
+  function venueChanged(o, n) {
+    const ov = nrm(o.venue), nv = nrm(n.venue);
+    if (!nv || ov === nv) return false;                 // sin campo en el PDF nuevo: no se considera cambio
+    if (!ov && nrm(o.rival).includes(nv)) return false; // antes el campo venía pegado al nombre del rival
+    return true;
+  }
+  function significantChange(o, n) {
+    return o.date !== n.date || (o.time || "") !== (n.time || "") || venueChanged(o, n);
+  }
+  function pairMatches(oldList, newList) {
+    const olds = (oldList || []).slice(), used = new Set(), pairs = [], adds = [];
+    (newList || []).forEach(n => {
+      let best = -1, bestScore = 0;
+      olds.forEach((o, k) => {
+        if (used.has(k) || !!o.home !== !!n.home) return;
+        let sc = 0;
+        if (o.jornada && n.jornada && String(o.jornada) === String(n.jornada)) sc += 4;
+        if (rivalLike(o.rival, n.rival)) sc += 2;
+        if (!sc) return;
+        if (o.date === n.date) sc += 1;
+        if (sc > bestScore) { bestScore = sc; best = k; }
+      });
+      if (best >= 0) { used.add(best); pairs.push([olds[best], n]); } else adds.push(n);
+    });
+    return { pairs, adds, dels: olds.filter((o, k) => !used.has(k)) };
+  }
   function diffMatches(oldList, newList) {
     const slim = (m) => ({ date: m.date, time: m.time, rival: m.rival, home: !!m.home, venue: m.venue || "" });
-    const pk = (m) => `${normalizeTeamName(m.rival)}|${m.home ? 1 : 0}`;
-    const sig = (m) => [m.date, m.time, m.venue || ""].join("|");
-    const olds = (oldList || []).slice(), out = [];
-    const used = new Set();
-    (newList || []).forEach(n => {
-      // primero uno idéntico, si no el mismo rival y campo
-      let i = olds.findIndex((o, k) => !used.has(k) && pk(o) === pk(n) && sig(o) === sig(n));
-      if (i >= 0) { used.add(i); return; }
-      i = olds.findIndex((o, k) => !used.has(k) && pk(o) === pk(n));
-      if (i >= 0) { used.add(i); out.push({ type: "mod", before: slim(olds[i]), after: slim(n) }); }
-      else out.push({ type: "add", after: slim(n) });
-    });
-    olds.forEach((o, k) => { if (!used.has(k)) out.push({ type: "del", before: slim(o) }); });
+    const r = pairMatches(oldList, newList), out = [];
+    r.pairs.forEach(([o, n]) => { if (significantChange(o, n)) out.push({ type: "mod", before: slim(o), after: slim(n) }); });
+    r.adds.forEach(n => out.push({ type: "add", after: slim(n) }));
+    r.dels.forEach(o => out.push({ type: "del", before: slim(o) }));
     const d = (c) => (c.after || c.before).date + (c.after || c.before).time;
     return out.sort((a, b) => d(a).localeCompare(d(b)));
+  }
+  // Los «con cambios» guardados con la regla anterior se revisan con la regla nueva
+  function revisarEstadosCambios() {
+    let tocado = false;
+    Object.values(cp.teams || {}).forEach(info => {
+      if (info.changeStatus !== "con" || !Array.isArray(info.changes)) return;
+      const ch = info.changes.filter(c => c.type !== "mod" || significantChange(c.before, c.after));
+      if (ch.length === info.changes.length) return;
+      info.changes = ch;
+      if (!ch.length) info.changeStatus = "sin";
+      tocado = true;
+    });
+    return tocado;
   }
 
   window.cpShowChanges = function (btn) {
@@ -830,10 +869,18 @@
     document.body.appendChild(o);
   };
 
-  // Compara dos listas de partidos sin tener en cuenta el orden.
+  // ¿Son los mismos partidos? (sin cambios de fecha, hora ni campo)
   function sameMatches(a, b) {
-    const norm = (list) => (list || []).map(m => [m.date, m.time, m.rival, m.home ? 1 : 0, m.venue || "", m.jornada || ""].join("|")).sort().join("\n");
-    return norm(a) === norm(b);
+    return diffMatches(a, b).length === 0;
+  }
+  // Si el PDF escribe distinto el rival o la jornada, los partidos movidos y los cambios
+  // local/visitante del equipo siguen apuntando al mismo partido.
+  function migrarClaves(key, oldList, newList) {
+    pairMatches(oldList, newList).pairs.forEach(([o, n]) => {
+      const a = moveKey(key, o), b = moveKey(key, n);
+      if (a === b) return;
+      [cp.moved, cp.homeOv].forEach(map => { if (map && a in map && !(b in map)) { map[b] = map[a]; delete map[a]; } });
+    });
   }
 
   // ---------- Iden de cada equipo y actualización automática desde la federación ----------
@@ -1177,7 +1224,7 @@
       const res = await fetch(`https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${CP_FILE}`, { headers, cache: "no-store" });
       if (!res.ok) return;
       const data = JSON.parse(b64_to_utf8((await res.json()).content));
-      if (data && data.teams) { cp = data; saveLocal(); render(); }
+      if (data && data.teams) { cp = data; revisarEstadosCambios(); saveLocal(); render(); }
     } catch (e) { console.error(`Error al cargar ${CP_FILE}:`, e); }
   }
 
