@@ -247,6 +247,7 @@
     const rows = planned.filter(m => (!from || m.date >= from) && (!to || m.date <= to))
       .sort((a, b) => (a.date + toHHMM(a.start)).localeCompare(b.date + toHHMM(b.start)));
     lastProposals = rows.filter(m => m.placed && !m.moved);
+    lastConfirmed = rows.filter(m => hasTime(m) && !m.moved);   // fecha y hora oficiales, sin mover
     const ids = new Set(rows.map(m => m.id));
     const shownWarns = warns.filter(w => w.ids.some(i => ids.has(i)));
     const warnOf = {};
@@ -349,7 +350,7 @@
     }
   }
   // ---------- Lista de cambios realizados (movimientos y cambios de campo) ----------
-  let changesOpen = false, changesAll = false, lastProposals = [];
+  let changesOpen = false, changesAll = false, lastProposals = [], lastConfirmed = [];
   function selRange() {
     const f = document.getElementById("cpFrom"), t = document.getElementById("cpTo");
     return { from: f ? f.value : "", to: t ? t.value : "" };
@@ -384,7 +385,7 @@
     const filt = `<div class="cp-change-actions"><button type="button" class="cp-tl-btn"${changesAll ? "" : ' style="background:var(--balon);color:var(--noche);border-color:var(--balon)"'} onclick="cpChangesScope(false)">Fechas seleccionadas</button>
          <button type="button" class="cp-tl-btn"${changesAll ? ' style="background:var(--balon);color:var(--noche);border-color:var(--balon)"' : ""} onclick="cpChangesScope(true)">TODOS</button></div>`;
     const pdfBtn = `<div class="cp-change-actions"><button type="button" class="cp-tl-btn" onclick="cpChangesPdf()">📄 Crear PDF</button></div>`;
-    if (!ch.length) return filt + `<div class="cp-empty">No hay cambios${changesAll ? "" : " en las fechas seleccionadas"}. Mantén pulsado un partido para moverlo, o usa «Pasar a local/visitante» en la lista.</div>` + (lastProposals.length ? pdfBtn : "");
+    if (!ch.length) return filt + `<div class="cp-empty">No hay cambios${changesAll ? "" : " en las fechas seleccionadas"}. Mantén pulsado un partido para moverlo, o usa «Pasar a local/visitante» en la lista.</div>` + (lastProposals.length || lastConfirmed.length ? pdfBtn : "");
     return filt + ch.map(c => `<div class="cp-change"><div class="cp-change-txt"><b>${esc(c.vs)}</b>${c.items.map(i => `<div>${esc(i)}</div>`).join("")}</div>
         <button type="button" class="cp-change-undo" data-mk="${esc(c.mk)}" onclick="cpUndoChange(this)" title="Deshacer">↺</button></div>`).join("")
       + `<div class="cp-change-actions"><button type="button" class="cp-tl-btn" onclick="cpChangesPdf()">📄 Crear PDF</button>
@@ -404,8 +405,14 @@
   };
   window.cpChangesPdf = async function () {
     const ch = changeList();
+    // Partido entre dos equipos del club: sale una sola vez
+    const conf = [], nT = (t) => normalizeTeamName(t || "");
+    lastConfirmed.forEach(m => {
+      if (conf.some(k => k.date === m.date && k.time === m.time && nT(k.team).startsWith(nT(m.rival)) && nT(m.team).startsWith(nT(k.rival)))) return;
+      conf.push(m);
+    });
     const props = lastProposals.slice();
-    if (!ch.length && !props.length) return;
+    if (!ch.length && !props.length && !conf.length) return;
     try {
       if (typeof mostrarCargando === "function") mostrarCargando("Creando PDF...");
       await ensureExportLibs();
@@ -450,6 +457,23 @@
           pdf.text(`${m.team} ${isHome(m) ? "vs" : "en"} ${m.rival || "?"}`, M + 8, y); y += 5.5;
           pdf.setFont("helvetica", "normal"); pdf.setFontSize(10); pdf.setTextColor(51, 65, 85);
           pdf.text(`Propuesta: ${whenTxt(m.date, toHHMM(m.start))}${isHome(m) ? " (local)" : " (visitante)"}`, M + 8, y); y += 7.5;
+        });
+      }
+      if (conf.length) {
+        if (y + 20 > 278) { pdf.addPage(); y = cab() + 12; }
+        y += 4;
+        seccion("Fechas confirmadas");
+        conf.forEach((m, i) => {
+          if (y + 11 > 278) { pdf.addPage(); y = cab() + 12; }
+          pdf.setFillColor(31, 157, 85); pdf.circle(M + 2.6, y - 1.3, 2.6, "F");
+          pdf.setFont("helvetica", "bold"); pdf.setFontSize(7.5); pdf.setTextColor(255, 255, 255);
+          pdf.text(String(i + 1), M + 2.6, y - 0.2, { align: "center" });
+          pdf.setFontSize(11); pdf.setTextColor(13, 27, 69);
+          pdf.text(`${m.team} ${isHome(m) ? "vs" : "en"} ${m.rival || "?"}`, M + 8, y); y += 5.5;
+          pdf.setFont("helvetica", "normal"); pdf.setFontSize(10); pdf.setTextColor(51, 65, 85);
+          const lugar = isHome(m) ? " (local)" : " (visitante)";
+          const ls = pdf.splitTextToSize(`${whenTxt(m.date, m.time)}${lugar}${m.venue ? " · " + m.venue.replace(/([A-Za-zÀ-ÿ]),(?=[A-Za-zÀ-ÿ])/g, "$1'") : ""}`, W - 2 * M - 8);
+          pdf.text(ls, M + 8, y); y += 7.5 + (ls.length - 1) * 4.5;
         });
       }
       nvaPdfFooters(pdf);
