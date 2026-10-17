@@ -124,6 +124,8 @@
         filas.push(Object.assign(f, viejas.get(f.id) ? pick(viejas.get(f.id)) : {}));
       });
     });
+    // Otros eventos añadidos a mano (solo los del mes elegido)
+    (st.filas || []).forEach(f => { if (f.evento && f.date && f.date.slice(0, 7) === st.mes) filas.push(f); });
     filas.sort((a, b) => (a.date + (a.time || "99:99")).localeCompare(b.date + (b.time || "99:99")));
     st.filas = filas;
   }
@@ -133,7 +135,7 @@
   const claveLocal = () => "NVA_KM_" + archivo();
   function datosGuardar() {
     return { coaches: st.coaches.slice(), mes: st.mes, guardado: new Date().toISOString(),
-      filas: st.filas.map(f => Object.assign({ id: f.id }, pick(f), { campoN: CAMPOS[f.campo] || "", salidaN: CAMPOS[f.salida] || "" })), total: +calcular().reduce((a, f) => a + f._km, 0).toFixed(1) };
+      filas: st.filas.map(f => Object.assign({ id: f.id }, f.evento ? datosEvento(f) : {}, pick(f), { campoN: CAMPOS[f.campo] || "", salidaN: CAMPOS[f.salida] || "" })), total: +calcular().reduce((a, f) => a + f._km, 0).toFixed(1) };
   }
   function aplicar(d) {
     if (!d || !Array.isArray(d.filas)) return false;
@@ -160,6 +162,7 @@
     alert(ok ? "Reporte de kilometraje guardado y sincronizado en GitHub." : "Guardado en este dispositivo. Se sincronizará con GitHub cuando haya conexión.");
   }
 
+  const datosEvento = (f) => ({ evento: true, date: f.date, time: f.time, concepto: f.concepto, ciudad: f.ciudad, equipo: "Otro evento", rival: f.concepto, venue: f.ciudad, home: false, coach: f.coach, sust: false });
   const pick = (o) => ({ sel: o.sel, chain: o.chain, salida: o.salida, campo: o.campo, kmMano: o.kmMano });
 
   // Km de cada partido elegido: ida (desde la salida o desde el partido anterior
@@ -167,6 +170,7 @@
   // Partido bloqueado: no tiene registro del partido hecho (con jugadores/as).
   // Un registro con solo el resultado no vale. Sus km no cuentan.
   function tieneRegistro(f) {
+    if (f.evento) return true;
     const logs = typeof allMatchLogs !== "undefined" ? allMatchLogs : [];
     return logs.some(l => l.equipo === f.key && l.fecha === f.date && Array.isArray(l.jugadores) && l.jugadores.length > 0);
   }
@@ -249,7 +253,7 @@
         <input type="checkbox" class="km-sel" ${f.sel ? "checked" : ""}>
         <div>
           <div class="km-t"><b>${esc(fmtDia(f.date))}${f.time ? " · " + esc(f.time) : ""}</b> · ${esc(f.equipo)}</div>
-          <div class="km-t">${f.home ? "🏠 vs " : "🚌 en "}${esc(f.rival)}${f.sust ? ` <span class="km-aviso">(sustituyendo a ${esc(f.coach)})</span>` : ""}</div>
+          ${f.evento ? `<div class="km-t">📌 ${esc(f.concepto)}${f.campo < 0 && f.ciudad ? " · " + esc(f.ciudad) : ""} <button type="button" class="km-ev-del" title="Quitar evento" style="background:none;border:0;color:var(--niebla);cursor:pointer;font-size:0.75rem">✕</button></div>` : `<div class="km-t">${f.home ? "🏠 vs " : "🚌 en "}${esc(f.rival)}${f.sust ? ` <span class="km-aviso">(sustituyendo a ${esc(f.coach)})</span>` : ""}</div>`}
           ${f.home ? "" : `<select class="km-campo" title="Campo del partido">${opcionesCampos(f.campo, true)}</select>${f.campo < 0 && f.venue ? `<div class="km-s">PDF: ${esc(f.venue)}</div>` : ""}`}
           ${f.sel && !f._encadenado ? `<div class="km-s">Salida: <select class="km-salida">${opcionesCampos(f.salida, false)}</select></div>` : ""}
           ${f.sel ? `<div class="km-s">${f._ruta.map(esc).join(" → ")}</div>` : ""}
@@ -266,6 +270,55 @@
       const c = appData.coaches.find(x => String(x.id) === String(id));
       return c ? `<span class="km-chip">+ ${esc(c.name)} <button data-id="${esc(id)}" title="Quitar">✕</button></span>` : "";
     }).join("");
+  }
+
+  // ---------- Otro evento (desplazamiento que no es un partido) ----------
+  function nuevoEvento(o) {
+    const w = document.createElement("div");
+    w.className = "cp-modal";
+    w.style.zIndex = "100005";
+    const [y, m] = st.mes.split("-");
+    const hoy = new Date().toISOString().slice(0, 10);
+    const ultimo = new Date(+y, +m, 0).getDate();
+    const fecha = hoy.slice(0, 7) === st.mes ? hoy : `${st.mes}-01`;
+    const coach = appData.coaches.find(c => String(c.id) === st.coaches[0]);
+    w.innerHTML = `<div class="cp-modal-box km-box" style="max-width:400px">
+      <div class="cp-modal-title">📌 Otro evento</div>
+      <div class="km-top"><input type="text" class="ev-concepto" placeholder="Concepto (p. ej. Reunión federación)" style="flex:1"></div>
+      <div class="km-top"><input type="date" class="ev-fecha" value="${fecha}" min="${st.mes}-01" max="${st.mes}-${String(ultimo).padStart(2, "0")}" style="flex:1"><input type="time" class="ev-hora"></div>
+      <div class="km-top"><select class="ev-campo" style="flex:1"><option value="-1">— Otra ciudad (km a mano) —</option>${CAMPOS.map((c, i) => `<option value="${i}">${esc(c)}</option>`).join("")}</select></div>
+      <div class="km-top ev-manual"><input type="text" class="ev-ciudad" placeholder="Ciudad" style="flex:1"><input type="text" class="ev-km" inputmode="decimal" placeholder="km" style="width:70px;text-align:right"></div>
+      <div class="km-s ev-auto" style="display:none;font-size:0.8rem"></div>
+      <div class="cp-modal-row">
+        <button class="cp-modal-btn cp-modal-stop">Cancelar</button>
+        <button class="cp-modal-btn cp-modal-main">Incluir en el reporte</button>
+      </div>
+    </div>`;
+    document.body.appendChild(w);
+    const $ = (c) => w.querySelector(c);
+    const pintaCampo = () => {
+      const c = +$(".ev-campo").value;
+      $(".ev-manual").style.display = c < 0 ? "" : "none";
+      $(".ev-auto").style.display = c < 0 ? "none" : "";
+      if (c >= 0) $(".ev-auto").textContent = `🚗 ${CAMPOS[CASA]} → ${CAMPOS[c]} → ${CAMPOS[CASA]}: ${(km(CASA, c) + km(c, CASA)).toFixed(1).replace(".", ",")} km`;
+    };
+    $(".ev-campo").onchange = pintaCampo;
+    $(".cp-modal-stop").onclick = () => w.remove();
+    $(".cp-modal-main").onclick = () => {
+      const concepto = $(".ev-concepto").value.trim(), date = $(".ev-fecha").value, campo = +$(".ev-campo").value;
+      const ciudad = $(".ev-ciudad").value.trim(), kmMano = $(".ev-km").value.trim();
+      if (!concepto) { alert("Escribe el concepto del evento."); return; }
+      if (!date || date.slice(0, 7) !== st.mes) { alert("Elige una fecha del mes del reporte."); return; }
+      if (campo < 0 && (!ciudad || !(parseFloat(kmMano.replace(",", ".")) >= 0))) { alert("Escribe la ciudad y los km."); return; }
+      const f = Object.assign(datosEvento({ date, time: $(".ev-hora").value, concepto, ciudad: campo < 0 ? ciudad : "", coach: coach ? coach.name : "" }),
+        { id: "ev|" + Date.now(), campo, kmMano: campo < 0 ? kmMano : "", sel: true, chain: false, salida: CASA });
+      st.filas.push(f);
+      st.filas.sort((a, b) => (a.date + (a.time || "99:99")).localeCompare(b.date + (b.time || "99:99")));
+      w.remove();
+      pintar(o);
+    };
+    pintaCampo();
+    $(".ev-concepto").focus();
   }
 
   // ---------- Ir al registro del partido y volver ----------
@@ -301,7 +354,7 @@
     o.innerHTML = `<div class="cp-modal-box km-box">
       <div class="cp-modal-title">🚗 Reporte Kilometraje</div>
       <div class="km-top"><select class="km-coach" title="Entrenador">${optsCoach(primero)}</select><input type="month" class="km-mes" value="${st.mes}"></div>
-      <div class="km-top"><button type="button" class="cp-modal-btn km-otro" style="flex:none;font-size:0.72rem;padding:5px 8px;">➕ Partidos de otro entrenador</button><span class="km-chips"></span></div>
+      <div class="km-top"><button type="button" class="cp-modal-btn km-otro" style="flex:none;font-size:0.72rem;padding:5px 8px;">➕ Partidos de otro entrenador</button><button type="button" class="cp-modal-btn km-evento" style="flex:none;font-size:0.72rem;padding:5px 8px;">➕ Otro evento</button><span class="km-chips"></span></div>
       <div class="km-list"></div>
       <div class="km-total"><span>TOTAL <small class="km-num" style="font-size:0.8rem;color:var(--niebla)"></small></span><b class="km-sum"></b></div>
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
@@ -342,7 +395,9 @@
     o.querySelector(".km-chips").onclick = (e) => { const b = e.target.closest("button[data-id]"); if (b) { st.coaches = st.coaches.filter(x => x !== b.dataset.id); recargar(); } };
     const lista = o.querySelector(".km-list");
     const fila = (e) => st.filas[+e.target.closest(".km-row").dataset.i];
+    o.querySelector(".km-evento").onclick = () => nuevoEvento(o);
     lista.addEventListener("click", (e) => {
+      if (e.target.classList.contains("km-ev-del")) { const f = fila(e); if (confirm(`¿Quitar el evento «${f.concepto}»?`)) { st.filas = st.filas.filter(x => x !== f); pintar(o); } return; }
       if (e.target.classList.contains("km-flecha")) { const f = fila(e); f.chain = !f.chain; pintar(o); }
       if (e.target.classList.contains("km-reg")) abrirRegistro(fila(e), o);
     });
@@ -399,7 +454,7 @@
       let yy = filaCab(36);
       pdf.setFontSize(8);
       s.forEach((f, i) => {
-        const partido = (f.home ? "vs " : "en ") + f.rival + (f.sust ? ` (sust. a ${f.coach})` : "");
+        const partido = f.evento ? f.concepto : (f.home ? "vs " : "en ") + f.rival + (f.sust ? ` (sust. a ${f.coach})` : "");
         const celdas = [new Date(f.date + "T12:00:00").toLocaleDateString("es-ES"), f.time || "-", f.equipo, partido, f._ruta.join(" > "), f._km.toFixed(1).replace(".", ",")];
         const lineas = celdas.map((t, k) => pdf.splitTextToSize(String(t), cols[k].w - 3));
         const h = Math.max(...lineas.map(l => l.length)) * 3.6 + 2.4;
