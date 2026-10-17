@@ -142,8 +142,9 @@
 
   // ---------- Dibujo con jsPDF (A4 apaisado, una página por equipo) ----------
   const C = {
-    gris: [128, 128, 128], grisOsc: [90, 90, 90], borde: [40, 40, 40], azul: [68, 114, 196], gris2: [160, 160, 160],
-    rojo: [220, 38, 38], propio: [204, 255, 153], propioCel: [226, 255, 204], club: [255, 204, 153], clubCel: [255, 255, 204]
+    gris: [27, 58, 140], grisOsc: [90, 90, 90], borde: [190, 199, 220], azul: [27, 58, 140], gris2: [160, 168, 184],
+    rojo: [214, 40, 57], propio: [245, 197, 24], propioCel: [254, 245, 205], club: [190, 210, 250], clubCel: [234, 241, 254],
+    noche: [13, 27, 69], diag: [226, 231, 243]
   };
   const fmtFecha = (iso) => { const [y, m, d] = iso.split("-"); return `${+d}-${+m}-${y.slice(2)}`; };
 
@@ -155,7 +156,7 @@
     return txt + "…";
   }
 
-  function dibujar(pdf, key, d) {
+  function dibujar(pdf, key, d, logo) {
     const W = 297, H = 210, M = 7;
     const propio = equipoPropio(key, d.clasificacion.map(c => c.nombre));
     const equipos = d.clasificacion.map(c => c.nombre).filter(n => n !== "DESCANSA");
@@ -165,25 +166,24 @@
     const cat = ((d.titulo.match(/ALEV[IÍ]N|INFANTIL|CADETE|JUVENIL|J[UÚ]NIOR|SENIOR|S[EÉ]NIOR/i) || [])[0] || (t ? t.category : "")).toUpperCase();
 
     // Cabecera
-    pdf.setFont("helvetica", "bold"); pdf.setTextColor(30, 60, 114);
-    pdf.setFontSize(13); pdf.text(`${key} · Partidos y Resultados`, M, M + 4);
-    pdf.setFont("helvetica", "normal"); pdf.setFontSize(8); pdf.setTextColor(80);
-    pdf.text(`${d.titulo}${d.impreso ? "   ·   Datos fvbcv.com del " + d.impreso : ""}`, M, M + 9);
+    const yBand = typeof nvaPdfBand === "function"
+      ? nvaPdfBand(pdf, logo, { kicker: "Club Nou Vòlei Alzira · Partidos y resultados", title: key, sub: `${d.titulo}${d.impreso ? "   ·   Datos fvbcv.com del " + d.impreso : ""}`, h: 20 })
+      : M + 10;
 
     // Cuadrante
-    const x0 = M, y0 = M + 13, anchoGrid = 205;
+    const x0 = M, y0 = yBand + 4, anchoGrid = 205;
     const cab = 30, cabX = 32;
     const cw = (anchoGrid - cabX) / n;
-    const ch = Math.min(15, (H - M - y0 - cab) / n);
+    const ch = Math.min(15, (H - 12 - y0 - cab) / n);
     const fondo = (nom, cel) => nom === propio ? (cel ? C.propioCel : C.propio) : esClub(nom) ? (cel ? C.clubCel : C.club) : null;
     pdf.setDrawColor(...C.borde); pdf.setLineWidth(0.15);
 
     // Esquina con diagonal
-    pdf.setFillColor(...C.gris); pdf.rect(x0, y0, cabX, cab, "FD");
-    pdf.line(x0, y0, x0 + cabX, y0 + cab);
-    pdf.setTextColor(0); pdf.setFont("helvetica", "bold");
+    pdf.setFillColor(...C.noche); pdf.rect(x0, y0, cabX, cab, "FD");
+    pdf.setDrawColor(255); pdf.line(x0, y0, x0 + cabX, y0 + cab); pdf.setDrawColor(...C.borde);
+    pdf.setTextColor(245, 197, 24); pdf.setFont("helvetica", "bold");
     pdf.text(encajar(pdf, cat || "LIGA", cabX - 3, 12, 6), x0 + 1.5, y0 + 6);
-    pdf.setFont("helvetica", "normal"); pdf.setFontSize(6.5);
+    pdf.setFont("helvetica", "normal"); pdf.setFontSize(6.5); pdf.setTextColor(233, 238, 250);
     const ang = Math.atan(cab / cabX) * 180 / Math.PI;
     pdf.text("VISITANTE", x0 + cabX * 0.55, y0 + cab * 0.42, { angle: -ang });
     pdf.text("LOCAL", x0 + cabX * 0.30, y0 + cab * 0.62, { angle: -ang });
@@ -204,7 +204,7 @@
 
     equipos.forEach((loc, i) => equipos.forEach((vis, j) => {
       const cx = x0 + cabX + j * cw, ry = y0 + cab + i * ch;
-      if (i === j) { pdf.setFillColor(...C.gris); pdf.rect(cx, ry, cw, ch, "FD"); return; }
+      if (i === j) { pdf.setFillColor(...C.diag); pdf.rect(cx, ry, cw, ch, "FD"); return; }
       const bg = (loc === propio || vis === propio) ? C.propioCel : (esClub(loc) || esClub(vis)) ? C.clubCel : [255, 255, 255];
       pdf.setFillColor(...bg); pdf.rect(cx, ry, cw, ch, "FD");
       const ps = d.partidos.filter(p => p.local === loc && p.visitante === vis);
@@ -224,7 +224,7 @@
         pdf.text(encajar(pdf, `(${p.sets})`, cw - 1, 3.6, 2.5), cx + cw / 2, ry + ch - 0.9, { align: "center" });
       }
     }));
-    pdf.setLineWidth(0.5); pdf.rect(x0, y0, anchoGrid, cab + n * ch);
+    pdf.setDrawColor(...C.noche); pdf.setLineWidth(0.5); pdf.rect(x0, y0, anchoGrid, cab + n * ch);
     pdf.line(x0 + cabX, y0, x0 + cabX, y0 + cab + n * ch); pdf.line(x0, y0 + cab, x0 + anchoGrid, y0 + cab);
 
     // Clasificación
@@ -234,15 +234,15 @@
     const rh = 6.5;
     let y = y0;
     pdf.setLineWidth(0.15);
-    pdf.setFillColor(30, 60, 114); pdf.rect(tx, y, tw, rh, "F");
+    pdf.setFillColor(...C.noche); pdf.rect(tx, y, tw, rh, "F"); pdf.setFillColor(245, 197, 24); pdf.rect(tx, y + rh - 0.6, tw, 0.6, "F");
     pdf.setFont("helvetica", "bold"); pdf.setFontSize(7); pdf.setTextColor(255);
     let cx = tx;
     cols.forEach(([h, w], k) => { pdf.text(k === 1 ? "CLASIFICACIÓN" : h, k === 1 ? cx + 1 : cx + w / 2, y + 4.4, { align: k === 1 ? "left" : "center" }); cx += w; });
     y += rh;
     d.clasificacion.filter(c => c.nombre !== "DESCANSA").forEach((c, k) => {
-      const bg = fondo(c.nombre) || (k % 2 ? [242, 242, 242] : [255, 255, 255]);
+      const bg = (fondo(c.nombre) && fondo(c.nombre, true)) || (k % 2 ? [246, 248, 253] : [255, 255, 255]);
       pdf.setFillColor(...bg); pdf.rect(tx, y, tw, rh, "F");
-      pdf.setDrawColor(200); pdf.line(tx, y + rh, tx + tw, y + rh);
+      pdf.setDrawColor(227, 232, 244); pdf.line(tx, y + rh, tx + tw, y + rh);
       const vals = [`${k + 1}º`, c.nombre, c.pj, c.pg, c.pp, c.sf, c.sc, c.pts];
       cx = tx; pdf.setTextColor(0);
       vals.forEach((v, q) => {
@@ -273,6 +273,7 @@
       await ensureExportLibs();
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4", compress: true });
+      const logo = typeof nvaLogoDataUrl === "function" ? await nvaLogoDataUrl() : null;
       let paginas = 0;
       for (const key of keys) {
         mostrarCargando(`Preparando ${key}...`);
@@ -280,16 +281,88 @@
           const d = analizar(await lineasPdf(await leerPdfGitHub(key)));
           if (!d.partidos.length) throw new Error("no se encontraron partidos en el PDF");
           if (paginas) pdf.addPage();
-          dibujar(pdf, key, d);
+          dibujar(pdf, key, d, logo);
           paginas++;
         } catch (e) { console.warn(key, e); fallos.push(`- ${key}: ${e.message}`); }
       }
-      if (paginas) pdf.save(`Partidos_y_Resultados_${nombreArchivo}.pdf`);
+      if (paginas) { if (typeof nvaPdfFooters === "function") nvaPdfFooters(pdf); const nombre = `Partidos_y_Resultados_${nombreArchivo}.pdf`;
+        pdf.save(nombre);
+        ocultarCargando();
+        ventanaWhatsApp(nombreArchivo, new File([pdf.output("blob")], nombre, { type: "application/pdf" }));
+      }
       if (fallos.length) alert((paginas ? "Algunos equipos no se han incluido:\n" : "No se pudo generar el PDF:\n") + fallos.join("\n"));
     } catch (e) {
       console.error(e);
       alert("Ocurrió un error al generar el PDF de partidos y resultados.");
     } finally { ocultarCargando(); }
+  }
+
+  // ---------- Enviar el PDF por WhatsApp ----------
+  // Una web no puede publicar sola en un grupo: se abre el menú «Compartir» del
+  // sistema con el PDF y se elige WhatsApp y el chat. Los chats guardados por
+  // informe (nombre + enlace opcional) sirven de recordatorio y para abrirlos.
+  const WA_KEY = "NVA_CUADRANTE_WHATSAPP";
+  const waLeer = () => { try { return JSON.parse(localStorage.getItem(WA_KEY)) || {}; } catch (e) { return {}; } };
+  const waGuardar = (o) => { try { localStorage.setItem(WA_KEY, JSON.stringify(o)); } catch (e) {} };
+  const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  // Enlace de grupo (chat.whatsapp.com/...) o teléfono → enlace que abre el chat
+  function waEnlace(v) {
+    v = (v || "").trim();
+    if (/^https:\/\/(chat\.whatsapp\.com|wa\.me|api\.whatsapp\.com)\//i.test(v)) return v;
+    const tel = v.replace(/[^\d+]/g, "").replace(/^\+/, "");
+    if (/^\d{9,15}$/.test(tel)) return "https://wa.me/" + (tel.length === 9 ? "34" + tel : tel);
+    return "";
+  }
+
+  function ventanaWhatsApp(informe, file) {
+    const o = document.createElement("div");
+    o.className = "cp-modal";
+    o.innerHTML = `<div class="cp-modal-box">
+      <div class="cp-modal-title">📲 Enviar por WhatsApp</div>
+      <div class="cp-modal-txt">PDF descargado. Pulsa <b>Compartir PDF</b>, elige <b>WhatsApp</b> y después el chat o grupo.</div>
+      <div class="wa-list" style="display:flex; flex-direction:column; gap:6px;"></div>
+      <details><summary class="cp-modal-txt" style="cursor:pointer;">➕ Guardar un chat o grupo para este informe</summary>
+        <div style="display:flex; flex-direction:column; gap:6px; margin-top:6px;">
+          <input class="wa-nombre" placeholder="Nombre (p. ej. Familias Juvenil)" style="padding:8px; border-radius:8px; border:1px solid #ccc;">
+          <input class="wa-link" placeholder="Enlace del grupo o teléfono (opcional)" style="padding:8px; border-radius:8px; border:1px solid #ccc;">
+          <button class="cp-modal-btn wa-add">Guardar chat</button>
+        </div></details>
+      <div class="cp-modal-row">
+        <button class="cp-modal-btn cp-modal-stop">Cerrar</button>
+        <button class="cp-modal-btn cp-modal-main wa-share">📤 Compartir PDF</button>
+      </div>
+    </div>`;
+    document.body.appendChild(o);
+    const pintar = () => {
+      const chats = waLeer()[informe] || [];
+      o.querySelector(".wa-list").innerHTML = chats.length
+        ? `<div class="cp-modal-txt">Chats guardados para este informe:</div>` + chats.map((c, i) => `<div style="display:flex; gap:6px; align-items:center;">
+            <span style="flex:1;">💬 <b>${esc(c.nombre)}</b></span>
+            ${waEnlace(c.link) ? `<a class="cp-modal-btn" style="padding:6px 10px;" href="${esc(waEnlace(c.link))}" target="_blank" rel="noopener">Abrir chat</a>` : ""}
+            <button class="cp-modal-btn wa-del" data-i="${i}" style="padding:6px 10px;" title="Quitar">✕</button></div>`).join("")
+        : `<div class="cp-modal-txt" style="opacity:.75;">Aún no hay chats guardados para este informe.</div>`;
+      o.querySelectorAll(".wa-del").forEach(b => b.onclick = () => {
+        const all = waLeer(); (all[informe] || []).splice(+b.dataset.i, 1); waGuardar(all); pintar();
+      });
+    };
+    pintar();
+    o.querySelector(".wa-add").onclick = () => {
+      const nombre = o.querySelector(".wa-nombre").value.trim(), link = o.querySelector(".wa-link").value.trim();
+      if (!nombre) { alert("Escribe un nombre para el chat."); return; }
+      if (link && !waEnlace(link)) { alert("El enlace debe ser de chat.whatsapp.com o wa.me, o un número de teléfono."); return; }
+      const all = waLeer(); (all[informe] = all[informe] || []).push({ nombre, link }); waGuardar(all);
+      o.querySelector(".wa-nombre").value = ""; o.querySelector(".wa-link").value = ""; pintar();
+    };
+    o.querySelector(".wa-share").onclick = async () => {
+      const chats = (waLeer()[informe] || []).map(c => c.nombre).join(", ");
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file], title: file.name, text: "Partidos y resultados" }); }
+        catch (e) { if (e.name !== "AbortError") alert("No se pudo compartir: " + e.message); }
+      } else {
+        alert(`Este navegador no deja compartir archivos directamente.\nEl PDF ya está en Descargas: ${chats ? "abre el chat (" + chats + ") con «Abrir chat»" : "abre WhatsApp"} y adjúntalo con el clip 📎.`);
+      }
+    };
+    o.querySelector(".cp-modal-stop").onclick = () => o.remove();
   }
 
   window.nvaCuadrante = { analizar, dibujar, generar };
