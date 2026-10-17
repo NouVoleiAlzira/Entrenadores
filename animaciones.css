@@ -381,19 +381,22 @@ header h1 {
   -webkit-text-fill-color: transparent;
 }
 html header.nva-head-play .header-title-container::before {
-  animation: nvaServe 1200ms var(--ease-out) both;
+  animation: nvaServe 1800ms ease-in-out both;
 }
 html header.nva-head-play h1 {
-  animation: nvaSheen 1100ms var(--ease-in-out) 700ms both;
+  animation: nvaSheen 1100ms var(--ease-in-out) 1800ms both;
 }
 @keyframes nvaServe {
+  /* 1) se desplaza hasta el lado izquierdo y vuelve */
   0%   { transform: none; }
-  15%  { transform: scale(2.2); }
-  40%  { transform: translateY(-6px) rotate(140deg) scale(1.7); }
-  70%  { transform: rotate(300deg) scale(1.15); }
-  86%  { transform: rotate(360deg) scale(0.92, 0.88); }
-  100% { transform: rotate(360deg); }
+  20%  { transform: translateX(max(-34vw, -150px)); }
+  40%  { transform: none; }
+  /* 2) zoom: crece y se reduce a su tamaño */
+  55%  { transform: scale(2.2); }
+  85%  { transform: scale(0.94); }
+  100% { transform: none; }
 }
+
 html header.nva-head-play { overflow: visible; }
 html header.nva-head-play .header-title-container::before { position: relative; z-index: 3; }
 
