@@ -205,6 +205,12 @@
         ${editable ? `<div style="display:flex; gap:8px; margin-top:10px;">
           <button class="btn-save-session ig-descartar" style="flex:1; background:#64748b;">🗑️ Descartar</button>
           <button class="btn-save-session ig-confirmar" style="flex:2;">✅ Confirmar y publicar</button></div>` : ""}`;
+      if (meta.enlace) det.insertAdjacentHTML("beforeend", `<p class="ig-info"><a href="${esc(meta.enlace)}" target="_blank" rel="noopener">📲 Ver en Instagram</a></p>`);
+      if (meta.estado === "error") {
+        det.insertAdjacentHTML("beforeend", `<p class="ig-info" style="color:#b91c1c;">${esc(meta.error)}</p>
+          <button class="btn-save-session ig-reintentar" style="width:100%;">🔁 Reintentar publicación</button>`);
+        det.querySelector(".ig-reintentar").onclick = () => { meta.estado = "borrador"; confirmar(id, meta); };
+      }
       if (!editable) return;
       det.querySelector(".ig-descartar").onclick = () => cambiarEstado(id, meta, "descartado");
       det.querySelector(".ig-confirmar").onclick = () => {
