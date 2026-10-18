@@ -184,6 +184,20 @@
     <div class="section-subtitle">Horarios de entrenamiento</div>
     <button class="btn-pdf-mode2" style="margin-bottom:20px;" onclick="openHorarios()">🗓️ Horarios</button>
     </div>
+
+    <!-- ===== Sección plegable: Instagram (solo si se ha activado en Opciones › Instagram) ===== -->
+    <div id="igSectionWrap" hidden>
+      <div class="section-title section-toggle" id="secHead_instagram" role="button" tabindex="0" aria-expanded="true" aria-controls="secBody_instagram" style="margin-top:20px;" onclick="toggleSection('instagram')" onkeydown="sectionKey(event,'instagram')">Instagram <span class="sec-arrow">▾</span></div>
+      <div class="section-body" id="secBody_instagram">
+        <div class="section-title" style="font-size:0.95rem; margin-top:8px;">Reels · borradores</div>
+        <p class="ig-info">Los reels se crean solos como borrador. Nada se publica hasta que una persona lo revisa y pulsa «Confirmar y publicar».</p>
+        <div style="display:flex; gap:8px; margin-bottom:10px;">
+          <button class="btn-save-session" style="flex:2;" onclick="igReelsGenerar()">🎬 Generar ahora</button>
+          <button class="btn-save-session" style="flex:1; background: var(--btn-fondoVerde);" onclick="igReelsCargar()">🔄 Refrescar</button>
+        </div>
+        <div id="igReelsList"></div>
+      </div>
+    </div>
   </div>
 
   <!-- PANTALLA OTROS: botones de información e instrucciones -->
@@ -533,6 +547,7 @@
         <button class="tab-btn" onclick="switchTab(2)">Jugadores/as y Equipos</button>
         <button class="tab-btn" onclick="switchTab(3)">Ligas</button>
         <button class="tab-btn" onclick="switchTab(4)">Conexión GitHub</button>
+        <button class="tab-btn" onclick="switchTab(5)">Insta&shy;gram</button>
       </div>
 
       <div class="tab-content active" id="tabContent1">
@@ -636,6 +651,22 @@
           <button class="btn-save-session" style="background: var(--azul-primary); padding:8px; margin-top:4px;" onclick="withLoading(syncConfigFromGitHub, 'Sincronizando desde GitHub...')">Sincronizar Desde GitHub Ahora</button>
           
           <button class="btn-danger-action" style="padding:8px; margin-top:12px;" onclick="clearAllLocalStorageData()">🗑️ Borrar Todos los Datos Locales (Storage)</button>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tabContent5">
+        <div class="config-section">
+          <div class="config-subtitle">Sección Instagram</div>
+          <div id="igConfigOff">
+            <p style="font-size:0.72rem; color:#64748b; margin-bottom:6px;">Para ver la sección Instagram en este dispositivo pega el token de la cuenta de Instagram (no el token común de los entrenadores).</p>
+            <label style="font-size:0.72rem; color:#64748b;">Token de Instagram:</label>
+            <input type="password" id="igTokenInput" class="app-input" placeholder="ghp_xxxxxxxxxxxx" autocomplete="off" style="margin-bottom: 6px;" onkeydown="if(event.key==='Enter'){event.preventDefault();withLoading(igActivate, 'Comprobando token...');}">
+            <button class="btn-save-session" style="padding:8px;" onclick="withLoading(igActivate, 'Comprobando token...')">🔓 Activar Instagram en este dispositivo</button>
+          </div>
+          <div id="igConfigOn" hidden>
+            <p style="font-size:0.85rem; font-weight:600; margin-bottom:8px;">✅ Activado con la cuenta <span id="igConfigLogin"></span></p>
+            <button class="btn-danger-action" style="padding:8px;" onclick="igDeactivate()">Quitar el token de este dispositivo</button>
+          </div>
         </div>
       </div>
 
@@ -778,6 +809,7 @@
 <script src="cuadrante-pdf.js" defer></script>
 <script src="kilometraje.js" defer></script>
 <script src="animaciones.js" defer></script>
+<script src="instagram.js" defer></script>
 
 
 <!-- Botón ATRÁS: vuelve a la pantalla principal y, ya en ella, pregunta antes de salir -->

@@ -2087,3 +2087,14 @@
       header h1 { font-size: clamp(1.25rem, 6.4vw, 1.75rem); }
       .header-title-container { gap: 0; padding: 0 60px; }
     }
+
+/* ===== Instagram · borradores de reels ===== */
+.ig-info { font-size: 0.8rem; color: #64748b; margin: 4px 0 10px; }
+.ig-reel { background: #fff; color: var(--text-dark); border: 1px solid var(--gray-border); border-radius: 14px; padding: 10px; margin-bottom: 10px; }
+.ig-reel-head { display: flex; gap: 10px; align-items: center; font-size: 0.85rem; }
+.ig-portada { width: 54px; height: 96px; object-fit: cover; border-radius: 8px; background: var(--noche); flex: 0 0 auto; }
+.ig-estado { display: inline-block; margin-top: 4px; font-size: 0.75rem; font-weight: 700; }
+.ig-borrador { color: #b45309; } .ig-confirmado { color: #1d4ed8; } .ig-publicado { color: #15803d; } .ig-error { color: #b91c1c; }
+.ig-video { width: 100%; max-height: 70vh; border-radius: 10px; background: #000; margin-top: 10px; }
+.ig-label { display: block; font-size: 0.8rem; font-weight: 700; margin: 8px 0 4px; }
+.ig-texto { width: 100%; box-sizing: border-box; font: inherit; font-size: 0.85rem; color: var(--text-dark); border: 1px solid var(--gray-border); border-radius: 8px; padding: 8px; }
