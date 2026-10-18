@@ -155,7 +155,10 @@
   async function blobUrl(path) {
     const r = await fetch(api(path), { headers: hdr({ "Accept": "application/vnd.github.raw" }), cache: "no-store" });
     if (!r.ok) throw new Error(`GitHub ${r.status}`);
-    return URL.createObjectURL(await r.blob());
+    // El tipo hace falta para que el móvil (sobre todo iPhone) reproduzca el vídeo
+    const tipo = /\.mp4$/.test(path) ? "video/mp4" : /\.jpe?g$/.test(path) ? "image/jpeg" : "";
+    const datos = await r.blob();
+    return URL.createObjectURL(tipo ? new Blob([datos], { type: tipo }) : datos);
   }
 
   function box() { return document.getElementById("igReelsList"); }
