@@ -202,7 +202,7 @@
       align-items: center;
       justify-content: center;
       gap: 6px;
-      transition: all 0.2s ease;
+      transition: transform 150ms ease-out, background-color 0.2s ease, filter 0.2s ease, box-shadow 0.2s ease;
     }
 
     .btn-pdf-mode2 {
@@ -221,7 +221,7 @@
       align-items: center;
       justify-content: center;
       gap: 6px;
-      transition: all 0.2s ease;
+      transition: transform 150ms ease-out, background-color 0.2s ease, filter 0.2s ease, box-shadow 0.2s ease;
     }
 
     .pdf-mode-banner {
@@ -290,7 +290,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      transition: all 0.2s ease;
+      transition: background-color 0.2s ease, filter 0.2s ease;
       box-shadow: 2px 2px 4px #000000;
     }
 
@@ -414,7 +414,7 @@
       transition: background-color 0.15s ease;
     }
 
-    .state-strip:hover .state-strip-bar { width: 16px; filter: blur(2px); }
+    @media (hover: hover) and (pointer: fine) { .state-strip:hover .state-strip-bar { width: 16px; filter: blur(2px); } }
 
     .card-row-1 {
       display: flex;
@@ -469,7 +469,7 @@
       color: white;
       background: rgba(0,0,0,0.25);
     }
-    .query-btn:hover { background: rgba(0,0,0,0.4); }
+    @media (hover: hover) and (pointer: fine) { .query-btn:hover { background: rgba(0,0,0,0.4); } }
 
     .attendance-btn-group {
       display: flex;
@@ -611,7 +611,7 @@
       cursor: pointer;
     }
 
-    .reason-option:hover { background: #f1f5f9; }
+    @media (hover: hover) and (pointer: fine) { .reason-option:hover { background: #f1f5f9; } }
     .reason-option.selected { background: #fef3c7; font-weight: 700; color: #92400e; }
 
     .reason-option-del {
@@ -625,7 +625,7 @@
       flex-shrink: 0;
     }
 
-    .reason-option-del:hover { color: #ef4444; }
+    @media (hover: hover) and (pointer: fine) { .reason-option-del:hover { color: #ef4444; } }
 
     .reason-add-row {
       display: flex;
@@ -1017,7 +1017,7 @@
       user-select: none;
     }
 
-    .cal-day:hover { background: #e2e8f0; }
+    @media (hover: hover) and (pointer: fine) { .cal-day:hover { background: #e2e8f0; } }
     .cal-day.empty { background: transparent; cursor: default; }
 
     .cal-day.range-start, .cal-day.range-end {
@@ -1142,8 +1142,8 @@
     .warn-line { display: flex; align-items: center; gap: 6px; flex: 1 1 0; min-width: 0; }
     .warn-name { flex: 0 1 auto; max-width: 55%; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .warn-reason-view { flex: 1 1 0; min-width: 0; overflow: hidden; white-space: nowrap; }
-    .warn-reason-track { display: inline-block; white-space: nowrap; font-size: 0.8rem; font-weight: 700; will-change: transform; }
-    .warn-reason-track.scrolling { animation: warnMarquee var(--warn-dur, 8s) ease-in-out infinite alternate; }
+    .warn-reason-track { display: inline-block; white-space: nowrap; font-size: 0.8rem; font-weight: 700; }
+    .warn-reason-track.scrolling { will-change: transform; animation: warnMarquee var(--warn-dur, 8s) ease-in-out infinite alternate; }
     @keyframes warnMarquee {
       0%, 15% { transform: translateX(0); }
       85%, 100% { transform: translateX(var(--warn-shift, 0px)); }
@@ -1387,7 +1387,7 @@
       min-width: 40px;
       justify-content: center;
     }
-    .btn-header-icon:hover { background: rgba(233,238,250,0.08); }
+    @media (hover: hover) and (pointer: fine) { .btn-header-icon:hover { background: rgba(233,238,250,0.08); } }
 
     .network-badge {
       font-size: 0.66rem;
@@ -1435,7 +1435,7 @@
       font-size: 1.1rem;
       color: var(--niebla);
     }
-    .section-toggle:hover .sec-arrow { color: var(--balon); }
+    @media (hover: hover) and (pointer: fine) { .section-toggle:hover .sec-arrow { color: var(--balon); } }
     .section-toggle.collapsed::after { background: rgba(233,238,250,0.12); }
 
     /* ---------- Botones de entrenador / equipo ---------- */
@@ -1449,7 +1449,7 @@
       box-shadow: 0 1px 0 rgba(233,238,250,0.06) inset, 0 6px 16px rgba(0,0,0,0.22);
       transition: background-color 0.15s ease, border-color 0.15s ease;
     }
-    .coach-btn:hover { background: var(--pista-2); }
+    @media (hover: hover) and (pointer: fine) { .coach-btn:hover { background: var(--pista-2); } }
     .coach-btn.selected {
       background: var(--pista-2);
       border-color: var(--balon);
@@ -1478,7 +1478,7 @@
       font-weight: 700;
       box-shadow: 0 3px 10px rgba(0,0,0,0.22);
     }
-    .team-btn:hover { background: #fff; }
+    @media (hover: hover) and (pointer: fine) { .team-btn:hover { background: #fff; } }
     .team-btn-all { background: var(--balon); color: var(--noche); border: 0; }
 
     /* ---------- Botones de acción ----------
@@ -1496,8 +1496,10 @@
       min-height: 42px;
       line-height: 1.2;
     }
-    .btn-pdf-mode:hover, .btn-pdf-mode2:hover, .btn-save-session:hover,
-    .btn-danger-action:hover, .btn-history:hover { filter: brightness(1.12); }
+    @media (hover: hover) and (pointer: fine) {
+      .btn-pdf-mode:hover, .btn-pdf-mode2:hover, .btn-save-session:hover,
+      .btn-danger-action:hover, .btn-history:hover { filter: brightness(1.12); }
+    }
     .btn-pdf-mode:active, .btn-pdf-mode2:active, .btn-save-session:active,
     .btn-danger-action:active, .btn-history:active { transform: translateY(1px); }
 
@@ -1506,7 +1508,7 @@
       border: 1px solid var(--linea);
       color: var(--tiza);
     }
-    .btn-pdf-mode:hover { background: rgba(233,238,250,0.14); filter: none; }
+    @media (hover: hover) and (pointer: fine) { .btn-pdf-mode:hover { background: rgba(233,238,250,0.14); filter: none; } }
     .btn-pdf-mode2 { font-size: 0.85rem; }
     .btn-save-session { font-size: 0.85rem; }
     .btn-save-session[style*="btn-fondoAmarillo"] { color: var(--noche); }
@@ -1586,7 +1588,7 @@
       color: var(--noche);
     }
     .btn-close-modal { width: 36px; height: 36px; border-radius: 10px; }
-    .btn-close-modal:hover { background: #F1F4FA; color: var(--noche); }
+    @media (hover: hover) and (pointer: fine) { .btn-close-modal:hover { background: #F1F4FA; color: var(--noche); } }
     .tab-btn.active { color: var(--morado-accent); }
     .app-input, .app-select { border-radius: 8px; padding: 10px 12px; font-family: var(--font-body); font-size: 0.88rem; }
     .app-input:focus, .app-select:focus { border-color: var(--morado-accent); box-shadow: 0 0 0 3px rgba(36,80,200,0.15); }
@@ -1655,7 +1657,7 @@
     /* ---------- Calendario de partidos: subsecciones, línea temporal y avisos ---------- */
     .cp-sub-head { display: flex; align-items: center; gap: 6px; margin: 14px 0 8px; padding: 6px 0 6px 10px; border-left: 3px solid var(--balon); font-family: var(--font-display); font-style: italic; font-weight: 700; font-size: 1.05rem; text-transform: uppercase; letter-spacing: .04em; color: #fff; cursor: pointer; user-select: none; }
     .cp-sub-head .sec-arrow { display: inline-block; margin-left: auto; font-style: normal; font-size: 1.1rem; color: var(--niebla); transition: transform 0.2s ease; }
-    .cp-sub-head:hover .sec-arrow { color: var(--balon); }
+    @media (hover: hover) and (pointer: fine) { .cp-sub-head:hover .sec-arrow { color: var(--balon); } }
     .cp-sub-head.collapsed .sec-arrow { transform: rotate(-90deg); }
     .cp-sub-body.collapsed { display: none; }
     .cp-badge-warn { color: var(--balon); }
@@ -2048,3 +2050,9 @@
   font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #1B3A8C;
 }
 .nva-pdf-brand i { width: 14px; height: 4px; border-radius: 2px; background: #F5C518; box-shadow: 18px 0 0 #D62839; margin-right: 18px; }
+
+    /* v60: en móviles estrechos el título no debe quedar bajo el botón de opciones */
+    @media (max-width: 480px) {
+      header h1 { font-size: clamp(1rem, 4.6vw, 1.35rem); }
+      .header-title-container { gap: 8px; padding: 0 64px; }
+    }

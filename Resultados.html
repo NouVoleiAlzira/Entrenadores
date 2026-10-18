@@ -255,7 +255,7 @@
         }
 
         .match-card-container:hover .btn-delete-card { opacity: 1; pointer-events: auto; }
-        .btn-delete-card:hover { background-color: #ff0000; transform: scale(1.15); }
+        @media (hover: hover) and (pointer: fine) { .btn-delete-card:hover { background-color: #ff0000; transform: scale(1.15); } }
 
         .btn-add-card-below {
             position: absolute;
@@ -283,7 +283,7 @@
         }
 
         .match-card-container:hover .btn-add-card-below { opacity: 1; pointer-events: auto; }
-        .btn-add-card-below:hover { background-color: #00ff00; color: #000; transform: scale(1.15); }
+        @media (hover: hover) and (pointer: fine) { .btn-add-card-below:hover { background-color: #00ff00; color: #000; transform: scale(1.15); } }
 
         .photo-img {
             flex-shrink: 0;
@@ -426,7 +426,7 @@
         .modal-tab-btn { flex: 1; background: #252525; color: #aaa; border: 1px solid #444; padding: 8px; border-radius: 5px 5px 0 0; cursor: pointer; font-weight: bold; font-size: 12px; transition: background 0.2s, color 0.2s, border-color 0.2s; }
         .modal-tab-btn.active { background: var(--nva-primary); color: #fff; border-color: var(--nva-primary-hover); }
 
-        .team-options-list { display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow-y: auto; margin-bottom: 16px; }
+        .team-options-list { display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow-y: auto; overscroll-behavior: contain; margin-bottom: 16px; }
         .team-option-btn { background: #292929; color: var(--nva-text); border: 1px solid #444; padding: 10px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s, border-color 0.2s; text-align: left; }
         .team-option-btn:hover { background: #3d3d3d; border-color: var(--nva-success); }
 
@@ -464,6 +464,7 @@
             gap: 10px;
             max-height: 50vh;
             overflow-y: auto;
+            overscroll-behavior: contain;
             overflow-x: hidden; /* <--- Añadir esta línea */
             margin-top: 15px;
             padding: 4px;       /* <--- Opcional: da espacio para que el scale no corte los bordes */
@@ -516,7 +517,11 @@
             -webkit-tap-highlight-color: transparent;
             box-shadow: 0 2px 6px rgba(0,0,0,0.35);
         }
-        .nva-btn-inicio:active { transform: scale(0.95); }
+        .nva-btn-inicio { transition: transform 150ms ease-out; }
+        .nva-btn-inicio:active { transform: scale(0.96); }
+        @media (prefers-reduced-motion: reduce) {
+            .nva-btn-inicio:active, .btn-menu-acciones:active, .btn-accion:active { transform: none; }
+        }
     </style>
     <style>
         /* =====================================================================

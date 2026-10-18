@@ -135,12 +135,27 @@ header.is-scrolled {
     box-shadow 200ms ease,
     filter 150ms ease;
 }
-.coach-btn:active, .team-btn:active, .btn-pdf-mode:active, .btn-pdf-mode2:active,
-.btn-save-session:active, .btn-danger-action:active, .btn-history:active,
-.btn-header-icon:active, .wk-nav-btn:active, .btn-add:active,
-.btn-edit-history:active, .reason-add-btn:active, .cp-upload:active,
-.cp-modal-btn:active, .cp-chg-btn:active, .btn-close-modal:active, .tab-btn:active {
-  transform: scale(0.97);
+:is(.coach-btn, .team-btn, .btn-pdf-mode, .btn-pdf-mode2, .btn-save-session,
+.btn-danger-action, .btn-history, .btn-header-icon, .wk-nav-btn, .btn-add,
+.btn-edit-history, .reason-add-btn, .cp-upload, .cp-modal-btn, .cp-chg-btn,
+.btn-close-modal, .tab-btn):not(:disabled):active {
+  transform: scale(0.96);
+}
+/* El cuadro gris de Android/iOS al tocar duplicaría el hundido */
+.coach-btn, .team-btn, .btn-pdf-mode, .btn-pdf-mode2, .btn-save-session,
+.btn-danger-action, .btn-history, .btn-header-icon, .wk-nav-btn, .btn-add,
+.btn-edit-history, .reason-add-btn, .cp-upload, .cp-modal-btn, .cp-chg-btn,
+.btn-close-modal, .tab-btn { -webkit-tap-highlight-color: transparent; }
+
+/* ---------------------------------------------------------------------
+   Listas con scroll dentro de modales: al llegar al final no se arrastra
+   la página de detrás
+   --------------------------------------------------------------------- */
+.modal-box, .tab-content, .item-list, .rte-editor, .cp-chg-list, .imp-list,
+#queryTeamsCheckboxes, #queryListPdfContainer, #playerPdfPlayersList,
+#historyListContainer, #matchHistoryListContainer, #resultsMatchesList,
+#leagueTeamsContainer, #modalHzZoom .modal-box > div:last-child {
+  overscroll-behavior: contain;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -384,7 +399,7 @@ html header.nva-head-play .header-title-container::before {
   animation: nvaServe 1800ms ease-in-out both;
 }
 html header.nva-head-play h1 {
-  animation: nvaSheen 1100ms var(--ease-in-out) 1800ms both;
+  animation: nvaSheen 1100ms var(--ease-in-out) 350ms both;
 }
 @keyframes nvaServe {
   /* 1) se desplaza hasta el lado izquierdo y vuelve */
@@ -403,6 +418,27 @@ html header.nva-head-play .header-title-container::before { position: relative; 
 @keyframes nvaSheen {
   from { background-position: 100% 0; }
   to   { background-position: 0% 0; }
+}
+
+/* ---------------------------------------------------------------------
+   TEXTOS
+   - Título de cada pantalla secundaria: se descubre de izquierda a derecha
+     junto con su línea de tiza (la pantalla principal ya tiene su entrada).
+   - Cifras que cambian (resumen semanal, contadores de partidos/avisos):
+     números de ancho fijo para que el texto no baile; animaciones.js les
+     da un pequeño empujón al cambiar.
+   --------------------------------------------------------------------- */
+.screen:not(#screenCoachTeam).active > .section-title:first-of-type {
+  animation: nvaTitleReveal 420ms var(--ease-out) 40ms backwards;
+}
+@keyframes nvaTitleReveal {
+  from { clip-path: inset(0 100% 0 0); transform: translateX(-6px); }
+  to   { clip-path: inset(0 0 0 0); transform: none; }
+}
+
+.wk-summary b, #cpWarnCount, #cpListCount {
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---------------------------------------------------------------------
@@ -425,10 +461,11 @@ html header.nva-head-play .header-title-container::before { position: relative; 
   :is(html.nva-intro-on, html.nva-reveal) #screenCoachTeam > * { animation-name: nvaFade; }
 
   .screen { animation: nvaFade 200ms ease; }
+  .screen:not(#screenCoachTeam).active > .section-title:first-of-type { animation: nvaFade 200ms ease; }
   .modal-backdrop.active > .modal-box, .cp-modal-box { animation: nvaFade 200ms ease; }
   .loading-overlay.active .loading-message { animation-name: nvaFade; }
-  .coach-btn:active, .team-btn:active, .btn-pdf-mode:active, .btn-pdf-mode2:active,
-  .btn-save-session:active, .btn-danger-action:active, .btn-history:active { transform: none; }
+  :is(.coach-btn, .team-btn, .btn-pdf-mode, .btn-pdf-mode2, .btn-save-session,
+  .btn-danger-action, .btn-history):not(:disabled):active { transform: none; }
   .btn-pdf-mode:hover, .btn-pdf-mode2:hover, .btn-save-session:hover,
   .btn-danger-action:hover, .btn-history:hover { transform: none; }
   .sec-arrow { transition: color 150ms ease, background-color 150ms ease; }

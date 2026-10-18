@@ -331,7 +331,7 @@
             cursor: pointer;
             font-weight: bold;
             font-size: 0.9em;
-            transition: all 0.2s;
+            transition: background-color 0.2s, border-color 0.2s, color 0.2s;
         }
 
         @media (hover: hover) and (pointer: fine) {
@@ -899,7 +899,7 @@
         /* Modal Rivales */
         .item-rival {
             cursor: pointer;
-            transition: all 0.2s ease-in-out;
+            transition: background-color 0.2s ease-in-out, border-left-color 0.2s ease-in-out;
             border-left: 4px solid transparent;
         }
         @media (hover: hover) and (pointer: fine) {
@@ -1013,7 +1013,11 @@
             -webkit-tap-highlight-color: transparent;
             box-shadow: 0 2px 6px rgba(0,0,0,0.35);
         }
-        .nva-btn-inicio:active { transform: scale(0.95); }
+        .nva-btn-inicio { transition: transform 150ms ease-out; }
+        .nva-btn-inicio:active { transform: scale(0.96); }
+        @media (prefers-reduced-motion: reduce) {
+            .nva-btn-inicio:active, .btn-menu-acciones:active, .btn-guardar-historico:active, .btn-cargar-jornada:active, .btn-cargar-partidos:active { transform: none; }
+        }
     </style>
     <style>
         /* =====================================================================

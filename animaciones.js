@@ -224,11 +224,54 @@
       setTimeout(play, html.classList.contains("nva-intro-on") ? 2600 : 500);
     }
 
+    // ---------- Textos: cifras que cambian ----------
+    // Al pasar de semana, las cifras del resumen que cambian entran desde
+    // el lado hacia el que se navega (solo con las flechas, no al recargar).
+    function wrapWeekMove() {
+      const orig = window.wkMove;
+      if (typeof orig !== "function") return;
+      window.wkMove = function (delta) {
+        const box = document.getElementById("wkSummary");
+        const before = box ? Array.from(box.querySelectorAll("b"), b => b.textContent) : [];
+        orig(delta);
+        if (!box || !ready) return;
+        const dx = (delta > 0 ? 8 : -8) + "px";
+        box.querySelectorAll("b").forEach((b, i) => {
+          if (b.textContent === before[i]) return;
+          b.animate(
+            reduce.matches
+              ? [{ opacity: 0.3 }, { opacity: 1 }]
+              : [{ opacity: 0, transform: `translateX(${dx})` }, { opacity: 1, transform: "none" }],
+            { duration: 220, easing: EASE_OUT });
+        });
+      };
+    }
+
+    // Los contadores de "Avisos" y "Lista de partidos" hacen un pop al cambiar
+    function watchCounter(el) {
+      if (!el) return;
+      let last = el.textContent;
+      new MutationObserver(() => {
+        const now = el.textContent;
+        if (now === last) return;
+        last = now;
+        if (!ready || !now) return;
+        el.animate(
+          reduce.matches
+            ? [{ opacity: 0.3 }, { opacity: 1 }]
+            : [{ opacity: 0.4, transform: "scale(0.8)" }, { opacity: 1, transform: "none" }],
+          { duration: 260, easing: EASE_OUT });
+      }).observe(el, { childList: true, characterData: true, subtree: true });
+    }
+
     function init() {
       initIntro();
       initHeader();
       initHeadPlay();
       wrapCoachSelection();
+      wrapWeekMove();
+      watchCounter(document.getElementById("cpWarnCount"));
+      watchCounter(document.getElementById("cpListCount"));
 
       const byClass = el => !el.classList.contains("collapsed");
       const byStyle = el => el.style.display !== "none";

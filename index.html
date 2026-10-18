@@ -29,6 +29,8 @@
 
   <!-- CSS en fichero aparte: el navegador lo cachea por separado del HTML,
        así que en visitas posteriores solo se descarga si cambia. -->
+  <link rel="preload" href="fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/barlow-condensed-latin-800-italic.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="animaciones.css">
   <!-- Intro de marca: solo la primera vez en cada sesión -->
@@ -116,7 +118,7 @@
       <div class="section-subtitle" style="margin-top:14px;">Informes PDF</div>
       <div style="display:flex; gap:6px;">
         <button class="btn-pdf-mode" id="btnPdfMode" onclick="togglePdfMode()" style="flex:1; min-width:0; margin-bottom:0; font-size:0.7rem; padding:8px 4px;">📊 POR EQUIPO</button>
-        <button class="btn-pdf-mode" id="btnPdfJugadora" onclick="openPlayerPdfModal()" style="flex:1; min-width:0; margin-bottom:0; font-size:0.7rem; padding:8px 4px;">🧑 Por Deportista</button>
+        <button class="btn-pdf-mode" id="btnPdfJugadora" onclick="openPlayerPdfModal()" style="flex:1; min-width:0; margin-bottom:0; font-size:0.7rem; padding:8px 4px;">🧑 POR DEPORTISTA</button>
         <button class="btn-pdf-mode" id="btnPdfCuadrante" onclick="togglePdfCuadranteMode()" style="flex:1.6; min-width:0; margin-bottom:0; font-size:0.7rem; padding:8px 4px;">🏆 PARTIDOS Y RESULTADOS</button>
       </div>
       <div class="section-subtitle" style="margin-top:14px;">Informes de Entrenadores</div>
