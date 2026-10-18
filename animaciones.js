@@ -214,7 +214,7 @@
         header.classList.add("nva-head-play");
       };
       header.addEventListener("animationend", e => {
-        if (e.animationName === "nvaSheen" || (reduce.matches && e.animationName === "nvaPop")) header.classList.remove("nva-head-play");
+        if (e.animationName === "nvaSheen" || (reduce.matches && e.animationName === "nvaFade")) header.classList.remove("nva-head-play");
       });
       // Tocar el escudo o el nombre (cualquier zona de la cabecera que no sea un botón)
       header.addEventListener("click", e => {

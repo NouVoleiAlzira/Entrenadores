@@ -358,8 +358,8 @@ html.nva-reveal { --nva-d: 0.1s; }
 :is(html.nva-intro-on, html.nva-reveal) header::after {
   animation: nvaLine 600ms var(--ease-out) var(--nva-d) backwards;
 }
-:is(html.nva-intro-on, html.nva-reveal) .header-title-container::before {
-  animation: nvaPop 500ms var(--ease-out) calc(var(--nva-d) + 0.05s) backwards;
+:is(html.nva-intro-on, html.nva-reveal) header::before {
+  animation: nvaFade 500ms var(--ease-out) calc(var(--nva-d) + 0.05s) backwards;
 }
 :is(html.nva-intro-on, html.nva-reveal) header h1 {
   animation: nvaRise 500ms var(--ease-out) calc(var(--nva-d) + 0.12s) backwards;
@@ -395,25 +395,43 @@ header h1 {
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
-html header.nva-head-play .header-title-container::before {
-  animation: nvaServe 1800ms ease-in-out both;
+/* v63: el escudo grande del fondo "remata": entra desde muy cerca y
+   desenfocado, se asienta con un pequeño rebote y emite una onda; a la vez
+   el nombre se abre un poco y lo cruza el reflejo de luz. Sin giros. */
+html header.nva-head-play::before {
+  animation: nvaCrest 1500ms var(--ease-out) both;
 }
 html header.nva-head-play h1 {
-  animation: nvaSheen 1100ms var(--ease-in-out) 350ms both;
+  animation: nvaSheen 1100ms var(--ease-in-out) 250ms both,
+             nvaTrack 1200ms var(--ease-out) 150ms both;
 }
-@keyframes nvaServe {
-  /* 1) se desplaza hasta el lado izquierdo y vuelve */
-  0%   { transform: none; }
-  20%  { transform: translateX(max(-34vw, -150px)); }
-  40%  { transform: none; }
-  /* 2) zoom: crece y se reduce a su tamaño */
-  55%  { transform: scale(2.2); }
-  85%  { transform: scale(0.94); }
-  100% { transform: none; }
+html header.nva-head-play .header-title-container::after {
+  content: "";
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 180px; height: 180px;
+  margin: -90px 0 0 -90px;
+  border-radius: 50%;
+  border: 2px solid rgba(245, 197, 24, 0.7);
+  pointer-events: none;
+  animation: nvaShock 900ms var(--ease-out) 380ms both;
 }
-
-html header.nva-head-play { overflow: visible; }
-html header.nva-head-play .header-title-container::before { position: relative; z-index: 3; }
+@keyframes nvaCrest {
+  0%   { transform: translate(-50%, -50%) scale(2.6); opacity: 0; filter: blur(8px); }
+  35%  { transform: translate(-50%, -50%) scale(0.92); opacity: 0.55; filter: blur(0); }
+  55%  { transform: translate(-50%, -50%) scale(1.06); opacity: 0.4; }
+  75%  { transform: translate(-50%, -50%) scale(0.98); }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 0.32; }
+}
+@keyframes nvaShock {
+  from { transform: scale(0.4); opacity: 0.9; }
+  to   { transform: scale(2.2); opacity: 0; }
+}
+@keyframes nvaTrack {
+  0%   { letter-spacing: 0.02em; opacity: 0.4; }
+  30%  { letter-spacing: 0.05em; opacity: 1; }
+  100% { letter-spacing: 0.02em; }
+}
 
 @keyframes nvaSheen {
   from { background-position: 100% 0; }
@@ -445,8 +463,9 @@ html header.nva-head-play .header-title-container::before { position: relative; 
    Movimiento reducido: sin desplazamientos, solo fundidos suaves
    --------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
-  html header.nva-head-play .header-title-container::before { animation: nvaPop 300ms ease both; }
+  html header.nva-head-play::before { animation: nvaFade 300ms ease both; }
   html header.nva-head-play h1 { animation: none; }
+  html header.nva-head-play .header-title-container::after { display: none; }
   html.nva-intro-on .nva-intro { animation: nvaIntroSkip 300ms ease 1.1s forwards; }
   .nva-intro-center { animation: none; }
   .nva-intro-court * { animation: none; stroke-dashoffset: 0; }
@@ -455,7 +474,7 @@ html header.nva-head-play .header-title-container::before { position: relative; 
 
   html.nva-intro-on { --nva-d: 1.2s; }
   :is(html.nva-intro-on, html.nva-reveal) header::after,
-  :is(html.nva-intro-on, html.nva-reveal) .header-title-container::before,
+  :is(html.nva-intro-on, html.nva-reveal) header::before,
   :is(html.nva-intro-on, html.nva-reveal) header h1,
   :is(html.nva-intro-on, html.nva-reveal) header > div:last-child,
   :is(html.nva-intro-on, html.nva-reveal) #screenCoachTeam > * { animation-name: nvaFade; }
