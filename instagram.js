@@ -251,7 +251,9 @@
     det.innerHTML = `<p class="ig-info">Descargando el vídeo…</p>`;
     try {
       const meta = await getJson(`${DIR}/${id}/meta.json`);
-      if (!videos[id]) videos[id] = await blobUrl(`${DIR}/${id}/reel.mp4`);
+      const vk = id + "|" + (meta.version || "");   // al cambiar el estilo el vídeo es otro
+      if (!videos[vk]) videos[vk] = await blobUrl(`${DIR}/${id}/reel.mp4`);
+      videos[id] = videos[vk];
       const editable = meta.estado === "borrador";
       det.innerHTML = `
         <video class="ig-video" src="${videos[id]}" controls playsinline preload="metadata"></video>
@@ -260,7 +262,8 @@
         <label class="ig-label">Texto del post${editable ? " (puedes cambiarlo)" : ""}</label>
         <textarea class="ig-texto" rows="8" ${editable ? "" : "readonly"}>${esc(meta.texto)}</textarea>
         <small class="ig-info">Música: ${esc(meta.musica || "sin música")}${meta.confirmadoPor ? ` · Confirmado por ${esc(meta.confirmadoPor)}` : ""}</small>
-        ${editable ? `<div style="display:flex; gap:8px; margin-top:10px;">
+        ${editable ? `<button class="btn-save-session ig-estilo" style="width:100%; margin-top:10px; background:#7c3aed;">🎨 Cambiar estilo</button>
+        <div style="display:flex; gap:8px; margin-top:8px;">
           <button class="btn-save-session ig-descartar" style="flex:1; background:#64748b;">🗑️ Descartar</button>
           <button class="btn-save-session ig-confirmar" style="flex:2;">✅ Confirmar y publicar</button></div>` : ""}`;
       const v = det.querySelector(".ig-video");
@@ -273,6 +276,16 @@
       }
       if (!editable) return;
       det.querySelector(".ig-descartar").onclick = () => cambiarEstado(id, meta, "descartado");
+      det.querySelector(".ig-estilo").onclick = async () => {
+        const estilo = await elegirEstilo(meta.estilo, "🎨 Regenerar reel");
+        if (!estilo) return;
+        try {
+          await putJson("Reels/solicitud.json", { id: Date.now().toString(36), tipo: "regenerar", borrador: id, estilo,
+            texto: det.querySelector(".ig-texto").value.trim(), pedido: new Date().toISOString() }, `Cambiar estilo del reel ${id}`);
+          det.hidden = true;
+          alert("Pedido. El borrador se rehará con el nuevo estilo en unos minutos (pulsa 🔄 para actualizar).");
+        } catch (e) { alert(e.message); }
+      };
       det.querySelector(".ig-confirmar").onclick = () => {
         meta.texto = det.querySelector(".ig-texto").value.trim();
         confirmar(id, meta);
@@ -311,6 +324,116 @@
       await putJson("Reels/publicar.json", { id, texto: meta.texto, confirmadoPor: quien, pedido: ahora }, `Publicar reel ${id}`);
       alert("Confirmado. El reel se publicará en Instagram en unos minutos.");
     } catch (e) { alert(e.message); }
+  }
+
+  /* ---------- Estilo del reel: portada, partidos y despedida (tipo, duración, animación) y colores ----------
+     Las miniaturas están en reels-estilos/<parte>-<plantilla>.jpg. «auto» = al azar (lo decide el Action). */
+  const ESTILO_KEY = "NVA_REEL_ESTILO";
+  const PLANTILLAS = [["auto", "🎲 Al azar"], ["pista", "Pista"], ["corte", "Corte"], ["foco", "Foco"], ["editorial", "Crónica"], ["marcador", "Marcador"]];
+  const PARTES = [["portada", "Portada", [2, 2.5, 3, 4, 5], 3], ["partido", "Partidos y fotos", [2, 2.5, 3, 3.2, 4, 5, 6], 3.2],
+                  ["cierre", "Despedida", [2, 2.5, 3, 4, 5], 3]];
+  const ANIMACIONES = [["slideleft", "Deslizar"], ["fade", "Desvanecer"], ["fadeblack", "Fundido a negro"], ["dissolve", "Disolver"],
+                       ["hblur", "Desenfoque"], ["zoomin", "Zoom"], ["circleopen", "Círculo"], ["pixelize", "Píxeles"]];
+  const ACENTOS = ["", "#f5c518", "#d62839", "#57aedf", "#ff7a45", "#2ec4b6", "#8b5cf6", "#ffffff"];
+  const FONDOS = ["", "#0b163a", "#111111", "#301040", "#0f3d2e", "#3a0d12", "#1e293b"];
+
+  function estiloGuardado() {
+    try { return JSON.parse(localStorage.getItem(ESTILO_KEY)) || {}; } catch (e) { return {}; }
+  }
+
+  // Devuelve una promesa con el estilo elegido, o null si se cancela
+  function elegirEstilo(inicial, textoBoton) {
+    const e = JSON.parse(JSON.stringify(inicial || estiloGuardado()));
+    PARTES.forEach(([k, , , dur]) => { e[k] = Object.assign({ tipo: "auto", dur }, e[k] || {}); });
+    e.cierre.anim = e.cierre.anim || "slideleft";
+    e.acento = e.acento || ""; e.fondo = e.fondo || "";
+    document.getElementById("modalIgEstilo")?.remove();
+    const swatches = (lista, k) => lista.map(c => `<button type="button" class="ig-sw" data-k="${k}" data-c="${c}" title="${c || "Al azar"}"
+        style="width:34px; height:34px; border-radius:50%; border:2px solid #cbd5e1; cursor:pointer; ${c ? `background:${c};` : "background:#fff; font-size:16px;"}">${c ? "" : "🎲"}</button>`).join("")
+      + `<label title="Otro color" style="position:relative; width:34px; height:34px; border-radius:50%; border:2px dashed #94a3b8; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; font-size:15px;">🎨
+         <input type="color" class="ig-sw-otro" data-k="${k}" style="position:absolute; inset:0; opacity:0; cursor:pointer;"></label>`;
+    document.body.insertAdjacentHTML("beforeend", `
+  <div class="modal-backdrop active" id="modalIgEstilo" style="z-index:3000;">
+    <div class="modal-box" style="max-width:460px; max-height:92vh; overflow:auto;">
+      <div class="modal-header">
+        <div class="modal-title">🎨 Estilo del reel</div>
+        <button class="btn-close-modal" type="button" data-est="cancelar">✕</button>
+      </div>
+      ${PARTES.map(([k, nombre, durs]) => `
+      <div class="ig-est-parte" data-parte="${k}" style="margin-bottom:12px;">
+        <label class="ig-label">${nombre}</label>
+        <div style="display:flex; gap:6px; overflow-x:auto; padding-bottom:4px;">
+          ${PLANTILLAS.map(([g, n]) => `<button type="button" class="ig-plantilla" data-g="${g}"
+            style="flex:0 0 auto; width:70px; padding:3px; border-radius:8px; border:2px solid #cbd5e1; background:#fff; cursor:pointer; color:#1e293b;">
+            ${g === "auto" ? `<div style="height:124px; display:flex; align-items:center; justify-content:center; font-size:28px; background:#f1f5f9; border-radius:5px;">🎲</div>`
+              : `<img src="reels-estilos/${k}-${g}.jpg" alt="" loading="lazy" style="width:100%; height:124px; object-fit:cover; border-radius:5px; display:block;">`}
+            <small style="display:block; font-size:11px; margin-top:2px;">${g === "auto" ? "Al azar" : n}</small></button>`).join("")}
+        </div>
+        <div style="display:flex; gap:8px; align-items:center; margin-top:4px; flex-wrap:wrap;">
+          <small>Duración</small>
+          <select class="app-input ig-est-dur" style="width:auto; padding:4px 8px;">${durs.map(d => `<option value="${d}">${String(d).replace(".", ",")} s</option>`).join("")}</select>
+          ${k === "cierre" ? `<small>Animación de entrada</small>
+          <select class="app-input ig-est-anim" style="width:auto; padding:4px 8px;">${ANIMACIONES.map(([v, n]) => `<option value="${v}">${n}</option>`).join("")}</select>` : ""}
+        </div>
+      </div>`).join("")}
+      <label class="ig-label">Color de acento</label>
+      <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">${swatches(ACENTOS, "acento")}</div>
+      <label class="ig-label">Color de fondo</label>
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">${swatches(FONDOS, "fondo")}</div>
+      <small class="ig-info">La plantilla «Crónica» usa siempre fondo de papel.</small>
+      <div style="display:flex; gap:8px; margin-top:12px;">
+        <button class="btn-save-session" type="button" data-est="cancelar" style="flex:1; background:#64748b;">Cancelar</button>
+        <button class="btn-save-session" type="button" data-est="ok" style="flex:2;">${textoBoton || "🎬 Generar reel"}</button>
+      </div>
+    </div>
+  </div>`);
+    const m = document.getElementById("modalIgEstilo");
+    const marcar = () => {
+      m.querySelectorAll(".ig-est-parte").forEach(div => {
+        const k = div.dataset.parte;
+        div.querySelectorAll(".ig-plantilla").forEach(b => {
+          const si = b.dataset.g === e[k].tipo;
+          b.style.borderColor = si ? "#2563eb" : "#cbd5e1"; b.style.boxShadow = si ? "0 0 0 2px #93c5fd" : "none";
+        });
+        const sel = div.querySelector(".ig-est-dur");
+        if (![...sel.options].some(o => +o.value === +e[k].dur)) sel.insertAdjacentHTML("beforeend", `<option value="${e[k].dur}">${e[k].dur} s</option>`);
+        sel.value = String(+e[k].dur);
+        const an = div.querySelector(".ig-est-anim"); if (an) an.value = e.cierre.anim;
+      });
+      m.querySelectorAll(".ig-sw").forEach(b => {
+        const si = (e[b.dataset.k] || "").toLowerCase() === b.dataset.c;
+        b.style.outline = si ? "3px solid #2563eb" : "none"; b.style.outlineOffset = "2px";
+      });
+      m.querySelectorAll(".ig-sw-otro").forEach(i => {
+        const c = e[i.dataset.k], propio = c && !(i.dataset.k === "acento" ? ACENTOS : FONDOS).includes(c.toLowerCase());
+        i.parentElement.style.background = propio ? c : "transparent";
+        i.parentElement.style.outline = propio ? "3px solid #2563eb" : "none"; i.parentElement.style.outlineOffset = "2px";
+        if (c) i.value = c;
+      });
+    };
+    marcar();
+    return new Promise(resolve => {
+      const fin = (v) => { m.remove(); resolve(v); };
+      m.addEventListener("click", (ev) => {
+        if (ev.target === m) return fin(null);
+        const b = ev.target.closest("button");
+        if (!b) return;
+        if (b.dataset.est === "cancelar") return fin(null);
+        if (b.dataset.est === "ok") {
+          try { localStorage.setItem(ESTILO_KEY, JSON.stringify(e)); } catch (x) { /* sin almacenamiento */ }
+          return fin(e);
+        }
+        if (b.classList.contains("ig-plantilla")) { e[b.closest(".ig-est-parte").dataset.parte].tipo = b.dataset.g; marcar(); }
+        if (b.classList.contains("ig-sw")) { e[b.dataset.k] = b.dataset.c; marcar(); }
+      });
+      m.addEventListener("change", (ev) => {
+        const t = ev.target, parte = t.closest(".ig-est-parte")?.dataset.parte;
+        if (t.classList.contains("ig-est-dur")) e[parte].dur = +t.value;
+        else if (t.classList.contains("ig-est-anim")) e.cierre.anim = t.value;
+        else if (t.classList.contains("ig-sw-otro")) e[t.dataset.k] = t.value;
+        marcar();
+      });
+    });
   }
 
   /* ---------- Menú «Generar ahora» (resultados, próximos o evento manual) ---------- */
@@ -703,19 +826,18 @@
   function generar(tipo) {
     crearMenu();
     destino = "reel";
-    if (tipo === "proximos") {
-      if (confirm("¿Generar el reel de próximos partidos?")) pedirPartidos("proximos");
-      return;
-    }
+    if (tipo === "proximos") { pedirPartidos("proximos"); return; }
     if (tipo === "resultados") { prepararResultados(); return; }
     verPaso(tipo === "evento" ? "evento" : "menu");
     document.getElementById("modalIgGenerar").classList.add("active");
   }
 
   async function pedirPartidos(tipo, extra) {
+    const estilo = await elegirEstilo();
+    if (!estilo) return;
     cerrarMenu();
     try {
-      await putJson("Reels/solicitud.json", Object.assign({ id: Date.now().toString(36), tipo, pedido: new Date().toISOString() }, extra || {}),
+      await putJson("Reels/solicitud.json", Object.assign({ id: Date.now().toString(36), tipo, estilo, pedido: new Date().toISOString() }, extra || {}),
         `Pedir reel ${tipo}`);
       alert("Pedido. El borrador aparecerá aquí en unos minutos (pulsa 🔄 para actualizar).");
     } catch (e) { alert(e.message); }
@@ -729,6 +851,8 @@
     if (!texto) { alert("Explica un poco de qué va el reel (puedes dictarlo)."); return; }
     if (!fotosEvento.length) { alert("Añade al menos una foto."); return; }
     pararDictado();
+    const estilo = await elegirEstilo();
+    if (!estilo) return;
     const boton = document.getElementById("igEvPedir"), estado = document.getElementById("igEvEstado");
     boton.disabled = true;
     const id = Date.now().toString(36);
@@ -741,7 +865,7 @@
         fotos.push(ruta);
       }
       estado.textContent = "Pidiendo el reel…";
-      await putJson("Reels/solicitud.json", { id, tipo: "evento", titulo, descripcion: texto, fotos,
+      await putJson("Reels/solicitud.json", { id, tipo: "evento", titulo, descripcion: texto, fotos, estilo,
         pedido: new Date().toISOString() }, `Pedir reel de evento ${id}`);
       fotosEvento.forEach(f => URL.revokeObjectURL(f.url)); fotosEvento = []; pintarFotos();
       document.getElementById("igEvTitulo").value = ""; document.getElementById("igEvTexto").value = "";
