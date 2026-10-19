@@ -156,7 +156,7 @@
       <input type="file" id="cpFileInput" accept="application/pdf,.pdf" style="display:none;">
     </div>
 
-    <!-- ===== Sección plegable: Dirección NVA (incluye Carteles y Horarios) ===== -->
+    <!-- ===== Sección plegable: Dirección NVA (incluye Horarios) ===== -->
     <div class="section-title section-toggle" id="secHead_direccion" role="button" tabindex="0" aria-expanded="true" aria-controls="secBody_direccion" style="margin-top:20px;" onclick="toggleSection('direccion')" onkeydown="sectionKey(event,'direccion')">Dirección NVA <span class="sec-arrow">▾</span></div>
     <div class="section-body" id="secBody_direccion">
     <button class="coach-btn" id="btnDireccionNVA" onclick="toggleDireccionNVA()">
@@ -169,27 +169,32 @@
       <button class="btn-pdf-mode" style="flex:1; min-width:0; margin-bottom:0;" onclick="openSelectQueryPdfModal()">📝 PDF CONSULTA</button>
     </div>
 
-    <div class="section-subtitle">Carteles</div>
-    <div class="cartel-sub">📅 Partidos de la semana</div>
-    <div class="cartel-row">
-      <button class="btn-pdf-mode2" onclick="cartelAuto('partidos')">⚡ Carga automática</button>
-      <button class="btn-pdf-mode2" onclick="location.href='Partidos.html'">✍️ Introducción manual</button>
-    </div>
-    <div class="cartel-sub">🏆 Resultados de la semana</div>
-    <div class="cartel-row">
-      <button class="btn-pdf-mode2" onclick="cartelAuto('resultados')">⚡ Carga automática</button>
-      <button class="btn-pdf-mode2" onclick="location.href='Resultados.html'">✍️ Introducción manual</button>
-    </div>
-
     <div class="section-subtitle">Horarios de entrenamiento</div>
     <button class="btn-pdf-mode2" style="margin-bottom:20px;" onclick="openHorarios()">🗓️ Horarios</button>
     </div>
 
-    <!-- ===== Sección plegable: Instagram (solo si se ha activado en Opciones › Instagram) ===== -->
-    <div id="igSectionWrap" hidden>
-      <div class="section-title section-toggle" id="secHead_instagram" role="button" tabindex="0" aria-expanded="true" aria-controls="secBody_instagram" style="margin-top:20px;" onclick="toggleSection('instagram')" onkeydown="sectionKey(event,'instagram')">Instagram <span class="sec-arrow">▾</span></div>
+    <!-- ===== Sección plegable: Redes Sociales (Carteles para todos; Reels y Stories solo con el token de Instagram) ===== -->
+    <div id="igSectionWrap">
+      <div class="section-title section-toggle" id="secHead_instagram" role="button" tabindex="0" aria-expanded="true" aria-controls="secBody_instagram" style="margin-top:20px;" onclick="toggleSection('instagram')" onkeydown="sectionKey(event,'instagram')">Redes Sociales <span class="sec-arrow">▾</span></div>
       <div class="section-body" id="secBody_instagram">
-        <div class="section-title" style="font-size:0.95rem; margin-top:8px;">Reels · borradores</div>
+        <div class="cp-sub-head" id="igSubHead_carteles" role="button" tabindex="0" aria-expanded="true" onclick="igToggleSub('carteles')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();igToggleSub('carteles');}">🖼️ Carteles <span class="sec-arrow">▾</span></div>
+        <div class="cp-sub-body" id="igSub_carteles">
+          <div class="cartel-sub">📅 Partidos de la semana</div>
+          <div class="cartel-row">
+            <button class="btn-pdf-mode2" onclick="cartelAuto('partidos')">⚡ Carga automática</button>
+            <button class="btn-pdf-mode2" onclick="location.href='Partidos.html'">✍️ Introducción manual</button>
+          </div>
+          <div class="cartel-sub">🏆 Resultados de la semana</div>
+          <div class="cartel-row">
+            <button class="btn-pdf-mode2" onclick="cartelAuto('resultados')">⚡ Carga automática</button>
+            <button class="btn-pdf-mode2" onclick="location.href='Resultados.html'">✍️ Introducción manual</button>
+          </div>
+        </div>
+
+        <p class="ig-info" id="igSinToken">Para hacer Reels y Stories de Instagram, activa Instagram en Opciones › Instagram.</p>
+        <div id="igSoloToken" hidden>
+        <div class="cp-sub-head" id="igSubHead_reels" role="button" tabindex="0" aria-expanded="true" onclick="igToggleSub('reels')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();igToggleSub('reels');}">🎬 Reels · borradores <span class="sec-arrow">▾</span></div>
+        <div class="cp-sub-body" id="igSub_reels">
         <p class="ig-info">Los reels se crean solos como borrador. Nada se publica hasta que una persona lo revisa y pulsa «Confirmar y publicar».</p>
         <div style="display:flex; gap:8px; align-items:flex-start; margin-bottom:10px;">
           <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
@@ -200,8 +205,10 @@
           <button class="btn-save-session" style="margin:0; width:44px; flex:none; padding:10px 0; background:#64748b;" onclick="igReelsCargar()" title="Refrescar borradores" aria-label="Refrescar borradores">🔄</button>
         </div>
         <div id="igReelsList"></div>
+        </div>
 
-        <div class="section-title" style="font-size:0.95rem; margin-top:18px;">Stories · borradores</div>
+        <div class="cp-sub-head" id="igSubHead_stories" role="button" tabindex="0" aria-expanded="true" onclick="igToggleSub('stories')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();igToggleSub('stories');}">📲 Stories · borradores <span class="sec-arrow">▾</span></div>
+        <div class="cp-sub-body" id="igSub_stories">
         <p class="ig-info">Con los carteles de Partidos y Resultados, o con fotos de un evento. Nada se publica hasta que una persona lo revisa y pulsa «Confirmar y publicar».</p>
         <div style="display:flex; gap:8px; align-items:flex-start; margin-bottom:10px;">
           <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
@@ -212,6 +219,8 @@
           <button class="btn-save-session" style="margin:0; width:44px; flex:none; padding:10px 0; background:#64748b;" onclick="igHistoriasCargar()" title="Refrescar borradores de stories" aria-label="Refrescar borradores de stories">🔄</button>
         </div>
         <div id="igStoriesList"></div>
+        </div>
+        </div>
       </div>
     </div>
   </div>

@@ -31,8 +31,11 @@
 
   function applyVisibility() {
     const ig = loadIg();
-    const wrap = document.getElementById("igSectionWrap");
-    if (wrap) wrap.hidden = !ig;
+    // La sección Redes Sociales (con Carteles) se ve siempre; Reels y Stories solo con el token
+    const solo = document.getElementById("igSoloToken");
+    if (solo) solo.hidden = !ig;
+    const sin = document.getElementById("igSinToken");
+    if (sin) sin.hidden = !!ig;
     const off = document.getElementById("igConfigOff");
     const on = document.getElementById("igConfigOn");
     if (off) off.hidden = !!ig;
@@ -88,12 +91,12 @@
   }
 
   function igDeactivate() {
-    if (!confirm("¿Quitar el token de Instagram de este dispositivo? La sección Instagram dejará de verse.")) return;
+    if (!confirm("¿Quitar el token de Instagram de este dispositivo? Reels y Stories dejarán de verse.")) return;
     saveIg(null);
   }
 
   // Al abrir la app se vuelve a comprobar el token guardado: si ha caducado
-  // o ya no tiene acceso se quita la sección. Sin conexión se deja como está.
+  // o ya no tiene acceso se ocultan Reels y Stories. Sin conexión se deja como está.
   async function recheckStoredToken() {
     const ig = loadIg();
     if (!ig || !navigator.onLine || !ghSettings.user || !ghSettings.repo) return;
@@ -102,9 +105,30 @@
     } catch (err) {
       if (!err.authFailed) return;
       saveIg(null);
-      alert(`Se ha desactivado la sección Instagram: ${err.message}`);
+      alert(`Se han desactivado Reels y Stories: ${err.message}`);
     }
   }
+
+  // Subsecciones plegables de Redes Sociales (mismo aspecto que las del calendario)
+  const SUBS_KEY = "NVA_IG_SUBS";
+  function subsState() { try { return JSON.parse(localStorage.getItem(SUBS_KEY)) || {}; } catch (e) { return {}; } }
+  function applySub(id, open) {
+    const head = document.getElementById("igSubHead_" + id), body = document.getElementById("igSub_" + id);
+    if (!head || !body) return;
+    head.classList.toggle("collapsed", !open); body.classList.toggle("collapsed", !open);
+    head.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+  function igToggleSub(id) {
+    const body = document.getElementById("igSub_" + id);
+    if (!body) return;
+    const open = body.classList.contains("collapsed"), st = subsState();
+    st[id] = open;
+    try { localStorage.setItem(SUBS_KEY, JSON.stringify(st)); } catch (e) { /* sin almacenamiento */ }
+    applySub(id, open);
+  }
+  const st0 = subsState();
+  ["carteles", "reels", "stories"].forEach(id => applySub(id, st0[id] !== false));
+  window.igToggleSub = igToggleSub;
 
   window.igActivate = igActivate;
   window.igDeactivate = igDeactivate;
