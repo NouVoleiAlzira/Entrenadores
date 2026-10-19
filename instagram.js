@@ -151,7 +151,7 @@
   "use strict";
 
   const DIR = "Reels/borradores";
-  const ESTADOS = { borrador: "📝 Borrador", confirmado: "✅ Confirmado · pendiente de publicar", publicado: "📲 Publicado", descartado: "🗑️ Descartado", error: "⚠️ Error al publicar" };
+  const ESTADOS = { previa: "🖼️ Previa · falta crear el vídeo", borrador: "📝 Borrador", confirmado: "✅ Confirmado · pendiente de publicar", publicado: "📲 Publicado", descartado: "🗑️ Descartado", error: "⚠️ Error al publicar" };
   const TIPOS = { resultados: "🏆 Resultados de la semana", proximos: "📅 Próximos partidos", actividad: "📸 Actividad", evento: "📸 Evento" };
   const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const fmt = (s) => { if (!s) return ""; const [y, m, d] = s.slice(0, 10).split("-"); return `${d}/${m}`; };
@@ -200,7 +200,7 @@
               <span class="ig-estado ig-${esc(b.estado)}">${ESTADOS[b.estado] || esc(b.estado)}</span></div>
             ${papelera ? `<button type="button" class="ig-papelera" title="Borrar" aria-label="Borrar" style="flex:none; align-self:flex-start; border:0; background:transparent; font-size:1.3rem; cursor:pointer; padding:4px;">🗑️</button>` : ""}
           </div>
-          <button class="btn-pdf-mode ig-abrir" style="width:100%; margin:8px 0 0; background:var(--azul-primary); color:#fff;">${b.estado === "borrador" ? "👀 REVISAR Y CONFIRMAR" : "👀 VER"}</button>
+          <button class="btn-pdf-mode ig-abrir" style="width:100%; margin:8px 0 0; background:var(--azul-primary); color:#fff;">${b.estado === "borrador" ? "👀 REVISAR Y CONFIRMAR" : b.estado === "previa" ? "👀 VER PREVIA" : "👀 VER"}</button>
           <div class="ig-detalle" hidden></div>
         </div>`;
   }
@@ -251,6 +251,7 @@
     det.innerHTML = `<p class="ig-info">Descargando el vídeo…</p>`;
     try {
       const meta = await getJson(`${DIR}/${id}/meta.json`);
+      if (meta.estado === "previa") return abrirPrevia(id, meta, det);
       const vk = id + "|" + (meta.version || "");   // al cambiar el estilo el vídeo es otro
       if (!videos[vk]) videos[vk] = await blobUrl(`${DIR}/${id}/reel.mp4`);
       videos[id] = videos[vk];
@@ -277,13 +278,13 @@
       if (!editable) return;
       det.querySelector(".ig-descartar").onclick = () => cambiarEstado(id, meta, "descartado");
       det.querySelector(".ig-estilo").onclick = async () => {
-        const estilo = await elegirEstilo(meta.estilo, "🎨 Regenerar reel");
+        const estilo = await elegirEstilo(meta.estilo, "🎨 Rehacer la previa");
         if (!estilo) return;
         try {
           await putJson("Reels/solicitud.json", { id: Date.now().toString(36), tipo: "regenerar", borrador: id, estilo,
             texto: det.querySelector(".ig-texto").value.trim(), pedido: new Date().toISOString() }, `Cambiar estilo del reel ${id}`);
           det.hidden = true;
-          alert("Pedido. El borrador se rehará con el nuevo estilo en unos minutos (pulsa 🔄 para actualizar).");
+          alert("Pedido. Se rehará la previa con el nuevo estilo en unos minutos (pulsa 🔄 para actualizar). Después tendrás que crear el vídeo otra vez.");
         } catch (e) { alert(e.message); }
       };
       det.querySelector(".ig-confirmar").onclick = () => {
@@ -294,6 +295,48 @@
       console.error(e);
       det.innerHTML = `<p class="ig-info">No se ha podido abrir el borrador (${esc(e.message)}).</p>`;
     }
+  }
+
+  // Previa: las diapositivas dibujadas, antes de montar el vídeo
+  async function abrirPrevia(id, meta, det) {
+    const n = meta.slides || 0;
+    det.innerHTML = `
+      <p class="ig-info">Así quedan las diapositivas. Si te gustan, crea el vídeo; si no, cambia el estilo.</p>
+      <div class="ig-slides" style="display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; scroll-snap-type:x mandatory;">
+        ${Array.from({ length: n }, (_, i) => `<img data-i="${i + 1}" alt="Diapositiva ${i + 1}" style="flex:0 0 auto; width:46%; aspect-ratio:9/16; object-fit:cover; border-radius:8px; background:#0b163a; scroll-snap-align:start; cursor:zoom-in;">`).join("")}
+      </div>
+      <label class="ig-label">Texto del post (puedes cambiarlo)</label>
+      <textarea class="ig-texto" rows="6">${esc(meta.texto)}</textarea>
+      <button class="btn-save-session ig-estilo" style="width:100%; margin-top:10px; background:#7c3aed;">🎨 Cambiar estilo</button>
+      <div style="display:flex; gap:8px; margin-top:8px;">
+        <button class="btn-save-session ig-descartar" style="flex:1; background:#64748b;">🗑️ Descartar</button>
+        <button class="btn-save-session ig-video" style="flex:2; background:var(--btn-fondoVerde);">🎬 Crear vídeo</button></div>`;
+    det.querySelectorAll(".ig-slides img").forEach(async img => {
+      try {
+        img.src = await blobUrl(`${DIR}/${id}/slides/${String(img.dataset.i).padStart(2, "0")}.jpg`);
+        img.onclick = () => window.open(img.src, "_blank");
+      } catch (e) { img.alt = "No disponible"; }
+    });
+    const texto = () => det.querySelector(".ig-texto").value.trim();
+    det.querySelector(".ig-descartar").onclick = () => cambiarEstado(id, meta, "descartado");
+    det.querySelector(".ig-estilo").onclick = async () => {
+      const estilo = await elegirEstilo(meta.estilo, "🎨 Rehacer la previa");
+      if (!estilo) return;
+      await pedirSobreBorrador({ tipo: "regenerar", borrador: id, estilo, texto: texto() }, `Cambiar estilo del reel ${id}`,
+        "Pedido. La previa se rehará con el nuevo estilo en unos minutos (pulsa 🔄 para actualizar).", det);
+    };
+    det.querySelector(".ig-video").onclick = async () => {
+      await pedirSobreBorrador({ tipo: "video", borrador: id, texto: texto() }, `Crear vídeo del reel ${id}`,
+        "Pedido. El vídeo estará listo en unos minutos (pulsa 🔄 para actualizar).", det);
+    };
+  }
+
+  async function pedirSobreBorrador(datos, msg, aviso, det) {
+    try {
+      await putJson("Reels/solicitud.json", Object.assign({ id: Date.now().toString(36), pedido: new Date().toISOString() }, datos), msg);
+      det.hidden = true;
+      alert(aviso);
+    } catch (e) { alert(e.message); }
   }
 
   async function cambiarEstado(id, meta, estado, extra) {
@@ -329,7 +372,10 @@
   /* ---------- Estilo del reel: portada, partidos y despedida (tipo, duración, animación) y colores ----------
      Las miniaturas están en reels-estilos/<parte>-<plantilla>.jpg. «auto» = al azar (lo decide el Action). */
   const ESTILO_KEY = "NVA_REEL_ESTILO";
-  const PLANTILLAS = [["auto", "🎲 Al azar"], ["pista", "Pista"], ["corte", "Corte"], ["foco", "Foco"], ["editorial", "Crónica"], ["marcador", "Marcador"]];
+  const PLANTILLAS = [["auto", "🎲 Al azar"], ["pancarta", "Pancarta"], ["rasgado", "Rasgado"], ["impacto", "Impacto"], ["diagonal", "Diagonal"],
+                      ["franjas", "Franjas"], ["pista", "Pista"], ["corte", "Corte"], ["foco", "Foco"], ["editorial", "Crónica"], ["marcador", "Marcador"]];
+  const ANIM_TXT = { portada: "Animación de inicio", partido: "Transición entre partidos", cierre: "Animación final" };
+  const ANIM_DEF = { portada: "fade", partido: "slideleft", cierre: "fade" };
   const PARTES = [["portada", "Portada", [2, 2.5, 3, 4, 5], 3], ["partido", "Partidos y fotos", [2, 2.5, 3, 3.2, 4, 5, 6], 3.2],
                   ["cierre", "Despedida", [2, 2.5, 3, 4, 5], 3]];
   const ANIMACIONES = [["slideleft", "Deslizar"], ["fade", "Desvanecer"], ["fadeblack", "Fundido a negro"], ["dissolve", "Disolver"],
@@ -345,7 +391,7 @@
   function elegirEstilo(inicial, textoBoton) {
     const e = JSON.parse(JSON.stringify(inicial || estiloGuardado()));
     PARTES.forEach(([k, , , dur]) => { e[k] = Object.assign({ tipo: "auto", dur }, e[k] || {}); });
-    e.cierre.anim = e.cierre.anim || "slideleft";
+    PARTES.forEach(([k]) => { e[k].anim = e[k].anim || ANIM_DEF[k]; });
     e.acento = e.acento || ""; e.fondo = e.fondo || "";
     document.getElementById("modalIgEstilo")?.remove();
     const swatches = (lista, k) => lista.map(c => `<button type="button" class="ig-sw" data-k="${k}" data-c="${c}" title="${c || "Al azar"}"
@@ -372,15 +418,15 @@
         <div style="display:flex; gap:8px; align-items:center; margin-top:4px; flex-wrap:wrap;">
           <small>Duración</small>
           <select class="app-input ig-est-dur" style="width:auto; padding:4px 8px;">${durs.map(d => `<option value="${d}">${String(d).replace(".", ",")} s</option>`).join("")}</select>
-          ${k === "cierre" ? `<small>Animación de entrada</small>
-          <select class="app-input ig-est-anim" style="width:auto; padding:4px 8px;">${ANIMACIONES.map(([v, n]) => `<option value="${v}">${n}</option>`).join("")}</select>` : ""}
+          <small>${ANIM_TXT[k]}</small>
+          <select class="app-input ig-est-anim" style="width:auto; padding:4px 8px;">${ANIMACIONES.map(([v, n]) => `<option value="${v}">${n}</option>`).join("")}</select>
         </div>
       </div>`).join("")}
       <label class="ig-label">Color de acento</label>
       <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">${swatches(ACENTOS, "acento")}</div>
       <label class="ig-label">Color de fondo</label>
       <div style="display:flex; gap:6px; flex-wrap:wrap;">${swatches(FONDOS, "fondo")}</div>
-      <small class="ig-info">La plantilla «Crónica» usa siempre fondo de papel.</small>
+      <small class="ig-info">Con 🎲, cada plantilla usa sus propios colores. «Crónica» usa siempre fondo de papel.</small>
       <div style="display:flex; gap:8px; margin-top:12px;">
         <button class="btn-save-session" type="button" data-est="cancelar" style="flex:1; background:#64748b;">Cancelar</button>
         <button class="btn-save-session" type="button" data-est="ok" style="flex:2;">${textoBoton || "🎬 Generar reel"}</button>
@@ -398,7 +444,7 @@
         const sel = div.querySelector(".ig-est-dur");
         if (![...sel.options].some(o => +o.value === +e[k].dur)) sel.insertAdjacentHTML("beforeend", `<option value="${e[k].dur}">${e[k].dur} s</option>`);
         sel.value = String(+e[k].dur);
-        const an = div.querySelector(".ig-est-anim"); if (an) an.value = e.cierre.anim;
+        div.querySelector(".ig-est-anim").value = e[k].anim;
       });
       m.querySelectorAll(".ig-sw").forEach(b => {
         const si = (e[b.dataset.k] || "").toLowerCase() === b.dataset.c;
@@ -429,7 +475,7 @@
       m.addEventListener("change", (ev) => {
         const t = ev.target, parte = t.closest(".ig-est-parte")?.dataset.parte;
         if (t.classList.contains("ig-est-dur")) e[parte].dur = +t.value;
-        else if (t.classList.contains("ig-est-anim")) e.cierre.anim = t.value;
+        else if (t.classList.contains("ig-est-anim")) e[parte].anim = t.value;
         else if (t.classList.contains("ig-sw-otro")) e[t.dataset.k] = t.value;
         marcar();
       });
@@ -578,7 +624,8 @@
      así que lo que se ve en este marco es exactamente lo que saldrá. */
   const FOTO_W = 1080, FOTO_H = 1350;
 
-  function encuadrar(file) {
+  // ancho × alto: 1080×1350 (4:5) para las fotos de eventos, 1200×900 (4:3) para las de los partidos
+  function encuadrar(file, FOTO_W = 1080, FOTO_H = 1350) {
     return new Promise((resolver) => {
       const url = URL.createObjectURL(file);
       const img = new Image();
@@ -589,12 +636,12 @@
         capa.innerHTML = `
           <div class="modal-box" style="max-width:380px; width:100%;">
             <div class="modal-header"><div class="modal-title">🔍 Ajusta la foto</div></div>
-            <div class="ig-marco" style="position:relative; width:100%; aspect-ratio:4/5; overflow:hidden; border-radius:10px; background:#0b163a; touch-action:none; cursor:grab;">
+            <div class="ig-marco" style="position:relative; width:100%; aspect-ratio:${FOTO_W}/${FOTO_H}; overflow:hidden; border-radius:10px; background:#0b163a; touch-action:none; cursor:grab;">
               <img alt="" draggable="false" style="position:absolute; left:0; top:0; transform-origin:0 0; user-select:none; max-width:none;">
             </div>
             <label class="ig-label" style="display:flex; align-items:center; gap:8px; margin-top:10px;">➖
-              <input type="range" class="ig-zoom" min="1" max="4" step="0.01" value="1" style="flex:1;">➕</label>
-            <small class="ig-info">Arrastra la foto para encuadrarla y usa la barra para el zoom. Lo que ves en el marco es lo que saldrá en el reel.</small>
+              <input type="range" class="ig-zoom" min="0.4" max="4" step="0.01" value="1" style="flex:1;">➕</label>
+            <small class="ig-info">Arrastra la foto para encuadrarla y usa la barra (o pellizca) para acercar o alejar. Si la alejas, el hueco se rellena con la misma foto desenfocada. Lo que ves en el marco es lo que saldrá en el reel.</small>
             <div style="display:flex; gap:8px; margin-top:10px;">
               <button class="btn-save-session" type="button" data-e="no" style="flex:1; background:#64748b;">Cancelar</button>
               <button class="btn-save-session" type="button" data-e="si" style="flex:2;">✅ Usar foto</button>
@@ -603,10 +650,13 @@
         document.body.appendChild(capa);
         const marco = capa.querySelector(".ig-marco"), vista = marco.querySelector("img"), zoom = capa.querySelector(".ig-zoom");
         vista.src = url;
+        marco.style.backgroundImage = `url("${url}")`; marco.style.backgroundSize = "cover"; marco.style.backgroundPosition = "center";
+        marco.insertAdjacentHTML("afterbegin", `<div style="position:absolute; inset:0; backdrop-filter:blur(14px) brightness(.7); -webkit-backdrop-filter:blur(14px) brightness(.7);"></div>`);
         let FW = 0, FH = 0, base = 1, z = 1, ox = 0, oy = 0;
         const limitar = () => {
           const dw = img.naturalWidth * base * z, dh = img.naturalHeight * base * z;
-          ox = Math.min(0, Math.max(FW - dw, ox)); oy = Math.min(0, Math.max(FH - dh, oy));
+          ox = dw <= FW ? (FW - dw) / 2 : Math.min(0, Math.max(FW - dw, ox));
+          oy = dh <= FH ? (FH - dh) / 2 : Math.min(0, Math.max(FH - dh, oy));
         };
         const pintar = () => { limitar(); vista.style.transform = `translate(${ox}px, ${oy}px) scale(${base * z})`; };
         const medir = () => {
@@ -618,7 +668,7 @@
           pintar();
         };
         const cambiarZoom = (nuevo, px = FW / 2, py = FH / 2) => {   // zoom manteniendo fijo el punto (px, py)
-          nuevo = Math.min(4, Math.max(1, nuevo));
+          nuevo = Math.min(4, Math.max(0.4, nuevo));
           const k = nuevo / z;
           ox = px - (px - ox) * k; oy = py - (py - oy) * k; z = nuevo; zoom.value = String(z);
           pintar();
@@ -657,6 +707,13 @@
           c.width = FOTO_W; c.height = FOTO_H;
           const k = FOTO_W / FW, ctx = c.getContext("2d");
           ctx.imageSmoothingQuality = "high";
+          if (z < 1) {   // foto alejada: el hueco, con la misma foto desenfocada y oscurecida
+            const s = Math.max(FOTO_W / img.naturalWidth, FOTO_H / img.naturalHeight);
+            ctx.fillStyle = "#0b163a"; ctx.fillRect(0, 0, FOTO_W, FOTO_H);
+            ctx.filter = "blur(28px) brightness(0.7)";
+            ctx.drawImage(img, (FOTO_W - img.naturalWidth * s) / 2, (FOTO_H - img.naturalHeight * s) / 2, img.naturalWidth * s, img.naturalHeight * s);
+            ctx.filter = "none";
+          }
           ctx.drawImage(img, ox * k, oy * k, img.naturalWidth * base * z * k, img.naturalHeight * base * z * k);
           c.toBlob(b => b ? cerrar(b) : alert("No se ha podido preparar la foto."), "image/jpeg", 0.88);
         };
@@ -811,7 +868,7 @@
       const p = resPartidos[+inp.dataset.res], f = inp.files && inp.files[0];
       if (!f) return;
       inp.value = "";
-      const blob = await encuadrar(f);
+      const blob = await encuadrar(f, 1200, 900);
       if (!blob) return;
       if (p.url) URL.revokeObjectURL(p.url);
       Object.assign(p, { blob, url: URL.createObjectURL(blob) });
@@ -861,7 +918,7 @@
     try {
       await putJson("Reels/solicitud.json", Object.assign({ id: Date.now().toString(36), tipo, estilo, pedido: new Date().toISOString() }, extra || {}),
         `Pedir reel ${tipo}`);
-      alert("Pedido. El borrador aparecerá aquí en unos minutos (pulsa 🔄 para actualizar).");
+      alert("Pedido. La previa de las diapositivas aparecerá aquí en unos minutos (pulsa 🔄 para actualizar).");
     } catch (e) { alert(e.message); }
   }
 
@@ -893,7 +950,7 @@
       document.getElementById("igEvTitulo").value = ""; document.getElementById("igEvTexto").value = "";
       estado.textContent = "";
       cerrarMenu();
-      alert("Pedido. El borrador aparecerá aquí en unos minutos (pulsa 🔄 para actualizar).");
+      alert("Pedido. La previa de las diapositivas aparecerá aquí en unos minutos (pulsa 🔄 para actualizar).");
     } catch (e) {
       estado.textContent = "";
       alert(e.message);
