@@ -362,19 +362,95 @@
 
   function pararDictado() { if (dictado) dictado.stop(); }
 
-  // Reduce cada foto a 1080×1920 como mucho (JPEG) para que la subida sea ligera
-  function reducir(file) {
-    return new Promise((ok, mal) => {
-      const img = new Image(), url = URL.createObjectURL(file);
+  /* ---------- Encuadre de la foto (zoom y posición) antes de añadirla ----------
+     La foto sale en el reel en formato 4:5 y ningún texto ni color se pone encima,
+     así que lo que se ve en este marco es exactamente lo que saldrá. */
+  const FOTO_W = 1080, FOTO_H = 1350;
+
+  function encuadrar(file) {
+    return new Promise((resolver) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onerror = () => { URL.revokeObjectURL(url); alert(`No se ha podido leer ${file.name}`); resolver(null); };
       img.onload = () => {
-        const k = Math.min(1, 1920 / Math.max(img.width, img.height));
-        const c = document.createElement("canvas");
-        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
-        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-        URL.revokeObjectURL(url);
-        c.toBlob(b => b ? ok(b) : mal(new Error("No se ha podido leer la foto")), "image/jpeg", 0.85);
+        const capa = document.createElement("div");
+        capa.style.cssText = "position:fixed; inset:0; z-index:10000; background:rgba(5,12,35,.86); display:flex; align-items:center; justify-content:center; padding:16px;";
+        capa.innerHTML = `
+          <div class="modal-box" style="max-width:380px; width:100%;">
+            <div class="modal-header"><div class="modal-title">🔍 Ajusta la foto</div></div>
+            <div class="ig-marco" style="position:relative; width:100%; aspect-ratio:4/5; overflow:hidden; border-radius:10px; background:#0b163a; touch-action:none; cursor:grab;">
+              <img alt="" draggable="false" style="position:absolute; left:0; top:0; transform-origin:0 0; user-select:none; max-width:none;">
+            </div>
+            <label class="ig-label" style="display:flex; align-items:center; gap:8px; margin-top:10px;">➖
+              <input type="range" class="ig-zoom" min="1" max="4" step="0.01" value="1" style="flex:1;">➕</label>
+            <small class="ig-info">Arrastra la foto para encuadrarla y usa la barra para el zoom. Lo que ves en el marco es lo que saldrá en el reel.</small>
+            <div style="display:flex; gap:8px; margin-top:10px;">
+              <button class="btn-save-session" type="button" data-e="no" style="flex:1; background:#64748b;">Cancelar</button>
+              <button class="btn-save-session" type="button" data-e="si" style="flex:2;">✅ Usar foto</button>
+            </div>
+          </div>`;
+        document.body.appendChild(capa);
+        const marco = capa.querySelector(".ig-marco"), vista = marco.querySelector("img"), zoom = capa.querySelector(".ig-zoom");
+        vista.src = url;
+        let FW = 0, FH = 0, base = 1, z = 1, ox = 0, oy = 0;
+        const limitar = () => {
+          const dw = img.naturalWidth * base * z, dh = img.naturalHeight * base * z;
+          ox = Math.min(0, Math.max(FW - dw, ox)); oy = Math.min(0, Math.max(FH - dh, oy));
+        };
+        const pintar = () => { limitar(); vista.style.transform = `translate(${ox}px, ${oy}px) scale(${base * z})`; };
+        const medir = () => {
+          const r = marco.getBoundingClientRect();
+          const cx = FW ? (FW / 2 - ox) / (base * z) : img.naturalWidth / 2, cy = FH ? (FH / 2 - oy) / (base * z) : img.naturalHeight / 2;
+          FW = r.width; FH = r.height;
+          base = Math.max(FW / img.naturalWidth, FH / img.naturalHeight);
+          ox = FW / 2 - cx * base * z; oy = FH / 2 - cy * base * z;
+          pintar();
+        };
+        const cambiarZoom = (nuevo, px = FW / 2, py = FH / 2) => {   // zoom manteniendo fijo el punto (px, py)
+          nuevo = Math.min(4, Math.max(1, nuevo));
+          const k = nuevo / z;
+          ox = px - (px - ox) * k; oy = py - (py - oy) * k; z = nuevo; zoom.value = String(z);
+          pintar();
+        };
+        zoom.oninput = () => cambiarZoom(+zoom.value);
+        marco.addEventListener("wheel", (e) => {
+          e.preventDefault();
+          const r = marco.getBoundingClientRect();
+          cambiarZoom(z * (e.deltaY < 0 ? 1.08 : 1 / 1.08), e.clientX - r.left, e.clientY - r.top);
+        }, { passive: false });
+        const dedos = new Map();
+        let distancia = 0;
+        marco.addEventListener("pointerdown", (e) => { marco.setPointerCapture(e.pointerId); dedos.set(e.pointerId, { x: e.clientX, y: e.clientY }); marco.style.cursor = "grabbing"; });
+        marco.addEventListener("pointermove", (e) => {
+          const antes = dedos.get(e.pointerId);
+          if (!antes) return;
+          dedos.set(e.pointerId, { x: e.clientX, y: e.clientY });
+          if (dedos.size === 2) {   // pellizco con dos dedos
+            const [a, b] = [...dedos.values()];
+            const dist = Math.hypot(a.x - b.x, a.y - b.y), r = marco.getBoundingClientRect();
+            if (distancia) cambiarZoom(z * dist / distancia, (a.x + b.x) / 2 - r.left, (a.y + b.y) / 2 - r.top);
+            distancia = dist;
+            return;
+          }
+          ox += e.clientX - antes.x; oy += e.clientY - antes.y;
+          pintar();
+        });
+        const soltar = (e) => { dedos.delete(e.pointerId); distancia = 0; marco.style.cursor = "grab"; };
+        marco.addEventListener("pointerup", soltar);
+        marco.addEventListener("pointercancel", soltar);
+        const cerrar = (blob) => { window.removeEventListener("resize", medir); capa.remove(); URL.revokeObjectURL(url); resolver(blob); };
+        window.addEventListener("resize", medir);
+        capa.querySelector('[data-e="no"]').onclick = () => cerrar(null);
+        capa.querySelector('[data-e="si"]').onclick = () => {
+          const c = document.createElement("canvas");
+          c.width = FOTO_W; c.height = FOTO_H;
+          const k = FOTO_W / FW, ctx = c.getContext("2d");
+          ctx.imageSmoothingQuality = "high";
+          ctx.drawImage(img, ox * k, oy * k, img.naturalWidth * base * z * k, img.naturalHeight * base * z * k);
+          c.toBlob(b => b ? cerrar(b) : alert("No se ha podido preparar la foto."), "image/jpeg", 0.88);
+        };
+        requestAnimationFrame(medir);
       };
-      img.onerror = () => { URL.revokeObjectURL(url); mal(new Error(`No se ha podido leer ${file.name}`)); };
       img.src = url;
     });
   }
@@ -384,8 +460,8 @@
     const lista = Array.from(files || []).filter(f => f.type.startsWith("image/"));
     if (lista.length > libres) alert(`Como mucho ${MAX_FOTOS} fotos. Se añaden las ${libres} primeras.`);
     for (const f of lista.slice(0, libres)) {
-      try { const blob = await reducir(f); fotosEvento.push({ blob, url: URL.createObjectURL(blob) }); }
-      catch (e) { alert(e.message); }
+      const blob = await encuadrar(f);
+      if (blob) fotosEvento.push({ blob, url: URL.createObjectURL(blob) });
     }
     pintarFotos();
   }
@@ -393,7 +469,7 @@
   function pintarFotos() {
     const el = document.getElementById("igEvMiniaturas");
     el.innerHTML = fotosEvento.map((f, i) => `
-      <div style="position:relative; aspect-ratio:1;">
+      <div style="position:relative; aspect-ratio:4/5;">
         <img src="${f.url}" alt="" style="width:100%; height:100%; object-fit:cover; border-radius:6px;">
         <button type="button" data-quitar="${i}" aria-label="Quitar foto" style="position:absolute; top:2px; right:2px; border:0; border-radius:50%; width:22px; height:22px; background:rgba(0,0,0,.65); color:#fff; cursor:pointer;">✕</button>
       </div>`).join("");
@@ -507,12 +583,12 @@
     el.querySelectorAll("[data-res]").forEach(inp => inp.onchange = async () => {
       const p = resPartidos[+inp.dataset.res], f = inp.files && inp.files[0];
       if (!f) return;
-      try {
-        const blob = await reducir(f);
-        if (p.url) URL.revokeObjectURL(p.url);
-        Object.assign(p, { blob, url: URL.createObjectURL(blob) });
-        pintarResultados();
-      } catch (e) { alert(e.message); }
+      inp.value = "";
+      const blob = await encuadrar(f);
+      if (!blob) return;
+      if (p.url) URL.revokeObjectURL(p.url);
+      Object.assign(p, { blob, url: URL.createObjectURL(blob) });
+      pintarResultados();
     });
   }
 
