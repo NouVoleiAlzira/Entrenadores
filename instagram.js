@@ -128,6 +128,7 @@
   }
   const st0 = subsState();
   ["carteles", "reels", "stories"].forEach(id => applySub(id, st0[id] !== false));
+  ["reelsPub", "storiesPub"].forEach(id => applySub(id, st0[id] === true));   // «Publicados» empieza plegado
   window.igToggleSub = igToggleSub;
 
   window.igActivate = igActivate;
@@ -187,28 +188,56 @@
 
   function box() { return document.getElementById("igReelsList"); }
 
+  const OCULTOS = ["descartado", "eliminado"];
+
+  // Tarjeta de un reel o de unas stories. papelera: solo en los publicados
+  function tarjeta(b, titulo, detalle, papelera) {
+    return `
+        <div class="ig-reel" data-id="${esc(b.id)}">
+          <div class="ig-reel-head">
+            <img class="ig-portada" alt="" data-src="${esc(b.id)}">
+            <div style="flex:1; min-width:0;"><b>${titulo}</b><br><small>${detalle}</small><br>
+              <span class="ig-estado ig-${esc(b.estado)}">${ESTADOS[b.estado] || esc(b.estado)}</span></div>
+            ${papelera ? `<button type="button" class="ig-papelera" title="Borrar" aria-label="Borrar" style="flex:none; align-self:flex-start; border:0; background:transparent; font-size:1.3rem; cursor:pointer; padding:4px;">🗑️</button>` : ""}
+          </div>
+          <button class="btn-pdf-mode ig-abrir" style="width:100%; margin:8px 0 0; background:var(--azul-primary); color:#fff;">${b.estado === "borrador" ? "👀 REVISAR Y CONFIRMAR" : "👀 VER"}</button>
+          <div class="ig-detalle" hidden></div>
+        </div>`;
+  }
+
+  // Quita un reel o unas stories publicadas de la app (estado «eliminado»)
+  async function eliminar(dir, clave, id, recargar) {
+    if (!confirm("¿Borrar de la app? Desaparece de esta lista. Si también quieres quitarlo de Instagram, bórralo desde Instagram (en «👀 VER» tienes el enlace cuando lo hay).")) return;
+    try {
+      const meta = (await getJson(`${dir}/${id}/meta.json`)) || {};
+      meta.estado = "eliminado";
+      await putJson(`${dir}/${id}/meta.json`, meta, `Borrar ${id} de la app`);
+      const idx = (await getJson(`${dir}/indice.json`)) || {};
+      (idx[clave] || []).forEach(b => { if (b.id === id) b.estado = "eliminado"; });
+      await putJson(`${dir}/indice.json`, idx, `Borrar ${id} de la app`);
+    } catch (e) { alert(e.message); }
+    recargar();
+  }
+
   async function cargar() {
-    const el = box();
+    const el = box(), pub = document.getElementById("igReelsPub");
     if (!el || !window.igGetToken()) return;
     el.innerHTML = `<p class="ig-info">Cargando borradores…</p>`;
     try {
       const idx = await getJson(`${DIR}/indice.json`);
-      const lista = ((idx && idx.borradores) || []).filter(b => b.estado !== "descartado").slice(0, 12);
-      if (!lista.length) { el.innerHTML = `<p class="ig-info">Todavía no hay borradores. Se crean solos el lunes a las 18:00 (resultados) y el martes a las 21:00 (próximos partidos), o con los botones de arriba.</p>`; return; }
-      el.innerHTML = lista.map(b => `
-        <div class="ig-reel" data-id="${esc(b.id)}">
-          <div class="ig-reel-head">
-            <img class="ig-portada" alt="" data-src="${esc(b.id)}">
-            <div><b>${TIPOS[b.tipo] || esc(b.tipo)}</b><br><small>${b.tipo === "evento" ? `${esc(b.titulo || "")} · ${b.fotos || 0} fotos` : `${fmt(b.desde)} – ${fmt(b.hasta)} · ${b.partidos || 0} partidos`}</small><br>
-              <span class="ig-estado ig-${esc(b.estado)}">${ESTADOS[b.estado] || esc(b.estado)}</span></div>
-          </div>
-          <button class="btn-pdf-mode ig-abrir" style="width:100%; margin:8px 0 0; background:var(--azul-primary); color:#fff;">${b.estado === "borrador" ? "👀 REVISAR Y CONFIRMAR" : "👀 VER"}</button>
-          <div class="ig-detalle" hidden></div>
-        </div>`).join("");
-      el.querySelectorAll(".ig-portada").forEach(async img => {
-        try { img.src = await blobUrl(`${DIR}/${img.dataset.src}/portada.jpg`); } catch (e) { img.remove(); }
+      const todos = ((idx && idx.borradores) || []).filter(b => !OCULTOS.includes(b.estado));
+      const det = (b) => b.tipo === "evento" ? `${esc(b.titulo || "")} · ${b.fotos || 0} fotos` : `${fmt(b.desde)} – ${fmt(b.hasta)} · ${b.partidos || 0} partidos`;
+      const borr = todos.filter(b => b.estado !== "publicado").slice(0, 12), publ = todos.filter(b => b.estado === "publicado").slice(0, 30);
+      el.innerHTML = borr.length ? borr.map(b => tarjeta(b, TIPOS[b.tipo] || esc(b.tipo), det(b), false)).join("")
+        : `<p class="ig-info">No hay borradores pendientes. Se crean solos el lunes a las 18:00 (resultados) y el martes a las 21:00 (próximos partidos), o con los botones de arriba.</p>`;
+      if (pub) pub.innerHTML = publ.length ? publ.map(b => tarjeta(b, TIPOS[b.tipo] || esc(b.tipo), det(b), true)).join("") : `<p class="ig-info">Todavía no hay reels publicados.</p>`;
+      [el, pub].filter(Boolean).forEach(cont => {
+        cont.querySelectorAll(".ig-portada").forEach(async img => {
+          try { img.src = await blobUrl(`${DIR}/${img.dataset.src}/portada.jpg`); } catch (e) { img.remove(); }
+        });
+        cont.querySelectorAll(".ig-abrir").forEach(btn => btn.onclick = () => abrir(btn.closest(".ig-reel")));
+        cont.querySelectorAll(".ig-papelera").forEach(btn => btn.onclick = () => eliminar(DIR, "borradores", btn.closest(".ig-reel").dataset.id, cargar));
       });
-      el.querySelectorAll(".ig-abrir").forEach(btn => btn.onclick = () => abrir(btn.closest(".ig-reel")));
     } catch (e) {
       console.error(e);
       el.innerHTML = `<p class="ig-info">No se han podido leer los borradores (${esc(e.message)}).</p>`;
@@ -313,7 +342,7 @@
         </div>
       </div>
       <div id="igGenCarteles" hidden>
-        <p class="ig-info">Primero genera y descarga los carteles en <b>Dirección NVA › Carteles</b> (Partidos o Resultados de la semana, «Carga automática»). Después elígelos aquí: cada cartel será una story y saldrá entero.</p>
+        <p class="ig-info">Primero genera y descarga los carteles en <b>Redes Sociales › Carteles</b> (Partidos o Resultados de la semana, «Carga automática»). Después elígelos aquí: cada cartel será una story y saldrá entero, sin cambios. Toca una miniatura para acercarla, alejarla o moverla.</p>
         <label class="btn-save-session" style="display:block; text-align:center; cursor:pointer; margin-bottom:6px; background:var(--btn-fondoVerde);">🖼️ Elegir carteles (JPG)
           <input type="file" id="igCartFotos" accept="image/*" multiple hidden></label>
         <div id="igCartMiniaturas" style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px;"></div>
@@ -374,7 +403,10 @@
       menu: "¿Qué reel quieres generar?", evento: historia ? "📸 Story de evento" : "📸 Evento manual",
       resultados: "🏆 Fotos de los partidos",
       carteles: tipoCarteles === "proximos" ? "📅 Stories de próximos partidos" : "🏆 Stories de resultados" }[paso];
-    document.getElementById("igEvTextoLabel").textContent = historia ? "¿De qué va? (sale debajo de la primera foto)" : "¿De qué va el reel?";
+    document.getElementById("igEvTextoLabel").textContent = historia ? "Notas (no salen en la story)" : "¿De qué va el reel?";
+    document.getElementById("igEvMiniaturas").style.gridTemplateColumns = historia ? "repeat(4,1fr)" : "repeat(5,1fr)";
+    if (fotosEvento.length && fotosEvento.destino && fotosEvento.destino !== destino) { fotosEvento.forEach(f => URL.revokeObjectURL(f.url)); fotosEvento = []; pintarFotos(); }
+    fotosEvento.destino = destino;
     document.getElementById("igEvPedir").textContent = historia ? "📲 Generar stories" : "🎬 Generar reel";
     if (paso !== "evento") pararDictado();
   }
@@ -503,6 +535,7 @@
     const lista = Array.from(files || []).filter(f => f.type.startsWith("image/"));
     if (lista.length > libres) alert(`Como mucho ${MAX_FOTOS} fotos. Se añaden las ${libres} primeras.`);
     for (const f of lista.slice(0, libres)) {
+      if (destino === "historia") { try { await anadirStory(fotosEvento, f); } catch (e) { alert(e.message); } continue; }
       const blob = await encuadrar(f);
       if (blob) fotosEvento.push({ blob, url: URL.createObjectURL(blob) });
     }
@@ -511,6 +544,7 @@
 
   function pintarFotos() {
     const el = document.getElementById("igEvMiniaturas");
+    if (destino === "historia") return miniaturasStory(el, fotosEvento, pintarFotos);
     el.innerHTML = fotosEvento.map((f, i) => `
       <div style="position:relative; aspect-ratio:4/5;">
         <img src="${f.url}" alt="" style="width:100%; height:100%; object-fit:cover; border-radius:6px;">
@@ -748,63 +782,59 @@
     document.getElementById("modalIgGenerar").classList.add("active");
   }
 
-  // Los carteles se suben enteros (sin recortar): solo se reducen si son muy grandes
-  function reducirCartel(file) {
-    return new Promise((ok, mal) => {
-      const img = new Image(), url = URL.createObjectURL(file);
-      img.onload = () => {
-        const k = Math.min(1, 2160 / Math.max(img.naturalWidth, img.naturalHeight));
-        const c = document.createElement("canvas");
-        c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
-        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-        URL.revokeObjectURL(url);
-        c.toBlob(b => b ? ok(b) : mal(new Error("No se ha podido leer el cartel")), "image/jpeg", 0.92);
-      };
-      img.onerror = () => { URL.revokeObjectURL(url); mal(new Error(`No se ha podido leer ${file.name}`)); };
-      img.src = url;
-    });
+  // Stories: la imagen se publica tal cual, colocada en el lienzo 9:16 (editor en historia-editor.js)
+  async function anadirStory(lista, file) {
+    const story = window.nvaStory;
+    const ajuste = Object.assign({}, story.AJUSTE_INICIAL);
+    const final = await story.componer(file, ajuste);
+    lista.push({ blob: file, ajuste, final, url: URL.createObjectURL(final) });
+  }
+
+  async function editarStory(item, repintar) {
+    const r = await window.nvaStory.editar(item.blob, item.ajuste);
+    if (!r) return;
+    URL.revokeObjectURL(item.url);
+    Object.assign(item, { ajuste: r.ajuste, final: r.blob, url: URL.createObjectURL(r.blob) });
+    repintar();
   }
 
   async function anadirCarteles(files) {
     const libres = MAX_FOTOS - carteles.length;
     const lista = Array.from(files || []).filter(f => f.type.startsWith("image/"));
-    if (lista.length > libres) alert(`Como mucho ${MAX_FOTOS} carteles. Se añaden los ${libres} primeros.`);
+    if (lista.length > libres) alert(`Como mucho ${MAX_FOTOS} imágenes. Se añaden las ${libres} primeras.`);
     for (const f of lista.slice(0, libres)) {
-      try { const blob = await reducirCartel(f); carteles.push({ blob, url: URL.createObjectURL(blob) }); }
-      catch (e) { alert(e.message); }
+      try { await anadirStory(carteles, f); } catch (e) { alert(e.message); }
     }
     pintarCarteles();
   }
 
-  function pintarCarteles() {
-    const el = document.getElementById("igCartMiniaturas");
-    el.innerHTML = carteles.map((f, i) => `
-      <div style="position:relative; background:#0b163a; border-radius:6px; aspect-ratio:9/16; display:flex; align-items:center;">
-        <img src="${f.url}" alt="" style="width:100%; height:100%; object-fit:contain;">
-        <button type="button" data-quitar="${i}" aria-label="Quitar cartel" style="position:absolute; top:2px; right:2px; border:0; border-radius:50%; width:22px; height:22px; background:rgba(0,0,0,.65); color:#fff; cursor:pointer;">✕</button>
+  function miniaturasStory(el, lista, repintar) {
+    el.innerHTML = lista.map((f, i) => `
+      <div style="position:relative; aspect-ratio:9/16;">
+        <img src="${f.url}" alt="" data-editar="${i}" title="Tocar para ajustar" style="width:100%; height:100%; object-fit:cover; border-radius:6px; cursor:pointer;">
+        <button type="button" data-quitar="${i}" aria-label="Quitar" style="position:absolute; top:2px; right:2px; border:0; border-radius:50%; width:22px; height:22px; background:rgba(0,0,0,.65); color:#fff; cursor:pointer;">✕</button>
+        <span style="position:absolute; bottom:3px; left:3px; font-size:.7rem; background:rgba(0,0,0,.6); color:#fff; border-radius:6px; padding:1px 5px; pointer-events:none;">✏️ Ajustar</span>
       </div>`).join("");
     el.querySelectorAll("[data-quitar]").forEach(b => b.onclick = () => {
-      const [f] = carteles.splice(+b.dataset.quitar, 1); URL.revokeObjectURL(f.url); pintarCarteles();
+      const [f] = lista.splice(+b.dataset.quitar, 1); URL.revokeObjectURL(f.url); repintar();
     });
+    el.querySelectorAll("[data-editar]").forEach(im => im.onclick = () => editarStory(lista[+im.dataset.editar], repintar));
+  }
+
+  function pintarCarteles() {
+    miniaturasStory(document.getElementById("igCartMiniaturas"), carteles, pintarCarteles);
   }
 
   async function subirYPedirHistoria(imagenes, datos, estado, boton) {
     boton.disabled = true;
-    const id = Date.now().toString(36);
     try {
-      const rutas = [];
-      for (let i = 0; i < imagenes.length; i++) {
-        estado.textContent = `Subiendo imagen ${i + 1} de ${imagenes.length}…`;
-        const ruta = `${DIR_H}/${id}/origen/${String(i + 1).padStart(2, "0")}.jpg`;
-        await subirArchivo(ruta, imagenes[i].blob, `Imagen ${i + 1} de las stories ${id}`);
-        rutas.push(ruta);
-      }
-      estado.textContent = "Pidiendo las stories…";
-      await putJson("Reels/solicitud_historia.json", Object.assign({ id, imagenes: rutas, pedido: new Date().toISOString() }, datos),
-        `Pedir stories ${id}`);
+      const ig = JSON.parse(localStorage.getItem("NVA_IG_SETTINGS") || "{}");
+      await window.nvaStory.crearBorrador({ token: window.igGetToken(), user: ghSettings.user, repo: ghSettings.repo, login: ig.login || "" },
+        imagenes, datos, (t) => { estado.textContent = t; });
       estado.textContent = "";
       cerrarMenu();
-      alert("Pedido. El borrador de stories aparecerá en «Stories · borradores» en unos minutos (pulsa 🔄 para actualizar).");
+      alert("Borrador creado. Lo tienes en «Stories»: revísalo, elige la duración y pulsa «Confirmar y publicar».");
+      cargarHistorias();
       return true;
     } catch (e) {
       estado.textContent = "";
@@ -841,27 +871,24 @@
   const fotosH = {};   // ruta -> objectURL
 
   async function cargarHistorias() {
-    const el = document.getElementById("igStoriesList");
+    const el = document.getElementById("igStoriesList"), pub = document.getElementById("igStoriesPub");
     if (!el || !window.igGetToken()) return;
     el.innerHTML = `<p class="ig-info">Cargando borradores…</p>`;
     try {
       const idx = await getJson(`${DIR_H}/indice.json`);
-      const lista = ((idx && idx.historias) || []).filter(b => b.estado !== "descartado").slice(0, 12);
-      if (!lista.length) { el.innerHTML = `<p class="ig-info">Todavía no hay borradores de stories. Créalos con los botones de arriba.</p>`; return; }
-      el.innerHTML = lista.map(b => `
-        <div class="ig-reel" data-id="${esc(b.id)}">
-          <div class="ig-reel-head">
-            <img class="ig-portada" alt="" data-src="${esc(b.id)}">
-            <div><b>${TIPOS_H[b.tipo] || esc(b.tipo)}</b><br><small>${b.tipo === "evento" ? esc(b.titulo || "") : `${fmt(b.desde)} – ${fmt(b.hasta)}`} · ${b.n || 0} stories</small><br>
-              <span class="ig-estado ig-${esc(b.estado)}">${ESTADOS[b.estado] || esc(b.estado)}</span></div>
-          </div>
-          <button class="btn-pdf-mode ig-abrir" style="width:100%; margin:8px 0 0; background:var(--azul-primary); color:#fff;">${b.estado === "borrador" ? "👀 REVISAR Y CONFIRMAR" : "👀 VER"}</button>
-          <div class="ig-detalle" hidden></div>
-        </div>`).join("");
-      el.querySelectorAll(".ig-portada").forEach(async img => {
-        try { img.src = await blobUrl(`${DIR_H}/${img.dataset.src}/historia_01.jpg`); } catch (e) { img.remove(); }
+      const todos = ((idx && idx.historias) || []).filter(b => !OCULTOS.includes(b.estado));
+      const det = (b) => `${b.tipo === "evento" ? esc(b.titulo || "") : `${fmt(b.desde)} – ${fmt(b.hasta)}`} · ${b.n || 0} stories`;
+      const borr = todos.filter(b => b.estado !== "publicado").slice(0, 12), publ = todos.filter(b => b.estado === "publicado").slice(0, 30);
+      el.innerHTML = borr.length ? borr.map(b => tarjeta(b, TIPOS_H[b.tipo] || esc(b.tipo), det(b), false)).join("")
+        : `<p class="ig-info">No hay borradores pendientes. Créalos con los botones de arriba.</p>`;
+      if (pub) pub.innerHTML = publ.length ? publ.map(b => tarjeta(b, TIPOS_H[b.tipo] || esc(b.tipo), det(b), true)).join("") : `<p class="ig-info">Todavía no hay stories publicadas.</p>`;
+      [el, pub].filter(Boolean).forEach(cont => {
+        cont.querySelectorAll(".ig-portada").forEach(async img => {
+          try { img.src = await blobUrl(`${DIR_H}/${img.dataset.src}/historia_01.jpg`); } catch (e) { img.remove(); }
+        });
+        cont.querySelectorAll(".ig-abrir").forEach(btn => btn.onclick = () => abrirHistoria(btn.closest(".ig-reel")));
+        cont.querySelectorAll(".ig-papelera").forEach(btn => btn.onclick = () => eliminar(DIR_H, "historias", btn.closest(".ig-reel").dataset.id, cargarHistorias));
       });
-      el.querySelectorAll(".ig-abrir").forEach(btn => btn.onclick = () => abrirHistoria(btn.closest(".ig-reel")));
     } catch (e) {
       console.error(e);
       el.innerHTML = `<p class="ig-info">No se han podido leer los borradores (${esc(e.message)}).</p>`;
@@ -875,18 +902,27 @@
     det.innerHTML = `<p class="ig-info">Descargando las stories…</p>`;
     try {
       const meta = await getJson(`${DIR_H}/${id}/meta.json`);
-      const editable = meta.estado === "borrador";
+      const editable = meta.estado === "borrador" || meta.estado === "error";
+      const puedeAjustar = editable && meta.estado === "borrador";
       for (const h of meta.historias || []) {
         const ruta = `${DIR_H}/${id}/${h}`;
         if (!fotosH[ruta]) fotosH[ruta] = await blobUrl(ruta);
       }
+      const dur = meta.duracion || 5;
       det.innerHTML = `
         <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:8px;">
-          ${(meta.historias || []).map(h => `<a href="${fotosH[`${DIR_H}/${id}/${h}`]}" download="story-${esc(id)}-${esc(h)}">
-            <img src="${fotosH[`${DIR_H}/${id}/${h}`]}" alt="Story" style="width:100%; border-radius:8px; display:block;"></a>`).join("")}
+          ${(meta.historias || []).map(h => `<div style="position:relative;">
+            <img src="${fotosH[`${DIR_H}/${id}/${h}`]}" alt="Story" data-h="${esc(h)}" style="width:100%; border-radius:8px; display:block; ${puedeAjustar ? "cursor:pointer;" : ""}">
+            ${puedeAjustar ? `<span style="position:absolute; bottom:4px; left:4px; font-size:.7rem; background:rgba(0,0,0,.6); color:#fff; border-radius:6px; padding:1px 5px; pointer-events:none;">✏️ Ajustar</span>` : ""}
+            <a href="${fotosH[`${DIR_H}/${id}/${h}`]}" download="story-${esc(id)}-${esc(h)}" title="Descargar" style="position:absolute; top:4px; right:4px; text-decoration:none; background:rgba(0,0,0,.6); border-radius:6px; padding:0 4px;">⬇️</a>
+          </div>`).join("")}
         </div>
-        <small class="ig-info">Toca una story para descargarla. Cada una dura 6 s en Instagram.${meta.confirmadoPor ? ` · Confirmado por ${esc(meta.confirmadoPor)}` : ""}</small>
-        ${editable ? `<div style="display:flex; gap:8px; margin-top:10px;">
+        <label class="ig-label" style="display:flex; align-items:center; gap:8px; margin-top:8px;">⏱️ Duración de cada story
+          <select class="ig-duracion app-input" style="width:auto; flex:none;" ${puedeAjustar ? "" : "disabled"}>
+            ${window.nvaStory.DURACIONES.map(d => `<option value="${d}" ${d === dur ? "selected" : ""}>${d} s</option>`).join("")}
+          </select></label>
+        <small class="ig-info">${puedeAjustar ? "Toca una story para acercarla, alejarla o moverla. " : ""}${meta.confirmadoPor ? `Confirmado por ${esc(meta.confirmadoPor)}` : ""}</small>
+        ${puedeAjustar ? `<div style="display:flex; gap:8px; margin-top:10px;">
           <button class="btn-save-session ig-descartar" style="flex:1; background:#64748b;">🗑️ Descartar</button>
           <button class="btn-save-session ig-confirmar" style="flex:2;">✅ Confirmar y publicar</button></div>` : ""}`;
       if (meta.estado === "error") {
@@ -894,12 +930,40 @@
           <button class="btn-save-session ig-reintentar" style="width:100%;">🔁 Reintentar publicación</button>`);
         det.querySelector(".ig-reintentar").onclick = () => confirmarHistoria(id, meta);
       }
-      if (!editable) return;
+      if (!puedeAjustar) return;
+      det.querySelectorAll("[data-h]").forEach(im => im.onclick = () => ajustarEnBorrador(id, meta, im.dataset.h, im));
       det.querySelector(".ig-descartar").onclick = () => estadoHistoria(id, meta, "descartado");
-      det.querySelector(".ig-confirmar").onclick = () => confirmarHistoria(id, meta);
+      det.querySelector(".ig-confirmar").onclick = () => {
+        meta.duracion = +det.querySelector(".ig-duracion").value || 5;
+        confirmarHistoria(id, meta);
+      };
     } catch (e) {
       console.error(e);
       det.innerHTML = `<p class="ig-info">No se ha podido abrir el borrador (${esc(e.message)}).</p>`;
+    }
+  }
+
+  // Volver a encajar una story del borrador: se parte siempre de la imagen original
+  async function ajustarEnBorrador(id, meta, h, imgEl) {
+    try {
+      const g = window.nvaStory.gh({ token: window.igGetToken(), user: ghSettings.user, repo: ghSettings.repo });
+      const origen = (meta.origenes && meta.origenes[h]) || `origen/${h.replace("historia_", "")}`;
+      const original = await g.blob(`${DIR_H}/${id}/${origen}`);
+      const r = await window.nvaStory.editar(original, (meta.ajustes || {})[h]);
+      if (!r) return;
+      imgEl.style.opacity = ".4";
+      await g.putBlob(`${DIR_H}/${id}/${h}`, r.blob, `Stories ${id}: ajustar ${h}`);
+      meta.ajustes = Object.assign({}, meta.ajustes, { [h]: r.ajuste });
+      await putJson(`${DIR_H}/${id}/meta.json`, meta, `Stories ${id}: ajustar ${h}`);
+      const ruta = `${DIR_H}/${id}/${h}`;
+      if (fotosH[ruta]) URL.revokeObjectURL(fotosH[ruta]);
+      fotosH[ruta] = URL.createObjectURL(r.blob);
+      imgEl.src = fotosH[ruta]; imgEl.style.opacity = "";
+      const portada = imgEl.closest(".ig-reel").querySelector(".ig-portada");
+      if (portada && h === "historia_01.jpg") portada.src = fotosH[ruta];
+    } catch (e) {
+      imgEl.style.opacity = "";
+      alert(e.message);
     }
   }
 
@@ -924,7 +988,7 @@
     if (!confirm("¿Has visto las stories? Al confirmar se publicarán en el Instagram del club.")) return;
     const quien = (JSON.parse(localStorage.getItem("NVA_IG_SETTINGS") || "{}").login) || "";
     const ahora = new Date().toISOString();
-    if (!await estadoHistoria(id, meta, "confirmado", { confirmadoPor: quien, confirmadoEn: ahora })) return;
+    if (!await estadoHistoria(id, meta, "confirmado", { confirmadoPor: quien, confirmadoEn: ahora, duracion: meta.duracion || 5 })) return;
     try {
       await putJson("Reels/publicar.json", { tipo: "historia", id, confirmadoPor: quien, pedido: ahora }, `Publicar stories ${id}`);
       alert("Confirmado. Las stories se publicarán en Instagram en unos minutos.");

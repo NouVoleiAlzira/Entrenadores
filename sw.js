@@ -1,6 +1,6 @@
 // Service Worker - Nou Volei Alzira
 // Sube el número de versión cada vez que quieras forzar una renovación completa de la caché.
-const VERSION = "nva-v77";
+const VERSION = "nva-v78";
 const SHELL_CACHE = VERSION + "-shell";
 const CDN_CACHE = VERSION + "-cdn";
 
@@ -13,6 +13,7 @@ const SHELL_FILES = [
   "animaciones.js",
   "instagram.js",
   "historia-cartel.js",
+  "historia-editor.js",
   "app.js",
   "calendario-partidos.js",
   "importar-datos.js",
