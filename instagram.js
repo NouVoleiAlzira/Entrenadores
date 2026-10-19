@@ -389,7 +389,7 @@
     document.getElementById("igCartPedir").onclick = pedirCarteles;
     const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
     const voz = document.getElementById("igEvVoz");
-    if (!Rec) voz.hidden = true;
+    if (!Rec) { voz.hidden = true; voz.dataset.sinVoz = "1"; }
     else voz.onclick = () => alternarDictado(Rec, voz);
   }
 
@@ -400,13 +400,18 @@
     document.getElementById("igGenCarteles").hidden = paso !== "carteles";
     const historia = destino === "historia";
     document.getElementById("igGenTitulo").textContent = {
-      menu: "¿Qué reel quieres generar?", evento: historia ? "📸 Story de evento" : "📸 Evento manual",
+      menu: "¿Qué reel quieres generar?", evento: historia ? "📸 Stories" : "📸 Evento manual",
       resultados: "🏆 Fotos de los partidos",
       carteles: tipoCarteles === "proximos" ? "📅 Stories de próximos partidos" : "🏆 Stories de resultados" }[paso];
     document.getElementById("igEvTextoLabel").textContent = historia ? "Notas (no salen en la story)" : "¿De qué va el reel?";
     document.getElementById("igEvMiniaturas").style.gridTemplateColumns = historia ? "repeat(4,1fr)" : "repeat(5,1fr)";
     if (fotosEvento.length && fotosEvento.destino && fotosEvento.destino !== destino) { fotosEvento.forEach(f => URL.revokeObjectURL(f.url)); fotosEvento = []; pintarFotos(); }
     fotosEvento.destino = destino;
+    // En stories solo se eligen fotos: sin título, texto ni dictado
+    ["igEvTitulo", "igEvTexto", "igEvTextoLabel"].forEach(i => { document.getElementById(i).style.display = historia ? "none" : ""; });
+    document.querySelector('label[for="igEvTitulo"]').style.display = historia ? "none" : "";
+    const voz = document.getElementById("igEvVoz");
+    voz.hidden = historia || voz.dataset.sinVoz === "1";
     document.getElementById("igEvPedir").textContent = historia ? "📲 Generar stories" : "🎬 Generar reel";
     if (paso !== "evento") pararDictado();
   }
@@ -856,7 +861,6 @@
   async function pedirEventoHistoria() {
     const titulo = document.getElementById("igEvTitulo").value.trim();
     const texto = document.getElementById("igEvTexto").value.trim();
-    if (!titulo) { alert("Pon un título."); return; }
     if (!fotosEvento.length) { alert("Añade al menos una foto."); return; }
     pararDictado();
     const ok = await subirYPedirHistoria(fotosEvento, { tipo: "evento", titulo, descripcion: texto },

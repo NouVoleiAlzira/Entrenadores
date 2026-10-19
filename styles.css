@@ -2098,3 +2098,7 @@
 .ig-video { width: 100%; max-height: 70vh; border-radius: 10px; background: #000; margin-top: 10px; }
 .ig-label { display: block; font-size: 0.8rem; font-weight: 700; margin: 8px 0 4px; }
 .ig-texto { width: 100%; box-sizing: border-box; font: inherit; font-size: 0.85rem; color: var(--text-dark); border: 1px solid var(--gray-border); border-radius: 8px; padding: 8px; }
+
+/* Redes Sociales: «Publicados» es una subsección dentro de Reels / Stories */
+.cp-sub-head.ig-pub-head { margin: 12px 0 0 12px; padding: 8px 10px; border-left: 2px solid var(--niebla); border-radius: 0 8px 8px 0; background: rgba(233,238,250,0.06); font-family: inherit; font-style: normal; font-weight: 700; font-size: 0.82rem; text-transform: none; letter-spacing: 0; color: var(--tiza, #e9eefa); }
+.cp-sub-body.ig-pub-body { margin-left: 12px; padding: 8px 0 0 10px; border-left: 2px solid rgba(233,238,250,0.15); }

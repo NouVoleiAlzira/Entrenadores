@@ -202,29 +202,27 @@
             <button class="btn-save-session" style="margin:0; flex:1 1 auto; min-width:0; padding:10px 2px; white-space:nowrap; font-size:0.78em; letter-spacing:0; background:var(--azul-primary);" onclick="igReelsGenerar('proximos')">📅 Partidos</button>
             <button class="btn-save-session" style="margin:0; flex:1 1 auto; min-width:0; padding:10px 2px; white-space:nowrap; font-size:0.78em; letter-spacing:0; background:var(--btn-fondoVerde);" onclick="igReelsGenerar('evento')">📸 Manual</button>
           </div>
-          <button class="btn-save-session" style="margin:0; width:44px; flex:none; padding:10px 0; background:#64748b;" onclick="igReelsCargar()" title="Refrescar borradores" aria-label="Refrescar borradores">🔄</button>
+          <button class="btn-save-session" style="margin:0; width:44px; flex:none; padding:10px 0; background:#2563eb;" onclick="igReelsCargar()" title="Refrescar borradores" aria-label="Refrescar borradores"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:block; margin:auto;"><path d="M20 11a8 8 0 0 0-14.6-4.5L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.6 4.5L20 16"/><path d="M20 21v-5h-5"/></svg></button>
         </div>
         <div id="igReelsList"></div>
-        <div class="cp-sub-head collapsed" id="igSubHead_reelsPub" role="button" tabindex="0" aria-expanded="false" onclick="igToggleSub('reelsPub')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();igToggleSub('reelsPub');}" style="margin-top:12px;">📲 Publicados <span class="sec-arrow">▾</span></div>
-        <div class="cp-sub-body collapsed" id="igSub_reelsPub">
+        <div class="cp-sub-head ig-pub-head collapsed" id="igSubHead_reelsPub" role="button" tabindex="0" aria-expanded="false" onclick="igToggleSub('reelsPub')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();igToggleSub('reelsPub');}" >✅ Publicados <span class="sec-arrow">▾</span></div>
+        <div class="cp-sub-body ig-pub-body collapsed" id="igSub_reelsPub">
         <div id="igReelsPub"></div>
         </div>
         </div>
 
         <div class="cp-sub-head" id="igSubHead_stories" role="button" tabindex="0" aria-expanded="true" onclick="igToggleSub('stories')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();igToggleSub('stories');}">📲 Stories <span class="sec-arrow">▾</span></div>
         <div class="cp-sub-body" id="igSub_stories">
-        <p class="ig-info">Con los carteles de Partidos y Resultados, o con fotos de un evento. Nada se publica hasta que una persona lo revisa y pulsa «Confirmar y publicar».</p>
+        <p class="ig-info">Elige las fotos o carteles; salen enteros, sin cambios. Nada se publica hasta que una persona lo revisa y pulsa «Confirmar y publicar».</p>
         <div style="display:flex; gap:6px; align-items:stretch; margin-bottom:10px;">
           <div style="flex:1; min-width:0; display:flex; gap:6px;">
-            <button class="btn-save-session" style="margin:0; flex:1 1 auto; min-width:0; padding:10px 2px; white-space:nowrap; font-size:0.78em; letter-spacing:0;" onclick="igHistoriasGenerar('resultados')">🏆 Resultados</button>
-            <button class="btn-save-session" style="margin:0; flex:1 1 auto; min-width:0; padding:10px 2px; white-space:nowrap; font-size:0.78em; letter-spacing:0; background:var(--azul-primary);" onclick="igHistoriasGenerar('proximos')">📅 Partidos</button>
             <button class="btn-save-session" style="margin:0; flex:1 1 auto; min-width:0; padding:10px 2px; white-space:nowrap; font-size:0.78em; letter-spacing:0; background:var(--btn-fondoVerde);" onclick="igHistoriasGenerar('evento')">📸 Manual</button>
           </div>
-          <button class="btn-save-session" style="margin:0; width:44px; flex:none; padding:10px 0; background:#64748b;" onclick="igHistoriasCargar()" title="Refrescar borradores de stories" aria-label="Refrescar borradores de stories">🔄</button>
+          <button class="btn-save-session" style="margin:0; width:44px; flex:none; padding:10px 0; background:#2563eb;" onclick="igHistoriasCargar()" title="Refrescar borradores de stories" aria-label="Refrescar borradores de stories"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:block; margin:auto;"><path d="M20 11a8 8 0 0 0-14.6-4.5L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.6 4.5L20 16"/><path d="M20 21v-5h-5"/></svg></button>
         </div>
         <div id="igStoriesList"></div>
-        <div class="cp-sub-head collapsed" id="igSubHead_storiesPub" role="button" tabindex="0" aria-expanded="false" onclick="igToggleSub('storiesPub')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();igToggleSub('storiesPub');}" style="margin-top:12px;">📲 Publicados <span class="sec-arrow">▾</span></div>
-        <div class="cp-sub-body collapsed" id="igSub_storiesPub">
+        <div class="cp-sub-head ig-pub-head collapsed" id="igSubHead_storiesPub" role="button" tabindex="0" aria-expanded="false" onclick="igToggleSub('storiesPub')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();igToggleSub('storiesPub');}" >✅ Publicados <span class="sec-arrow">▾</span></div>
+        <div class="cp-sub-body ig-pub-body collapsed" id="igSub_storiesPub">
         <div id="igStoriesPub"></div>
         </div>
         </div>
