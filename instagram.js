@@ -456,6 +456,10 @@
         <button class="btn-save-session" type="button" data-ig="evento" style="background:var(--btn-fondoVerde);">📸 Evento manual</button>
       </div>
       <div id="igGenResultados" hidden>
+        <div style="display:flex; gap:8px; margin-bottom:8px;">
+          <label style="flex:1; font-size:0.75rem; color:#475569;">Desde<input type="date" id="igResDesde" class="app-input" style="margin-top:2px;"></label>
+          <label style="flex:1; font-size:0.75rem; color:#475569;">Hasta<input type="date" id="igResHasta" class="app-input" style="margin-top:2px;"></label>
+        </div>
         <p class="ig-info" id="igResInfo"></p>
         <div id="igResLista" style="display:flex; flex-direction:column; gap:6px; max-height:46vh; overflow:auto;"></div>
         <small class="ig-info" id="igResEstado"></small>
@@ -508,6 +512,10 @@
     document.getElementById("igEvFotos").onchange = (e) => { anadirFotos(e.target.files); e.target.value = ""; };
     document.getElementById("igEvPedir").onclick = pedirEvento;
     document.getElementById("igResPedir").onclick = pedirResultados;
+    ["igResDesde", "igResHasta"].forEach(i => document.getElementById(i).onchange = () => {
+      const d = document.getElementById("igResDesde").value, h = document.getElementById("igResHasta").value;
+      if (d && h && d <= h) cargarResultados({ desde: d, hasta: h });
+    });
     document.getElementById("igCartFotos").onchange = (e) => { anadirCarteles(e.target.files); e.target.value = ""; };
     document.getElementById("igCartPedir").onclick = pedirCarteles;
     const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -752,16 +760,26 @@
     return cards;
   }
 
-  async function prepararResultados() {
-    resRango = rangoResultados();
-    resPartidos.forEach(p => p.url && URL.revokeObjectURL(p.url));
-    resPartidos = partidosConResultado(resRango.desde, resRango.hasta);
-    const directo = () => { if (confirm("¿Generar el reel de resultados de la semana?")) pedirPartidos("resultados"); };
-    if (!resPartidos.length) { directo(); return; }
+  function prepararResultados() {
     verPaso("resultados");
     document.getElementById("modalIgGenerar").classList.add("active");
+    cargarResultados(rangoResultados());
+  }
+
+  // Partidos con resultado entre dos fechas; se conservan las fotos y casillas ya puestas
+  async function cargarResultados(rango) {
+    resRango = rango;
+    document.getElementById("igResDesde").value = rango.desde;
+    document.getElementById("igResHasta").value = rango.hasta;
+    const antes = new Map(resPartidos.map(p => [p.id, p]));
+    resPartidos = partidosConResultado(rango.desde, rango.hasta).map(p => {
+      const v = antes.get(p.id);
+      return v ? Object.assign(p, { blob: v.blob, url: v.url, sel: v.sel }) : Object.assign(p, { sel: true });
+    });
+    antes.forEach((v, id) => { if (v.url && !resPartidos.some(p => p.id === id)) URL.revokeObjectURL(v.url); });
     document.getElementById("igResInfo").textContent = "Buscando las fotos de los partidos…";
     document.getElementById("igResLista").innerHTML = "";
+    if (!resPartidos.length) { pintarResultados(); return; }
     try {
       const cards = await fotosGuardadas(resRango.desde, resRango.hasta);
       resPartidos.forEach(p => {
@@ -769,24 +787,26 @@
                                   (parecido(c.awayTeam, p.equipo) && parecido(c.homeTeam, p.rival)));
       });
     } catch (e) { console.warn(e); }
-    if (resPartidos.every(p => p.tiene)) { cerrarMenu(); directo(); return; }
+    if (resRango !== rango) return;   // se cambiaron las fechas mientras tanto
     pintarResultados();
   }
 
   function pintarResultados() {
-    const faltan = resPartidos.filter(p => !p.tiene && !p.blob).length;
-    document.getElementById("igResInfo").textContent = faltan
-      ? `${faltan} partido(s) sin foto. Puedes añadirlas ahora (es opcional): saldrán en su diapositiva.`
-      : "Todos los partidos tienen foto.";
+    const sel = resPartidos.filter(p => p.sel), faltan = sel.filter(p => !p.tiene && !p.blob).length;
+    document.getElementById("igResInfo").textContent = !resPartidos.length ? "No hay partidos con resultado entre esas fechas."
+      : `${sel.length} de ${resPartidos.length} partidos en el reel. ` + (faltan
+      ? `${faltan} sin foto: puedes añadirlas ahora (es opcional), saldrán en su diapositiva.` : "Todos tienen foto.");
     const el = document.getElementById("igResLista");
     el.innerHTML = resPartidos.map((p, i) => `
-      <div style="display:flex; align-items:center; gap:8px; padding:6px 8px; border:1px solid #e2e8f0; border-radius:10px;">
+      <div style="display:flex; align-items:center; gap:8px; padding:6px 8px; border:1px solid #e2e8f0; border-radius:10px;${p.sel ? "" : " opacity:.5;"}">
+        <input type="checkbox" data-sel="${i}" ${p.sel ? "checked" : ""} title="Incluir en el reel" style="width:20px; height:20px; flex:none; accent-color:#2563eb;">
         ${p.url ? `<img src="${p.url}" alt="" style="width:44px; height:44px; object-fit:cover; border-radius:6px;">` : ""}
         <div style="flex:1; min-width:0; font-size:0.78rem; color:#1e293b;"><b>${esc(p.equipo)}</b> ${esc(p.marcador)} ${esc(p.rival)}<br>
           <small style="color:#64748b;">${fmt(p.fecha)}${p.tiene ? " · 📸 ya tiene foto" : ""}</small></div>
         <label class="btn-save-session" style="width:auto; flex:none; white-space:nowrap; margin:0; padding:6px 10px; font-size:0.72rem; cursor:pointer; background:${p.tiene || p.blob ? "#64748b" : "var(--btn-fondoVerde)"};">
           ${p.blob ? "Cambiar" : p.tiene ? "Otra foto" : "➕ Foto"}<input type="file" accept="image/*" hidden data-res="${i}"></label>
       </div>`).join("");
+    el.querySelectorAll("[data-sel]").forEach(c => c.onchange = () => { resPartidos[+c.dataset.sel].sel = c.checked; pintarResultados(); });
     el.querySelectorAll("[data-res]").forEach(inp => inp.onchange = async () => {
       const p = resPartidos[+inp.dataset.res], f = inp.files && inp.files[0];
       if (!f) return;
@@ -801,7 +821,9 @@
 
   async function pedirResultados() {
     const boton = document.getElementById("igResPedir"), estado = document.getElementById("igResEstado");
-    const conFoto = resPartidos.filter(p => p.blob);
+    const elegidos = resPartidos.filter(p => p.sel);
+    if (!elegidos.length) { alert("Marca al menos un partido."); return; }
+    const conFoto = elegidos.filter(p => p.blob);
     boton.disabled = true;
     const id = Date.now().toString(36);
     try {
@@ -813,7 +835,7 @@
         fotos[conFoto[i].id] = ruta;
       }
       estado.textContent = "";
-      await pedirPartidos("resultados", { desde: resRango.desde, hasta: resRango.hasta, fotos, id });
+      await pedirPartidos("resultados", { desde: resRango.desde, hasta: resRango.hasta, fotos, id, partidos: elegidos.map(p => p.id) });
     } catch (e) {
       estado.textContent = "";
       alert(e.message);
