@@ -1,0 +1,25 @@
+{
+  "comunes": [
+    "comun1.png",
+    "comun-2a.png",
+    "comun-2b.png"
+  ],
+  "equipos": [
+    {
+      "nombre": "Enova",
+      "archivo": "enova.png"
+    },
+    {
+      "nombre": "Espai Laboral",
+      "archivo": "espai-laboral.png"
+    },
+    {
+      "nombre": "Jessi Esparza",
+      "archivo": "jessi-esparza.png"
+    },
+    {
+      "nombre": "Up! School",
+      "archivo": "up-school.png"
+    }
+  ]
+}
