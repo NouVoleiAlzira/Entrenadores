@@ -184,7 +184,7 @@
             <button class="btn-pdf-mode2" onclick="cartelAuto('partidos')">⚡ Carga automática</button>
             <button class="btn-pdf-mode2" onclick="location.href='Partidos.html'">✍️ Introducción manual</button>
           </div>
-          <div class="cartel-sub">🏆 Resultados de la semana</div>
+          <div class="cartel-sub">🏆 Resultados</div>
           <div class="cartel-row">
             <button class="btn-pdf-mode2" onclick="cartelAuto('resultados')">⚡ Carga automática</button>
             <button class="btn-pdf-mode2" onclick="location.href='Resultados.html'">✍️ Introducción manual</button>
@@ -196,11 +196,11 @@
         <div class="cp-sub-head" id="igSubHead_reels" role="button" tabindex="0" aria-expanded="true" onclick="igToggleSub('reels')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();igToggleSub('reels');}">🎬 Reels · borradores <span class="sec-arrow">▾</span></div>
         <div class="cp-sub-body" id="igSub_reels">
         <p class="ig-info">Los reels se crean solos como borrador. Nada se publica hasta que una persona lo revisa y pulsa «Confirmar y publicar».</p>
-        <div style="display:flex; gap:8px; align-items:flex-start; margin-bottom:10px;">
-          <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
-            <button class="btn-save-session" style="margin:0;" onclick="igReelsGenerar('resultados')">🏆 Resultados de la semana</button>
-            <button class="btn-save-session" style="margin:0; background:var(--azul-primary);" onclick="igReelsGenerar('proximos')">📅 Próximos partidos</button>
-            <button class="btn-save-session" style="margin:0; background:var(--btn-fondoVerde);" onclick="igReelsGenerar('evento')">📸 Evento manual</button>
+        <div style="display:flex; gap:6px; align-items:stretch; margin-bottom:10px;">
+          <div style="flex:1; min-width:0; display:flex; gap:6px;">
+            <button class="btn-save-session" style="margin:0; flex:1 1 auto; min-width:0; padding:10px 2px; white-space:nowrap; font-size:0.78em; letter-spacing:0;" onclick="igReelsGenerar('resultados')">🏆 Resultados</button>
+            <button class="btn-save-session" style="margin:0; flex:1 1 auto; min-width:0; padding:10px 2px; white-space:nowrap; font-size:0.78em; letter-spacing:0; background:var(--azul-primary);" onclick="igReelsGenerar('proximos')">📅 Partidos</button>
+            <button class="btn-save-session" style="margin:0; flex:1 1 auto; min-width:0; padding:10px 2px; white-space:nowrap; font-size:0.78em; letter-spacing:0; background:var(--btn-fondoVerde);" onclick="igReelsGenerar('evento')">📸 Manual</button>
           </div>
           <button class="btn-save-session" style="margin:0; width:44px; flex:none; padding:10px 0; background:#64748b;" onclick="igReelsCargar()" title="Refrescar borradores" aria-label="Refrescar borradores">🔄</button>
         </div>
@@ -210,11 +210,11 @@
         <div class="cp-sub-head" id="igSubHead_stories" role="button" tabindex="0" aria-expanded="true" onclick="igToggleSub('stories')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();igToggleSub('stories');}">📲 Stories · borradores <span class="sec-arrow">▾</span></div>
         <div class="cp-sub-body" id="igSub_stories">
         <p class="ig-info">Con los carteles de Partidos y Resultados, o con fotos de un evento. Nada se publica hasta que una persona lo revisa y pulsa «Confirmar y publicar».</p>
-        <div style="display:flex; gap:8px; align-items:flex-start; margin-bottom:10px;">
-          <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
-            <button class="btn-save-session" style="margin:0;" onclick="igHistoriasGenerar('resultados')">🏆 Resultados de la semana</button>
-            <button class="btn-save-session" style="margin:0; background:var(--azul-primary);" onclick="igHistoriasGenerar('proximos')">📅 Próximos partidos</button>
-            <button class="btn-save-session" style="margin:0; background:var(--btn-fondoVerde);" onclick="igHistoriasGenerar('evento')">📸 Evento manual</button>
+        <div style="display:flex; gap:6px; align-items:stretch; margin-bottom:10px;">
+          <div style="flex:1; min-width:0; display:flex; gap:6px;">
+            <button class="btn-save-session" style="margin:0; flex:1 1 auto; min-width:0; padding:10px 2px; white-space:nowrap; font-size:0.78em; letter-spacing:0;" onclick="igHistoriasGenerar('resultados')">🏆 Resultados</button>
+            <button class="btn-save-session" style="margin:0; flex:1 1 auto; min-width:0; padding:10px 2px; white-space:nowrap; font-size:0.78em; letter-spacing:0; background:var(--azul-primary);" onclick="igHistoriasGenerar('proximos')">📅 Partidos</button>
+            <button class="btn-save-session" style="margin:0; flex:1 1 auto; min-width:0; padding:10px 2px; white-space:nowrap; font-size:0.78em; letter-spacing:0; background:var(--btn-fondoVerde);" onclick="igHistoriasGenerar('evento')">📸 Manual</button>
           </div>
           <button class="btn-save-session" style="margin:0; width:44px; flex:none; padding:10px 0; background:#64748b;" onclick="igHistoriasCargar()" title="Refrescar borradores de stories" aria-label="Refrescar borradores de stories">🔄</button>
         </div>

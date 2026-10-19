@@ -1107,6 +1107,7 @@
             link.download = filename;
             link.href = canvas.toDataURL('image/jpeg', 0.95);
             link.click();
+            if (window.nvaOfrecerStory) canvas.toBlob(b => window.nvaOfrecerStory(b, 'resultados'), 'image/jpeg', 0.95);
         }
 
         // ==========================================================================
@@ -2613,5 +2614,6 @@
     }
 })();
 </script>
+<script src="historia-cartel.js?v=1"></script>
 </body>
 </html>

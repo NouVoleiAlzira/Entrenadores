@@ -2724,6 +2724,7 @@
                         return;
                     }
                     descargarBlobComoArchivo(blob, nombreArchivo);
+                    if (window.nvaOfrecerStory) window.nvaOfrecerStory(blob, 'proximos');
                 }, 'image/jpeg', 0.92);
 
             } catch (err) {
@@ -4247,5 +4248,6 @@
     }
 })();
 </script>
+<script src="historia-cartel.js?v=1"></script>
 </body>
 </html>
