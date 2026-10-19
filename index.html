@@ -200,6 +200,18 @@
           <button class="btn-save-session" style="margin:0; width:44px; flex:none; padding:10px 0; background:#64748b;" onclick="igReelsCargar()" title="Refrescar borradores" aria-label="Refrescar borradores">🔄</button>
         </div>
         <div id="igReelsList"></div>
+
+        <div class="section-title" style="font-size:0.95rem; margin-top:18px;">Stories · borradores</div>
+        <p class="ig-info">Con los carteles de Partidos y Resultados, o con fotos de un evento. Nada se publica hasta que una persona lo revisa y pulsa «Confirmar y publicar».</p>
+        <div style="display:flex; gap:8px; align-items:flex-start; margin-bottom:10px;">
+          <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
+            <button class="btn-save-session" style="margin:0;" onclick="igHistoriasGenerar('resultados')">🏆 Resultados de la semana</button>
+            <button class="btn-save-session" style="margin:0; background:var(--azul-primary);" onclick="igHistoriasGenerar('proximos')">📅 Próximos partidos</button>
+            <button class="btn-save-session" style="margin:0; background:var(--btn-fondoVerde);" onclick="igHistoriasGenerar('evento')">📸 Evento manual</button>
+          </div>
+          <button class="btn-save-session" style="margin:0; width:44px; flex:none; padding:10px 0; background:#64748b;" onclick="igHistoriasCargar()" title="Refrescar borradores de stories" aria-label="Refrescar borradores de stories">🔄</button>
+        </div>
+        <div id="igStoriesList"></div>
       </div>
     </div>
   </div>
