@@ -380,8 +380,21 @@
                   ["cierre", "Despedida", [2, 2.5, 3, 4, 5], 3]];
   const ANIMACIONES = [["slideleft", "Deslizar"], ["fade", "Desvanecer"], ["fadeblack", "Fundido a negro"], ["dissolve", "Disolver"],
                        ["hblur", "Desenfoque"], ["zoomin", "Zoom"], ["circleopen", "Círculo"], ["pixelize", "Píxeles"]];
-  const ACENTOS = ["", "#f5c518", "#d62839", "#57aedf", "#ff7a45", "#2ec4b6", "#8b5cf6", "#ffffff"];
-  const FONDOS = ["", "#0b163a", "#111111", "#301040", "#0f3d2e", "#3a0d12", "#1e293b"];
+  // v85: un solo estilo para todo el reel; cada estilo trae sus colores y todos se pueden cambiar
+  const COLORES_TXT = { ac: "Acento", ac2: "Acento 2", fondo: "Fondo", texto: "Texto" };
+  const COLORES_DEF = {
+    auto: { ac: "#f5c518", fondo: "#0b163a", texto: "#ecf0fa" },
+    pancarta: { ac: "#ffd400", fondo: "#1840c8", texto: "#ecf0fa" },
+    rasgado: { ac: "#b5e61d", fondo: "#0e0e0e", texto: "#ecf0fa" },
+    impacto: { ac: "#e21c28", fondo: "#101012", texto: "#ecf0fa" },
+    diagonal: { ac: "#ffc400", ac2: "#6221f5", fondo: "#0a1640", texto: "#ecf0fa" },
+    franjas: { ac: "#d0141e", fondo: "#161616", texto: "#ecf0fa" },
+    pista: { ac: "#f5c518", fondo: "#0b163a", texto: "#ecf0fa" },
+    corte: { ac: "#ff7a45", fondo: "#0b163a", texto: "#ecf0fa" },
+    foco: { ac: "#57aedf", fondo: "#0b163a", texto: "#ecf0fa" },
+    editorial: { ac: "#ff7a45" },
+    marcador: { ac: "#ff7a45", fondo: "#0b163a", texto: "#ecf0fa" },
+  };
 
   function estiloGuardado() {
     try { return JSON.parse(localStorage.getItem(ESTILO_KEY)) || {}; } catch (e) { return {}; }
@@ -390,14 +403,10 @@
   // Devuelve una promesa con el estilo elegido, o null si se cancela
   function elegirEstilo(inicial, textoBoton) {
     const e = JSON.parse(JSON.stringify(inicial || estiloGuardado()));
-    PARTES.forEach(([k, , , dur]) => { e[k] = Object.assign({ tipo: "auto", dur }, e[k] || {}); });
-    PARTES.forEach(([k]) => { e[k].anim = e[k].anim || ANIM_DEF[k]; });
-    e.acento = e.acento || ""; e.fondo = e.fondo || "";
+    PARTES.forEach(([k, , , dur]) => { e[k] = Object.assign({ dur }, e[k] || {}); e[k].anim = e[k].anim || ANIM_DEF[k]; });
+    e.tipo = e.tipo || (e.partido && e.partido.tipo) || "auto";
+    e.colores = e.colores || {};
     document.getElementById("modalIgEstilo")?.remove();
-    const swatches = (lista, k) => lista.map(c => `<button type="button" class="ig-sw" data-k="${k}" data-c="${c}" title="${c || "Al azar"}"
-        style="width:34px; height:34px; border-radius:50%; border:2px solid #cbd5e1; cursor:pointer; ${c ? `background:${c};` : "background:#fff; font-size:16px;"}">${c ? "" : "🎲"}</button>`).join("")
-      + `<label title="Otro color" style="position:relative; width:34px; height:34px; border-radius:50%; border:2px dashed #94a3b8; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; font-size:15px;">🎨
-         <input type="color" class="ig-sw-otro" data-k="${k}" style="position:absolute; inset:0; opacity:0; cursor:pointer;"></label>`;
     document.body.insertAdjacentHTML("beforeend", `
   <div class="modal-backdrop active" id="modalIgEstilo" style="z-index:3000;">
     <div class="modal-box" style="max-width:460px; max-height:92vh; overflow:auto;">
@@ -405,28 +414,27 @@
         <div class="modal-title">🎨 Estilo del reel</div>
         <button class="btn-close-modal" type="button" data-est="cancelar">✕</button>
       </div>
+      <label class="ig-label">Estilo (para todo el reel)</label>
+      <div style="display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; margin-bottom:10px;">
+        ${PLANTILLAS.map(([g, n]) => `<button type="button" class="ig-plantilla" data-g="${g}"
+          style="flex:0 0 auto; width:70px; padding:3px; border-radius:8px; border:2px solid #cbd5e1; background:#fff; cursor:pointer; color:#1e293b;">
+          ${g === "auto" ? `<div style="height:124px; display:flex; align-items:center; justify-content:center; font-size:28px; background:#f1f5f9; border-radius:5px;">🎲</div>`
+            : `<img src="reels-estilos/partido-${g}.jpg" alt="" loading="lazy" style="width:100%; height:124px; object-fit:cover; border-radius:5px; display:block;">`}
+          <small style="display:block; font-size:11px; margin-top:2px;">${g === "auto" ? "Al azar" : n}</small></button>`).join("")}
+      </div>
+      <label class="ig-label">Colores del estilo</label>
+      <div id="igEstColores" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:4px;"></div>
+      <small class="ig-info" id="igEstColInfo"></small>
       ${PARTES.map(([k, nombre, durs]) => `
-      <div class="ig-est-parte" data-parte="${k}" style="margin-bottom:12px;">
+      <div class="ig-est-parte" data-parte="${k}" style="margin-top:10px;">
         <label class="ig-label">${nombre}</label>
-        <div style="display:flex; gap:6px; overflow-x:auto; padding-bottom:4px;">
-          ${PLANTILLAS.map(([g, n]) => `<button type="button" class="ig-plantilla" data-g="${g}"
-            style="flex:0 0 auto; width:70px; padding:3px; border-radius:8px; border:2px solid #cbd5e1; background:#fff; cursor:pointer; color:#1e293b;">
-            ${g === "auto" ? `<div style="height:124px; display:flex; align-items:center; justify-content:center; font-size:28px; background:#f1f5f9; border-radius:5px;">🎲</div>`
-              : `<img src="reels-estilos/${k}-${g}.jpg" alt="" loading="lazy" style="width:100%; height:124px; object-fit:cover; border-radius:5px; display:block;">`}
-            <small style="display:block; font-size:11px; margin-top:2px;">${g === "auto" ? "Al azar" : n}</small></button>`).join("")}
-        </div>
-        <div style="display:flex; gap:8px; align-items:center; margin-top:4px; flex-wrap:wrap;">
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
           <small>Duración</small>
           <select class="app-input ig-est-dur" style="width:auto; padding:4px 8px;">${durs.map(d => `<option value="${d}">${String(d).replace(".", ",")} s</option>`).join("")}</select>
           <small>${ANIM_TXT[k]}</small>
           <select class="app-input ig-est-anim" style="width:auto; padding:4px 8px;">${ANIMACIONES.map(([v, n]) => `<option value="${v}">${n}</option>`).join("")}</select>
         </div>
       </div>`).join("")}
-      <label class="ig-label">Color de acento</label>
-      <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">${swatches(ACENTOS, "acento")}</div>
-      <label class="ig-label">Color de fondo</label>
-      <div style="display:flex; gap:6px; flex-wrap:wrap;">${swatches(FONDOS, "fondo")}</div>
-      <small class="ig-info">Con 🎲, cada plantilla usa sus propios colores. «Crónica» usa siempre fondo de papel.</small>
       <div style="display:flex; gap:8px; margin-top:12px;">
         <button class="btn-save-session" type="button" data-est="cancelar" style="flex:1; background:#64748b;">Cancelar</button>
         <button class="btn-save-session" type="button" data-est="ok" style="flex:2;">${textoBoton || "🎬 Generar reel"}</button>
@@ -434,28 +442,30 @@
     </div>
   </div>`);
     const m = document.getElementById("modalIgEstilo");
+    const pintarColores = () => {
+      const def = COLORES_DEF[e.tipo] || COLORES_DEF.auto;
+      m.querySelector("#igEstColores").innerHTML = Object.keys(def).map(c => {
+        const v = e.colores[c] || def[c];
+        return `<label style="display:flex; flex-direction:column; align-items:center; gap:2px; font-size:11px; color:#334155; cursor:pointer;">
+          <span style="position:relative; width:38px; height:38px; border-radius:50%; border:2px solid ${e.colores[c] ? "#2563eb" : "#cbd5e1"}; background:${v};">
+            <input type="color" class="ig-col" data-c="${c}" value="${v}" style="position:absolute; inset:0; opacity:0; cursor:pointer;"></span>
+          ${COLORES_TXT[c]}</label>`;
+      }).join("") + (Object.keys(e.colores).length ? `<button type="button" data-est="colreset" style="align-self:center; border:1px solid #cbd5e1; background:#fff; border-radius:8px; padding:4px 8px; cursor:pointer; color:#1e293b;">↺ Originales</button>` : "");
+      m.querySelector("#igEstColInfo").textContent = e.tipo === "auto" ? "Con 🎲 el estilo se elige al azar; los colores que cambies se aplican igual."
+        : e.tipo === "editorial" ? "«Crónica» usa siempre fondo de papel y texto oscuro." : "Toca un color para cambiarlo.";
+    };
     const marcar = () => {
+      m.querySelectorAll(".ig-plantilla").forEach(b => {
+        const si = b.dataset.g === e.tipo;
+        b.style.borderColor = si ? "#2563eb" : "#cbd5e1"; b.style.boxShadow = si ? "0 0 0 2px #93c5fd" : "none";
+      });
       m.querySelectorAll(".ig-est-parte").forEach(div => {
-        const k = div.dataset.parte;
-        div.querySelectorAll(".ig-plantilla").forEach(b => {
-          const si = b.dataset.g === e[k].tipo;
-          b.style.borderColor = si ? "#2563eb" : "#cbd5e1"; b.style.boxShadow = si ? "0 0 0 2px #93c5fd" : "none";
-        });
-        const sel = div.querySelector(".ig-est-dur");
+        const k = div.dataset.parte, sel = div.querySelector(".ig-est-dur");
         if (![...sel.options].some(o => +o.value === +e[k].dur)) sel.insertAdjacentHTML("beforeend", `<option value="${e[k].dur}">${e[k].dur} s</option>`);
         sel.value = String(+e[k].dur);
         div.querySelector(".ig-est-anim").value = e[k].anim;
       });
-      m.querySelectorAll(".ig-sw").forEach(b => {
-        const si = (e[b.dataset.k] || "").toLowerCase() === b.dataset.c;
-        b.style.outline = si ? "3px solid #2563eb" : "none"; b.style.outlineOffset = "2px";
-      });
-      m.querySelectorAll(".ig-sw-otro").forEach(i => {
-        const c = e[i.dataset.k], propio = c && !(i.dataset.k === "acento" ? ACENTOS : FONDOS).includes(c.toLowerCase());
-        i.parentElement.style.background = propio ? c : "transparent";
-        i.parentElement.style.outline = propio ? "3px solid #2563eb" : "none"; i.parentElement.style.outlineOffset = "2px";
-        if (c) i.value = c;
-      });
+      pintarColores();
     };
     marcar();
     return new Promise(resolve => {
@@ -465,18 +475,20 @@
         const b = ev.target.closest("button");
         if (!b) return;
         if (b.dataset.est === "cancelar") return fin(null);
+        if (b.dataset.est === "colreset") { e.colores = {}; return marcar(); }
         if (b.dataset.est === "ok") {
+          PARTES.forEach(([k]) => { e[k].tipo = e.tipo; });
+          e.acento = e.colores.ac || ""; e.fondo = e.colores.fondo || "";
           try { localStorage.setItem(ESTILO_KEY, JSON.stringify(e)); } catch (x) { /* sin almacenamiento */ }
           return fin(e);
         }
-        if (b.classList.contains("ig-plantilla")) { e[b.closest(".ig-est-parte").dataset.parte].tipo = b.dataset.g; marcar(); }
-        if (b.classList.contains("ig-sw")) { e[b.dataset.k] = b.dataset.c; marcar(); }
+        if (b.classList.contains("ig-plantilla")) { if (e.tipo !== b.dataset.g) e.colores = {}; e.tipo = b.dataset.g; marcar(); }
       });
       m.addEventListener("change", (ev) => {
         const t = ev.target, parte = t.closest(".ig-est-parte")?.dataset.parte;
         if (t.classList.contains("ig-est-dur")) e[parte].dur = +t.value;
         else if (t.classList.contains("ig-est-anim")) e[parte].anim = t.value;
-        else if (t.classList.contains("ig-sw-otro")) e[t.dataset.k] = t.value;
+        else if (t.classList.contains("ig-col")) e.colores[t.dataset.c] = t.value;
         marcar();
       });
     });
