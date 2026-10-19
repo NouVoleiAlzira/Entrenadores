@@ -91,18 +91,27 @@
   const km = (a, b) => (a < 0 || b < 0) ? 0 : (DIST[a][b] || 0);
 
   // ---------- Datos ----------
-  let st = null;   // { mes, coaches: [id...], filas: [...] }
+  let st = null;   // { desde, hasta (YYYY-MM-DD), coaches: [id...], filas: [...] }
+  const dentro = (d) => !!d && d >= st.desde && d <= st.hasta;
+  const finMes = (ym) => { const [y, m] = ym.split("-"); return `${ym}-${String(new Date(+y, +m, 0).getDate()).padStart(2, "0")}`; };
+  // Si el rango es un mes completo se devuelve "YYYY-MM" (así se abren los reportes guardados por mes)
+  const mesCompleto = () => st.desde.slice(8) === "01" && st.hasta === finMes(st.desde.slice(0, 7)) ? st.desde.slice(0, 7) : "";
+  const fmtCorta = (iso) => new Date(iso + "T12:00:00").toLocaleDateString("es-ES");
+  function etiquetaRango() {
+    const m = mesCompleto();
+    return m ? `${MESES[+m.slice(5) - 1]} ${m.slice(0, 4)}` : `del ${fmtCorta(st.desde)} al ${fmtCorta(st.hasta)}`;
+  }
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const fmtDia = (iso) => { const d = new Date(iso + "T12:00:00"); return d.toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" }); };
 
-  function partidosDe(coach, mes, propio) {
+  function partidosDe(coach, propio) {
     const cp = window.cpGetData ? window.cpGetData() : null;
     if (!cp || !cp.teams) return [];
     const out = [];
     getCoachTeamEntries(coach).forEach(e => {
       const t = cp.teams[e.teamKey];
       (t && t.matches || []).forEach(m => {
-        if (!m.date || m.date.slice(0, 7) !== mes || /DESCANSA/i.test(m.rival || "")) return;
+        if (!dentro(m.date) || /DESCANSA/i.test(m.rival || "")) return;
         const home = m.home === true || /PALAU/i.test(m.venue || "");
         const c = campoDe(Object.assign({}, m, { home }));
         out.push({ id: e.teamKey + "|" + m.date + "|" + m.time + "|" + m.rival, key: e.teamKey, coach: coach.name, sust: !propio, equipo: e.name,
@@ -119,22 +128,22 @@
     st.coaches.forEach((id, i) => {
       const c = appData.coaches.find(x => String(x.id) === String(id));
       if (!c) return;
-      partidosDe(c, st.mes, i === 0).forEach(f => {
+      partidosDe(c, i === 0).forEach(f => {
         if (filas.some(x => x.id === f.id)) return;   // equipo compartido: una sola vez
         filas.push(Object.assign(f, viejas.get(f.id) ? pick(viejas.get(f.id)) : {}));
       });
     });
-    // Otros eventos añadidos a mano (solo los del mes elegido)
-    (st.filas || []).forEach(f => { if (f.evento && f.date && f.date.slice(0, 7) === st.mes) filas.push(f); });
+    // Otros eventos añadidos a mano (solo los de las fechas elegidas)
+    (st.filas || []).forEach(f => { if (f.evento && dentro(f.date)) filas.push(f); });
     filas.sort((a, b) => (a.date + (a.time || "99:99")).localeCompare(b.date + (b.time || "99:99")));
     st.filas = filas;
   }
   // ---------- Guardar / recuperar (por entrenador y mes) ----------
   // Se guarda en el navegador y en GitHub (Kilometraje/km_<entrenador>_<mes>.json).
-  const archivo = () => { const c = appData.coaches.find(x => String(x.id) === st.coaches[0]); return `Kilometraje/km_${sanitizeFileName(c ? c.name : st.coaches[0])}_${st.mes}.json`; };
+  const archivo = () => { const c = appData.coaches.find(x => String(x.id) === st.coaches[0]); return `Kilometraje/km_${sanitizeFileName(c ? c.name : st.coaches[0])}_${mesCompleto() || st.desde + "_" + st.hasta}.json`; };
   const claveLocal = () => "NVA_KM_" + archivo();
   function datosGuardar() {
-    return { coaches: st.coaches.slice(), mes: st.mes, guardado: new Date().toISOString(),
+    return { coaches: st.coaches.slice(), desde: st.desde, hasta: st.hasta, guardado: new Date().toISOString(),
       filas: st.filas.map(f => Object.assign({ id: f.id }, f.evento ? datosEvento(f) : {}, pick(f), { campoN: CAMPOS[f.campo] || "", salidaN: CAMPOS[f.salida] || "" })), total: +calcular().reduce((a, f) => a + f._km, 0).toFixed(1) };
   }
   function aplicar(d) {
@@ -158,7 +167,7 @@
     const d = datosGuardar();
     try { localStorage.setItem(claveLocal(), JSON.stringify(d)); } catch (e) {}
     st.guardado = d.guardado; pintar(o);
-    const ok = await writeGitHubFile(archivo(), d, `Kilometraje ${st.mes}`);
+    const ok = await writeGitHubFile(archivo(), d, `Kilometraje ${etiquetaRango()}`);
     alert(ok ? "Reporte de kilometraje guardado y sincronizado en GitHub." : "Guardado en este dispositivo. Se sincronizará con GitHub cuando haya conexión.");
   }
 
@@ -201,6 +210,10 @@
       .km-top { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
       .km-top select, .km-top input, .km-row select, .km-row input[type=text] { background: var(--noche); color: var(--tiza); border: 1px solid var(--linea); border-radius: 8px; padding: 5px 6px; font: inherit; font-size: 0.8rem; }
       .km-top select { flex: 1; min-width: 0; }
+      .km-fechas .km-coach { flex: 0 1 30%; }
+      .km-rango { flex: 1 1 60%; display: flex; align-items: center; gap: 4px; min-width: 0; }
+      .km-rango input { flex: 1; min-width: 0; font-size: 0.85rem; }
+      .km-rango span { font-size: 0.75rem; color: var(--niebla); }
       .km-chip { font-size: 0.72rem; background: rgba(245,197,24,0.15); color: var(--balon); border-radius: 999px; padding: 3px 8px; display: inline-flex; gap: 4px; align-items: center; }
       .km-chip button { background: none; border: 0; color: inherit; cursor: pointer; padding: 0; }
       .km-list { overflow-y: auto; flex: 1; min-height: 120px; padding-right: 2px; }
@@ -235,7 +248,7 @@
   function pintar(o) {
     const s = calcular();
     const list = o.querySelector(".km-list");
-    if (!st.filas.length) { list.innerHTML = `<div class="cp-modal-txt">No hay partidos de estos equipos en ${MESES[+st.mes.slice(5) - 1]}. Revisa que los calendarios estén cargados en «Equipos · PDF Competición».</div>`; }
+    if (!st.filas.length) { list.innerHTML = `<div class="cp-modal-txt">No hay partidos de estos equipos ${mesCompleto() ? "en " : ""}${etiquetaRango()}. Revisa que los calendarios estén cargados en «Equipos · PDF Competición».</div>`; }
     else list.innerHTML = st.filas.map((f, i) => {
       if (f._lock) return `<div class="km-row km-lock" data-i="${i}">
         <span title="Sin registro del partido">🔒</span>
@@ -277,15 +290,13 @@
     const w = document.createElement("div");
     w.className = "cp-modal";
     w.style.zIndex = "100005";
-    const [y, m] = st.mes.split("-");
     const hoy = new Date().toISOString().slice(0, 10);
-    const ultimo = new Date(+y, +m, 0).getDate();
-    const fecha = hoy.slice(0, 7) === st.mes ? hoy : `${st.mes}-01`;
+    const fecha = dentro(hoy) ? hoy : st.desde;
     const coach = appData.coaches.find(c => String(c.id) === st.coaches[0]);
     w.innerHTML = `<div class="cp-modal-box km-box" style="max-width:400px">
       <div class="cp-modal-title">📌 Otro evento</div>
       <div class="km-top"><input type="text" class="ev-concepto" placeholder="Concepto (p. ej. Reunión federación)" style="flex:1"></div>
-      <div class="km-top"><input type="date" class="ev-fecha" value="${fecha}" min="${st.mes}-01" max="${st.mes}-${String(ultimo).padStart(2, "0")}" style="flex:1"><input type="time" class="ev-hora"></div>
+      <div class="km-top"><input type="date" class="ev-fecha" value="${fecha}" min="${st.desde}" max="${st.hasta}" style="flex:1"><input type="time" class="ev-hora"></div>
       <div class="km-top"><select class="ev-campo" style="flex:1"><option value="-1">— Otra ciudad (km a mano) —</option>${CAMPOS.map((c, i) => `<option value="${i}">${esc(c)}</option>`).join("")}</select></div>
       <div class="km-top ev-manual"><input type="text" class="ev-ciudad" placeholder="Ciudad" style="flex:1"><input type="text" class="ev-km" inputmode="decimal" placeholder="km" style="width:70px;text-align:right"></div>
       <div class="km-s ev-auto" style="display:none;font-size:0.8rem"></div>
@@ -308,7 +319,7 @@
       const concepto = $(".ev-concepto").value.trim(), date = $(".ev-fecha").value, campo = +$(".ev-campo").value;
       const ciudad = $(".ev-ciudad").value.trim(), kmMano = $(".ev-km").value.trim();
       if (!concepto) { alert("Escribe el concepto del evento."); return; }
-      if (!date || date.slice(0, 7) !== st.mes) { alert("Elige una fecha del mes del reporte."); return; }
+      if (!dentro(date)) { alert("Elige una fecha dentro de las fechas del reporte."); return; }
       if (campo < 0 && (!ciudad || !(parseFloat(kmMano.replace(",", ".")) >= 0))) { alert("Escribe la ciudad y los km."); return; }
       const f = Object.assign(datosEvento({ date, time: $(".ev-hora").value, concepto, ciudad: campo < 0 ? ciudad : "", coach: coach ? coach.name : "" }),
         { id: "ev|" + Date.now(), campo, kmMano: campo < 0 ? kmMano : "", sel: true, chain: false, salida: CASA });
@@ -347,13 +358,14 @@
     const hoy = new Date();
     const seguir = volver === true && st;
     const primero = seguir ? st.coaches[0] : (typeof activeCoachId !== "undefined" && activeCoachId != null && appData.coaches.some(c => c.id == activeCoachId)) ? activeCoachId : appData.coaches[0].id;
-    if (!seguir) st = { mes: `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`, coaches: [String(primero)], filas: [] };
+    const mesHoy = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
+    if (!seguir) st = { desde: mesHoy + "-01", hasta: finMes(mesHoy), coaches: [String(primero)], filas: [] };
     const o = document.createElement("div");
     o.className = "cp-modal";
     const optsCoach = (sel) => appData.coaches.map(c => `<option value="${esc(c.id)}"${String(c.id) === String(sel) ? " selected" : ""}>${esc(c.name)}</option>`).join("");
     o.innerHTML = `<div class="cp-modal-box km-box">
       <div class="cp-modal-title">🚗 Reporte Kilometraje</div>
-      <div class="km-top"><select class="km-coach" title="Entrenador">${optsCoach(primero)}</select><input type="month" class="km-mes" value="${st.mes}"></div>
+      <div class="km-top km-fechas"><select class="km-coach" title="Entrenador">${optsCoach(primero)}</select><span class="km-rango"><input type="date" class="km-desde" value="${st.desde}" title="Desde"><span>al</span><input type="date" class="km-hasta" value="${st.hasta}" title="Hasta"></span></div>
       <div class="km-top"><button type="button" class="cp-modal-btn km-otro" style="flex:none;font-size:0.72rem;padding:5px 8px;">➕ Partidos de otro entrenador</button><button type="button" class="cp-modal-btn km-evento" style="flex:none;font-size:0.72rem;padding:5px 8px;">➕ Otro evento</button><span class="km-chips"></span></div>
       <div class="km-list"></div>
       <div class="km-total"><span>TOTAL <small class="km-num" style="font-size:0.8rem;color:var(--niebla)"></small></span><b class="km-sum"></b></div>
@@ -375,16 +387,22 @@
         st.filas = []; st.guardado = "";
         aplicar(leerLocal());
         cargar(); pintar(o);
-        const mes = st.mes, c0 = st.coaches[0];
+        const rango = st.desde + st.hasta, c0 = st.coaches[0];
         const gh = await leerGitHub();
         const loc = leerLocal();
-        if (gh && mes === st.mes && c0 === st.coaches[0] && (!loc || (gh.guardado || "") > (loc.guardado || ""))) { aplicar(gh); cargar(); pintar(o); }
+        if (gh && rango === st.desde + st.hasta && c0 === st.coaches[0] && (!loc || (gh.guardado || "") > (loc.guardado || ""))) { aplicar(gh); cargar(); pintar(o); }
         return;
       }
       cargar(); pintar(o);
     };
     o.querySelector(".km-coach").onchange = (e) => { st.coaches[0] = e.target.value; st.coaches = st.coaches.filter((x, i) => i === 0 || x !== e.target.value); recargar(true); };
-    o.querySelector(".km-mes").onchange = (e) => { if (e.target.value) { st.mes = e.target.value; recargar(true); } };
+    const fDesde = o.querySelector(".km-desde"), fHasta = o.querySelector(".km-hasta");
+    const cambiaRango = (e) => {
+      if (!fDesde.value || !fHasta.value) return;
+      if (fHasta.value < fDesde.value) { if (e.target === fDesde) fHasta.value = fDesde.value; else fDesde.value = fHasta.value; }
+      st.desde = fDesde.value; st.hasta = fHasta.value; recargar(true);
+    };
+    fDesde.onchange = cambiaRango; fHasta.onchange = cambiaRango;
     o.querySelector(".km-otro").onclick = () => {
       const libres = appData.coaches.filter(c => !st.coaches.includes(String(c.id)));
       if (!libres.length) { alert("No hay más entrenadores."); return; }
@@ -435,13 +453,12 @@
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF({ unit: "mm", format: "a4", compress: true });
       const coach = appData.coaches.find(c => String(c.id) === st.coaches[0]);
-      const [y, m] = st.mes.split("-");
       const W = 210, X = 12;
       const logo = typeof nvaLogoDataUrl === "function" ? await nvaLogoDataUrl() : null;
       const cab = () => nvaPdfBand(pdf, logo, {
         kicker: "Club Nou Vòlei Alzira",
         title: "Reporte de kilometraje",
-        sub: `Entrenador/a: ${coach ? coach.name : ""}  ·  ${MESES[+m - 1]} ${y}`
+        sub: `Entrenador/a: ${coach ? coach.name : ""}  ·  ${etiquetaRango()}`
       });
       const cols = [{ t: "Fecha", w: 20 }, { t: "Hora", w: 11 }, { t: "Equipo", w: 36 }, { t: "Partido", w: 38 }, { t: "Recorrido", w: 64 }, { t: "Km", w: 17 }];
       const filaCab = (yy) => {
@@ -485,7 +502,7 @@
       pdf.setFont("helvetica", "normal"); pdf.setFontSize(7.5); pdf.setTextColor(110);
       pdf.text(pdf.splitTextToSize("Salida y vuelta: Palau d'Esports (Alzira) salvo indicación. Partidos encadenados (barra amarilla): se va directo desde el campo anterior.", W - 2 * X), X, yy + 19);
       nvaPdfFooters(pdf);
-      pdf.save(`Kilometraje_${sanitizeFileName(coach ? coach.name : "")}_${y}-${m}.pdf`);
+      pdf.save(`Kilometraje_${sanitizeFileName(coach ? coach.name : "")}_${mesCompleto() || st.desde + "_" + st.hasta}.pdf`);
     } catch (e) { alert("No se pudo crear el PDF: " + (e.message || e)); }
   }
 })();
