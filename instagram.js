@@ -127,7 +127,7 @@
 
   const DIR = "Reels/borradores";
   const ESTADOS = { borrador: "📝 Borrador", confirmado: "✅ Confirmado · pendiente de publicar", publicado: "📲 Publicado", descartado: "🗑️ Descartado", error: "⚠️ Error al publicar" };
-  const TIPOS = { resultados: "🏆 Resultados de la semana", proximos: "📅 Próximos partidos", actividad: "📸 Actividad" };
+  const TIPOS = { resultados: "🏆 Resultados de la semana", proximos: "📅 Próximos partidos", actividad: "📸 Actividad", evento: "📸 Evento" };
   const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const fmt = (s) => { if (!s) return ""; const [y, m, d] = s.slice(0, 10).split("-"); return `${d}/${m}`; };
   const videos = {};   // id -> objectURL ya descargado
@@ -175,7 +175,7 @@
         <div class="ig-reel" data-id="${esc(b.id)}">
           <div class="ig-reel-head">
             <img class="ig-portada" alt="" data-src="${esc(b.id)}">
-            <div><b>${TIPOS[b.tipo] || esc(b.tipo)}</b><br><small>${fmt(b.desde)} – ${fmt(b.hasta)} · ${b.partidos || 0} partidos</small><br>
+            <div><b>${TIPOS[b.tipo] || esc(b.tipo)}</b><br><small>${b.tipo === "evento" ? `${esc(b.titulo || "")} · ${b.fotos || 0} fotos` : `${fmt(b.desde)} – ${fmt(b.hasta)} · ${b.partidos || 0} partidos`}</small><br>
               <span class="ig-estado ig-${esc(b.estado)}">${ESTADOS[b.estado] || esc(b.estado)}</span></div>
           </div>
           <button class="btn-pdf-mode ig-abrir" style="width:100%; margin:8px 0 0; background:var(--azul-primary); color:#fff;">${b.estado === "borrador" ? "👀 REVISAR Y CONFIRMAR" : "👀 VER"}</button>
@@ -260,12 +260,332 @@
     } catch (e) { alert(e.message); }
   }
 
-  async function generar() {
-    const tipo = confirm("¿Qué reel quieres generar?\n\nAceptar = Resultados de la semana\nCancelar = Próximos partidos") ? "resultados" : "proximos";
+  /* ---------- Menú «Generar ahora» (resultados, próximos o evento manual) ---------- */
+  const MAX_FOTOS = 10;
+  let fotosEvento = [];   // [{ blob, url }]
+  let dictado = null;
+
+  function crearMenu() {
+    if (document.getElementById("modalIgGenerar")) return;
+    document.body.insertAdjacentHTML("beforeend", `
+  <div class="modal-backdrop" id="modalIgGenerar">
+    <div class="modal-box" style="max-width: 420px;">
+      <div class="modal-header">
+        <div class="modal-title" id="igGenTitulo">¿Qué reel quieres generar?</div>
+        <button class="btn-close-modal" type="button" data-ig="cerrar">✕</button>
+      </div>
+      <div id="igGenMenu" style="display:flex; flex-direction:column; gap:8px;">
+        <button class="btn-save-session" type="button" data-ig="resultados">🏆 Resultados de la semana</button>
+        <button class="btn-save-session" type="button" data-ig="proximos" style="background:var(--azul-primary);">📅 Próximos partidos</button>
+        <button class="btn-save-session" type="button" data-ig="evento" style="background:var(--btn-fondoVerde);">📸 Evento manual</button>
+      </div>
+      <div id="igGenResultados" hidden>
+        <p class="ig-info" id="igResInfo"></p>
+        <div id="igResLista" style="display:flex; flex-direction:column; gap:6px; max-height:46vh; overflow:auto;"></div>
+        <small class="ig-info" id="igResEstado"></small>
+        <div style="display:flex; gap:8px; margin-top:10px;">
+          <button class="btn-save-session" type="button" data-ig="volver" style="flex:1; background:#64748b;">← Volver</button>
+          <button class="btn-save-session" type="button" id="igResPedir" style="flex:2;">🎬 Generar reel</button>
+        </div>
+      </div>
+      <div id="igGenEvento" hidden>
+        <label class="ig-label" for="igEvTitulo">Título del reel</label>
+        <input type="text" id="igEvTitulo" class="app-input" maxlength="40" placeholder="Ej.: Challenge NVA">
+        <label class="ig-label" for="igEvTexto">¿De qué va el reel?</label>
+        <textarea id="igEvTexto" class="app-input" rows="4" placeholder="Cuenta un poco qué pasó: qué, dónde, cuándo, quién…"></textarea>
+        <button class="btn-save-session" type="button" id="igEvVoz" style="width:100%; margin:6px 0; background:var(--azul-primary);">🎤 Dictar con la voz</button>
+        <label class="ig-label">Fotos (hasta ${MAX_FOTOS})</label>
+        <label class="btn-save-session" style="display:block; text-align:center; cursor:pointer; margin-bottom:6px; background:var(--btn-fondoVerde);">🖼️ Elegir fotos
+          <input type="file" id="igEvFotos" accept="image/*" multiple hidden></label>
+        <div id="igEvMiniaturas" style="display:grid; grid-template-columns:repeat(5,1fr); gap:4px;"></div>
+        <small class="ig-info" id="igEvEstado"></small>
+        <div style="display:flex; gap:8px; margin-top:10px;">
+          <button class="btn-save-session" type="button" data-ig="volver" style="flex:1; background:#64748b;">← Volver</button>
+          <button class="btn-save-session" type="button" id="igEvPedir" style="flex:2;">🎬 Generar reel</button>
+        </div>
+      </div>
+    </div>
+  </div>`);
+    const m = document.getElementById("modalIgGenerar");
+    m.addEventListener("click", (e) => {
+      if (e.target === m) return cerrarMenu();
+      const b = e.target.closest("[data-ig]");
+      if (!b) return;
+      const a = b.dataset.ig;
+      if (a === "cerrar") cerrarMenu();
+      else if (a === "volver") verPaso("menu");
+      else if (a === "evento") verPaso("evento");
+      else if (a === "resultados") prepararResultados();
+      else pedirPartidos(a);
+    });
+    document.getElementById("igEvFotos").onchange = (e) => { anadirFotos(e.target.files); e.target.value = ""; };
+    document.getElementById("igEvPedir").onclick = pedirEvento;
+    document.getElementById("igResPedir").onclick = pedirResultados;
+    const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const voz = document.getElementById("igEvVoz");
+    if (!Rec) voz.hidden = true;
+    else voz.onclick = () => alternarDictado(Rec, voz);
+  }
+
+  function verPaso(paso) {
+    document.getElementById("igGenMenu").style.display = paso === "menu" ? "flex" : "none";
+    document.getElementById("igGenEvento").hidden = paso !== "evento";
+    document.getElementById("igGenResultados").hidden = paso !== "resultados";
+    document.getElementById("igGenTitulo").textContent =
+      { menu: "¿Qué reel quieres generar?", evento: "📸 Evento manual", resultados: "🏆 Fotos de los partidos" }[paso];
+    if (paso !== "evento") pararDictado();
+  }
+
+  function cerrarMenu() {
+    pararDictado();
+    document.getElementById("modalIgGenerar").classList.remove("active");
+  }
+
+  function alternarDictado(Rec, boton) {
+    if (dictado) { pararDictado(); return; }
+    const area = document.getElementById("igEvTexto");
+    const previo = area.value ? area.value.replace(/\s*$/, " ") : "";
+    dictado = new Rec();
+    dictado.lang = "es-ES"; dictado.continuous = true; dictado.interimResults = true;
+    dictado.onresult = (ev) => {
+      let t = "";
+      for (let i = 0; i < ev.results.length; i++) t += ev.results[i][0].transcript;
+      area.value = previo + t;
+    };
+    dictado.onerror = (ev) => {
+      if (ev.error === "not-allowed") alert("El navegador no deja usar el micrófono. Revisa los permisos.");
+    };
+    dictado.onend = () => { dictado = null; boton.textContent = "🎤 Dictar con la voz"; };
+    dictado.start();
+    boton.textContent = "⏹️ Parar de dictar";
+  }
+
+  function pararDictado() { if (dictado) dictado.stop(); }
+
+  // Reduce cada foto a 1080×1920 como mucho (JPEG) para que la subida sea ligera
+  function reducir(file) {
+    return new Promise((ok, mal) => {
+      const img = new Image(), url = URL.createObjectURL(file);
+      img.onload = () => {
+        const k = Math.min(1, 1920 / Math.max(img.width, img.height));
+        const c = document.createElement("canvas");
+        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        c.toBlob(b => b ? ok(b) : mal(new Error("No se ha podido leer la foto")), "image/jpeg", 0.85);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); mal(new Error(`No se ha podido leer ${file.name}`)); };
+      img.src = url;
+    });
+  }
+
+  async function anadirFotos(files) {
+    const libres = MAX_FOTOS - fotosEvento.length;
+    const lista = Array.from(files || []).filter(f => f.type.startsWith("image/"));
+    if (lista.length > libres) alert(`Como mucho ${MAX_FOTOS} fotos. Se añaden las ${libres} primeras.`);
+    for (const f of lista.slice(0, libres)) {
+      try { const blob = await reducir(f); fotosEvento.push({ blob, url: URL.createObjectURL(blob) }); }
+      catch (e) { alert(e.message); }
+    }
+    pintarFotos();
+  }
+
+  function pintarFotos() {
+    const el = document.getElementById("igEvMiniaturas");
+    el.innerHTML = fotosEvento.map((f, i) => `
+      <div style="position:relative; aspect-ratio:1;">
+        <img src="${f.url}" alt="" style="width:100%; height:100%; object-fit:cover; border-radius:6px;">
+        <button type="button" data-quitar="${i}" aria-label="Quitar foto" style="position:absolute; top:2px; right:2px; border:0; border-radius:50%; width:22px; height:22px; background:rgba(0,0,0,.65); color:#fff; cursor:pointer;">✕</button>
+      </div>`).join("");
+    el.querySelectorAll("[data-quitar]").forEach(b => b.onclick = () => {
+      const [f] = fotosEvento.splice(+b.dataset.quitar, 1); URL.revokeObjectURL(f.url); pintarFotos();
+    });
+  }
+
+  function aBase64(blob) {
+    return new Promise((ok, mal) => {
+      const r = new FileReader();
+      r.onload = () => ok(String(r.result).split(",")[1]);
+      r.onerror = () => mal(r.error);
+      r.readAsDataURL(blob);
+    });
+  }
+
+  async function subirArchivo(path, blob, msg) {
+    const r = await fetch(api(path), { method: "PUT", headers: hdr({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ message: msg, content: await aBase64(blob) }) });
+    if (!r.ok) throw new Error(`No se ha podido subir la foto (${r.status}).`);
+  }
+
+  /* ---------- Resultados: antes de pedir el reel, fotos de los partidos que no tengan ---------- */
+  // Mismo cálculo que el Action (generar_reel.py): partidos con resultado de la semana pasada
+  const isoDia = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const apos = (t) => String(t || "").replace(/([A-Za-zÀ-ÿ]),(?=[A-Za-zÀ-ÿ])/g, "$1'");
+  const normT = (t) => String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const parecido = (a, b) => { const x = normT(a), y = normT(b); return !!x && !!y && (x === y || x.includes(y) || y.includes(x)); };
+  const MESES_L = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+  let resPartidos = [];   // [{ id, equipo, rival, fecha, marcador, tiene, blob, url }]
+  let resRango = null;
+
+  function rangoResultados() {
+    const hoy = new Date(); hoy.setHours(12, 0, 0, 0);
+    const dom = new Date(hoy); dom.setDate(hoy.getDate() - ((hoy.getDay() + 7) % 7));   // domingo pasado (u hoy)
+    const lun = new Date(dom); lun.setDate(dom.getDate() - 6);
+    return { desde: isoDia(lun), hasta: isoDia(dom) };
+  }
+
+  function partidosConResultado(desde, hasta) {
+    const cp = window.cpGetData ? window.cpGetData() : null;
+    const out = [];
+    Object.entries((cp && cp.teams) || {}).forEach(([clave, info]) => (info.matches || []).forEach(m => {
+      if (!m.date || m.date < desde || m.date > hasta) return;
+      const r = /\s(\d)\s*-\s*(\d)\s*\(/.exec(m.raw || "");
+      if (!r) return;
+      const rival = apos(m.rival);
+      out.push({ id: `${clave}|${m.date}|${rival}`, equipo: clave.replace(/\s*\(.*\)\s*$/, ""), rival, fecha: m.date, marcador: `${r[1]}-${r[2]}` });
+    }));
+    return out.sort((a, b) => a.fecha.localeCompare(b.fecha));
+  }
+
+  function rangoDeNombre(nombre) {   // "Resultados del 26 de septiembre al 4 de octubre del 2026.json"
+    const t = nombre.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+    const y = (t.match(/\b(20\d\d)\b/) || [])[1];
+    const dias = [...t.matchAll(/\b(\d{1,2}) de ([a-z]+)/g)].map(m => ({ d: +m[1], m: MESES_L.indexOf(m[2]) })).filter(x => x.m >= 0);
+    if (!y || !dias.length) return null;
+    const a = dias[0], b = dias[dias.length - 1];
+    const iso = (yy, x) => `${yy}-${String(x.m + 1).padStart(2, "0")}-${String(x.d).padStart(2, "0")}`;
+    return { desde: iso(a.m > b.m ? +y - 1 : +y, a), hasta: iso(+y, b) };
+  }
+
+  // Fotos ya guardadas desde Resultados.html para esas fechas (el Action las usa solas)
+  async function fotosGuardadas(desde, hasta) {
+    const r = await fetch(api("PartidosyResultados"), { headers: hdr(), cache: "no-store" });
+    if (!r.ok) return [];
+    const archivos = ((await r.json()) || []).filter(a => a.type === "file" && /^Resultados.*\.json$/i.test(a.name))
+      .filter(a => { const x = rangoDeNombre(a.name); return x && x.desde <= hasta && x.hasta >= desde; });
+    const cards = [];
+    for (const a of archivos) {
+      try { ((await getJson(`PartidosyResultados/${a.name}`)) || {}).cards.forEach(c => { if (c.photo && c.photo.file) cards.push(c); }); }
+      catch (e) { console.warn("No se ha podido leer", a.name, e); }
+    }
+    return cards;
+  }
+
+  async function prepararResultados() {
+    resRango = rangoResultados();
+    resPartidos.forEach(p => p.url && URL.revokeObjectURL(p.url));
+    resPartidos = partidosConResultado(resRango.desde, resRango.hasta);
+    if (!resPartidos.length) { pedirPartidos("resultados"); return; }
+    verPaso("resultados");
+    document.getElementById("igResInfo").textContent = "Buscando las fotos de los partidos…";
+    document.getElementById("igResLista").innerHTML = "";
     try {
-      await putJson("Reels/solicitud.json", { id: Date.now().toString(36), tipo, pedido: new Date().toISOString() }, `Pedir reel ${tipo}`);
+      const cards = await fotosGuardadas(resRango.desde, resRango.hasta);
+      resPartidos.forEach(p => {
+        p.tiene = cards.some(c => (parecido(c.homeTeam, p.equipo) && parecido(c.awayTeam, p.rival)) ||
+                                  (parecido(c.awayTeam, p.equipo) && parecido(c.homeTeam, p.rival)));
+      });
+    } catch (e) { console.warn(e); }
+    if (resPartidos.every(p => p.tiene)) { pedirPartidos("resultados"); return; }
+    pintarResultados();
+  }
+
+  function pintarResultados() {
+    const faltan = resPartidos.filter(p => !p.tiene && !p.blob).length;
+    document.getElementById("igResInfo").textContent = faltan
+      ? `${faltan} partido(s) sin foto. Puedes añadirlas ahora (es opcional): saldrán en su diapositiva.`
+      : "Todos los partidos tienen foto.";
+    const el = document.getElementById("igResLista");
+    el.innerHTML = resPartidos.map((p, i) => `
+      <div style="display:flex; align-items:center; gap:8px; padding:6px 8px; border:1px solid #e2e8f0; border-radius:10px;">
+        ${p.url ? `<img src="${p.url}" alt="" style="width:44px; height:44px; object-fit:cover; border-radius:6px;">` : ""}
+        <div style="flex:1; min-width:0; font-size:0.78rem; color:#1e293b;"><b>${esc(p.equipo)}</b> ${esc(p.marcador)} ${esc(p.rival)}<br>
+          <small style="color:#64748b;">${fmt(p.fecha)}${p.tiene ? " · 📸 ya tiene foto" : ""}</small></div>
+        <label class="btn-save-session" style="width:auto; flex:none; white-space:nowrap; margin:0; padding:6px 10px; font-size:0.72rem; cursor:pointer; background:${p.tiene || p.blob ? "#64748b" : "var(--btn-fondoVerde)"};">
+          ${p.blob ? "Cambiar" : p.tiene ? "Otra foto" : "➕ Foto"}<input type="file" accept="image/*" hidden data-res="${i}"></label>
+      </div>`).join("");
+    el.querySelectorAll("[data-res]").forEach(inp => inp.onchange = async () => {
+      const p = resPartidos[+inp.dataset.res], f = inp.files && inp.files[0];
+      if (!f) return;
+      try {
+        const blob = await reducir(f);
+        if (p.url) URL.revokeObjectURL(p.url);
+        Object.assign(p, { blob, url: URL.createObjectURL(blob) });
+        pintarResultados();
+      } catch (e) { alert(e.message); }
+    });
+  }
+
+  async function pedirResultados() {
+    const boton = document.getElementById("igResPedir"), estado = document.getElementById("igResEstado");
+    const conFoto = resPartidos.filter(p => p.blob);
+    boton.disabled = true;
+    const id = Date.now().toString(36);
+    try {
+      const fotos = {};
+      for (let i = 0; i < conFoto.length; i++) {
+        estado.textContent = `Subiendo foto ${i + 1} de ${conFoto.length}…`;
+        const ruta = `Reels/fotos/${id}/foto_${String(i + 1).padStart(2, "0")}.jpg`;
+        await subirArchivo(ruta, conFoto[i].blob, `Foto ${i + 1} del reel ${id}`);
+        fotos[conFoto[i].id] = ruta;
+      }
+      estado.textContent = "";
+      await pedirPartidos("resultados", { desde: resRango.desde, hasta: resRango.hasta, fotos, id });
+    } catch (e) {
+      estado.textContent = "";
+      alert(e.message);
+    } finally {
+      boton.disabled = false;
+    }
+  }
+
+  function generar() {
+    crearMenu();
+    verPaso("menu");
+    document.getElementById("modalIgGenerar").classList.add("active");
+  }
+
+  async function pedirPartidos(tipo, extra) {
+    cerrarMenu();
+    try {
+      await putJson("Reels/solicitud.json", Object.assign({ id: Date.now().toString(36), tipo, pedido: new Date().toISOString() }, extra || {}),
+        `Pedir reel ${tipo}`);
       alert("Pedido. El borrador aparecerá aquí en unos minutos (pulsa 🔄 para actualizar).");
     } catch (e) { alert(e.message); }
+  }
+
+  async function pedirEvento() {
+    const titulo = document.getElementById("igEvTitulo").value.trim();
+    const texto = document.getElementById("igEvTexto").value.trim();
+    if (!titulo) { alert("Pon un título al reel."); return; }
+    if (!texto) { alert("Explica un poco de qué va el reel (puedes dictarlo)."); return; }
+    if (!fotosEvento.length) { alert("Añade al menos una foto."); return; }
+    pararDictado();
+    const boton = document.getElementById("igEvPedir"), estado = document.getElementById("igEvEstado");
+    boton.disabled = true;
+    const id = Date.now().toString(36);
+    try {
+      const fotos = [];
+      for (let i = 0; i < fotosEvento.length; i++) {
+        estado.textContent = `Subiendo foto ${i + 1} de ${fotosEvento.length}…`;
+        const ruta = `Reels/eventos/${id}/foto_${String(i + 1).padStart(2, "0")}.jpg`;
+        await subirArchivo(ruta, fotosEvento[i].blob, `Foto ${i + 1} del reel ${id}`);
+        fotos.push(ruta);
+      }
+      estado.textContent = "Pidiendo el reel…";
+      await putJson("Reels/solicitud.json", { id, tipo: "evento", titulo, descripcion: texto, fotos,
+        pedido: new Date().toISOString() }, `Pedir reel de evento ${id}`);
+      fotosEvento.forEach(f => URL.revokeObjectURL(f.url)); fotosEvento = []; pintarFotos();
+      document.getElementById("igEvTitulo").value = ""; document.getElementById("igEvTexto").value = "";
+      estado.textContent = "";
+      cerrarMenu();
+      alert("Pedido. El borrador aparecerá aquí en unos minutos (pulsa 🔄 para actualizar).");
+    } catch (e) {
+      estado.textContent = "";
+      alert(e.message);
+    } finally {
+      boton.disabled = false;
+    }
   }
 
   window.igReelsCargar = cargar;
