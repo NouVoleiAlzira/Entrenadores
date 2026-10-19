@@ -191,9 +191,13 @@
       <div class="section-body" id="secBody_instagram">
         <div class="section-title" style="font-size:0.95rem; margin-top:8px;">Reels · borradores</div>
         <p class="ig-info">Los reels se crean solos como borrador. Nada se publica hasta que una persona lo revisa y pulsa «Confirmar y publicar».</p>
-        <div style="display:flex; gap:8px; margin-bottom:10px;">
-          <button class="btn-save-session" style="flex:2;" onclick="igReelsGenerar()">🎬 Generar ahora</button>
-          <button class="btn-save-session" style="flex:1; background: var(--btn-fondoVerde);" onclick="igReelsCargar()">🔄 Refrescar</button>
+        <div style="display:flex; gap:8px; align-items:flex-start; margin-bottom:10px;">
+          <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
+            <button class="btn-save-session" style="margin:0;" onclick="igReelsGenerar('resultados')">🏆 Resultados de la semana</button>
+            <button class="btn-save-session" style="margin:0; background:var(--azul-primary);" onclick="igReelsGenerar('proximos')">📅 Próximos partidos</button>
+            <button class="btn-save-session" style="margin:0; background:var(--btn-fondoVerde);" onclick="igReelsGenerar('evento')">📸 Evento manual</button>
+          </div>
+          <button class="btn-save-session" style="margin:0; width:44px; flex:none; padding:10px 0; background:#64748b;" onclick="igReelsCargar()" title="Refrescar borradores" aria-label="Refrescar borradores">🔄</button>
         </div>
         <div id="igReelsList"></div>
       </div>

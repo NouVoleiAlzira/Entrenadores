@@ -170,7 +170,7 @@
     try {
       const idx = await getJson(`${DIR}/indice.json`);
       const lista = ((idx && idx.borradores) || []).filter(b => b.estado !== "descartado").slice(0, 12);
-      if (!lista.length) { el.innerHTML = `<p class="ig-info">Todavía no hay borradores. Se crean solos el lunes a las 18:00 (resultados) y el martes a las 21:00 (próximos partidos), o con «Generar ahora».</p>`; return; }
+      if (!lista.length) { el.innerHTML = `<p class="ig-info">Todavía no hay borradores. Se crean solos el lunes a las 18:00 (resultados) y el martes a las 21:00 (próximos partidos), o con los botones de arriba.</p>`; return; }
       el.innerHTML = lista.map(b => `
         <div class="ig-reel" data-id="${esc(b.id)}">
           <div class="ig-reel-head">
@@ -551,8 +551,10 @@
     resRango = rangoResultados();
     resPartidos.forEach(p => p.url && URL.revokeObjectURL(p.url));
     resPartidos = partidosConResultado(resRango.desde, resRango.hasta);
-    if (!resPartidos.length) { pedirPartidos("resultados"); return; }
+    const directo = () => { if (confirm("¿Generar el reel de resultados de la semana?")) pedirPartidos("resultados"); };
+    if (!resPartidos.length) { directo(); return; }
     verPaso("resultados");
+    document.getElementById("modalIgGenerar").classList.add("active");
     document.getElementById("igResInfo").textContent = "Buscando las fotos de los partidos…";
     document.getElementById("igResLista").innerHTML = "";
     try {
@@ -562,7 +564,7 @@
                                   (parecido(c.awayTeam, p.equipo) && parecido(c.homeTeam, p.rival)));
       });
     } catch (e) { console.warn(e); }
-    if (resPartidos.every(p => p.tiene)) { pedirPartidos("resultados"); return; }
+    if (resPartidos.every(p => p.tiene)) { cerrarMenu(); directo(); return; }
     pintarResultados();
   }
 
@@ -615,9 +617,15 @@
     }
   }
 
-  function generar() {
+  // Botones de la sección: resultados, próximos o evento manual (sin tipo, el menú con los tres)
+  function generar(tipo) {
     crearMenu();
-    verPaso("menu");
+    if (tipo === "proximos") {
+      if (confirm("¿Generar el reel de próximos partidos?")) pedirPartidos("proximos");
+      return;
+    }
+    if (tipo === "resultados") { prepararResultados(); return; }
+    verPaso(tipo === "evento" ? "evento" : "menu");
     document.getElementById("modalIgGenerar").classList.add("active");
   }
 
