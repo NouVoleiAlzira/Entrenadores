@@ -201,13 +201,17 @@
       if (!videos[id]) videos[id] = await blobUrl(`${DIR}/${id}/reel.mp4`);
       const editable = meta.estado === "borrador";
       det.innerHTML = `
-        <video class="ig-video" src="${videos[id]}" controls playsinline></video>
+        <video class="ig-video" src="${videos[id]}" controls playsinline preload="metadata"></video>
+        <p class="ig-info ig-video-err" hidden style="color:#b91c1c;">Este navegador no puede reproducir el vídeo aquí. Descárgalo para verlo.</p>
+        <a class="ig-info" href="${videos[id]}" download="reel-${esc(id)}.mp4">⬇️ Descargar el vídeo</a>
         <label class="ig-label">Texto del post${editable ? " (puedes cambiarlo)" : ""}</label>
         <textarea class="ig-texto" rows="8" ${editable ? "" : "readonly"}>${esc(meta.texto)}</textarea>
         <small class="ig-info">Música: ${esc(meta.musica || "sin música")}${meta.confirmadoPor ? ` · Confirmado por ${esc(meta.confirmadoPor)}` : ""}</small>
         ${editable ? `<div style="display:flex; gap:8px; margin-top:10px;">
           <button class="btn-save-session ig-descartar" style="flex:1; background:#64748b;">🗑️ Descartar</button>
           <button class="btn-save-session ig-confirmar" style="flex:2;">✅ Confirmar y publicar</button></div>` : ""}`;
+      const v = det.querySelector(".ig-video");
+      v.onerror = () => { det.querySelector(".ig-video-err").hidden = false; console.error("Vídeo", v.error); };
       if (meta.enlace) det.insertAdjacentHTML("beforeend", `<p class="ig-info"><a href="${esc(meta.enlace)}" target="_blank" rel="noopener">📲 Ver en Instagram</a></p>`);
       if (meta.estado === "error") {
         det.insertAdjacentHTML("beforeend", `<p class="ig-info" style="color:#b91c1c;">${esc(meta.error)}</p>
