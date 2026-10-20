@@ -2143,3 +2143,12 @@
 @media (hover: hover) and (pointer: fine) { .mode-swap:hover { filter: brightness(1.15); } }
 .mode-swap:active { transform: translateY(1px); }
 @media (max-width: 430px) { .mode-swap { width: 38px; height: 38px; } .mode-swap svg { width: 20px; height: 20px; } }
+
+/* ---------- Historial: Cargar/Editar + Borrar ---------- */
+.history-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+.history-actions > button { width: 100%; }
+.btn-delete-history {
+  background: #dc2626; color: #fff; border: none; padding: 6px 10px; border-radius: 6px;
+  font-size: 0.78rem; font-weight: 700; cursor: pointer;
+}
+.btn-delete-history:active { transform: translateY(1px); }

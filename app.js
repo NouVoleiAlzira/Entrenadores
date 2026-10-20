@@ -2324,7 +2324,10 @@
             Jugadoras: ${log.jugadores.filter(j => j.attendance === 'presente').length} Asisten / ${log.jugadores.filter(j => j.attendance === 'falta').length} Faltas
           </div>
         </div>
-        <button class="btn-edit-history" onclick="loadRecordForEditing(${jsArg(log.fecha)})">✏️ Cargar/Editar</button>
+        <div class="history-actions">
+          <button class="btn-edit-history" onclick="loadRecordForEditing(${jsArg(log.fecha)})">✏️ Cargar/Editar</button>
+          <button class="btn-delete-history" onclick="openDeleteLogModal(currentTeam, ${jsArg(log.fecha)}, 'train')">🗑️ Borrar</button>
+        </div>
       `;
       container.appendChild(card);
     });
@@ -2689,18 +2692,23 @@
   //  Se elimina de la caché local y del fichero de la carpeta "registros/".
   //  Si no hay conexión (o falla), el borrado queda en la cola offline.
   // ---------------------------------------------------------------------
-  function isLogPendingDelete(equipo, fecha) {
-    return offlineQueue.some(op => op.deleteLog && op.equipo === equipo && op.fecha === fecha);
+  function isLogPendingDelete(equipo, fecha, kind) {
+    return offlineQueue.some(op => op.deleteLog && op.equipo === equipo && op.fecha === fecha && (op.kind || 'train') === (kind || 'train'));
   }
 
-  function enqueueOfflineDeleteLog(equipo, fecha) {
-    if (isLogPendingDelete(equipo, fecha)) return;
+  function enqueueOfflineDeleteLog(equipo, fecha, kind) {
+    kind = kind || 'train';
+    if (isLogPendingDelete(equipo, fecha, kind)) return;
+    const esPartido = kind === 'match';
     offlineQueue.push({
       deleteLog: true,
+      kind: kind,
       equipo: equipo,
       fecha: fecha,
-      fileName: `${TRAINING_LOGS_FOLDER}/Entrenamientos_${sanitizeFileName(equipo)}_${fecha}.json`,
-      commitMessage: `Borrar registro entrenamiento ${equipo} - ${fecha}`,
+      fileName: esPartido
+        ? `${MATCH_LOGS_FOLDER}/Partidos_${sanitizeFileName(equipo)}_${fecha}.json`
+        : `${TRAINING_LOGS_FOLDER}/Entrenamientos_${sanitizeFileName(equipo)}_${fecha}.json`,
+      commitMessage: `Borrar registro ${esPartido ? 'partido' : 'entrenamiento'} ${equipo} - ${fecha}`,
       timestamp: Date.now()
     });
     localStorage.setItem("NVA_OFFLINE_QUEUE", JSON.stringify(offlineQueue));
@@ -2708,16 +2716,21 @@
 
   // Borra en GitHub el/los fichero(s) que contienen el registro de ese equipo y fecha.
   // Devuelve true si ya no queda nada de ese registro en el repositorio.
-  async function githubDeleteTrainingLogFiles(equipo, fecha) {
+  // kind: 'train' (carpeta registros/, Entrenamientos_*) o 'match' (carpeta Partidos/, Partidos_*)
+  async function githubDeleteTrainingLogFiles(equipo, fecha, kind) {
     if (!ghSettings.user || !ghSettings.repo || !ghSettings.token || !navigator.onLine) return false;
-    const files = await listGitHubFolder(TRAINING_LOGS_FOLDER);
+    const esPartido = kind === 'match';
+    const folder = esPartido ? MATCH_LOGS_FOLDER : TRAINING_LOGS_FOLDER;
+    const prefix = esPartido ? "Partidos_" : "Entrenamientos_";
+    const tipoTxt = esPartido ? "partido" : "entrenamiento";
+    const files = await listGitHubFolder(folder);
     if (!files) return false;   // no se pudo listar: no se puede confirmar el borrado
 
     const authHeaders = { "Authorization": `token ${ghSettings.token}` };
-    const candidates = files.filter(f => f.name && f.name.startsWith("Entrenamientos_") && f.name.endsWith(".json") && f.name.includes(fecha));
+    const candidates = files.filter(f => f.name && f.name.startsWith(prefix) && f.name.endsWith(".json") && f.name.includes(fecha));
 
     for (const file of candidates) {
-      const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${TRAINING_LOGS_FOLDER}/${file.name}`;
+      const url = `https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/contents/${folder}/${file.name}`;
       const getRes = await fetch(url, { headers: authHeaders, cache: "no-store" });
       if (!getRes.ok) { if (getRes.status === 404) continue; return false; }
       const getJson = await getRes.json();
@@ -2736,7 +2749,7 @@
           method: "PUT",
           headers: { ...authHeaders, "Content-Type": "application/json" },
           body: JSON.stringify({
-            message: `Borrar registro entrenamiento ${equipo} - ${fecha}`,
+            message: `Borrar registro ${tipoTxt} ${equipo} - ${fecha}`,
             content: utf8_to_b64(JSON.stringify(remaining, null, 2)),
             sha: getJson.sha
           })
@@ -2745,7 +2758,7 @@
         res = await fetch(url, {
           method: "DELETE",
           headers: { ...authHeaders, "Content-Type": "application/json" },
-          body: JSON.stringify({ message: `Borrar registro entrenamiento ${equipo} - ${fecha}`, sha: getJson.sha })
+          body: JSON.stringify({ message: `Borrar registro ${tipoTxt} ${equipo} - ${fecha}`, sha: getJson.sha })
         });
       }
       if (!res.ok && res.status !== 404) return false;
@@ -2755,18 +2768,22 @@
 
   let pendingDeleteLog = null;   // { equipo, fecha }
 
-  function openDeleteLogModal(equipo, fecha) {
-    const existe = allTrainingLogs.some(l => l.equipo === equipo && l.fecha === fecha);
+  function openDeleteLogModal(equipo, fecha, kind) {
+    kind = kind || 'train';
+    const esPartido = kind === 'match';
+    const existe = (esPartido ? allMatchLogs : allTrainingLogs).some(l => l.equipo === equipo && l.fecha === fecha);
     if (!existe) {
-      alert("Este entrenamiento no tiene registro guardado: no hay nada que borrar.");
+      alert(`Este ${esPartido ? 'partido' : 'entrenamiento'} no tiene registro guardado: no hay nada que borrar.`);
       return;
     }
-    pendingDeleteLog = { equipo, fecha };
+    pendingDeleteLog = { equipo, fecha, kind };
     const p = String(fecha).split("-");
     const fechaTxt = p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : fecha;
     document.getElementById("deleteLogText").innerText =
-      `¿Quieres borrar el registro de entrenamiento de ${equipo} del ${fechaTxt}?`;
-    document.getElementById("modalDeleteLog").classList.add("active");
+      `¿Quieres borrar el registro de ${esPartido ? 'partido' : 'entrenamiento'} de ${equipo} del ${fechaTxt}?`;
+    const modalDel = document.getElementById("modalDeleteLog");
+    document.body.appendChild(modalDel);   // por encima del Historial abierto
+    modalDel.classList.add("active");
   }
 
   function closeDeleteLogModal() {
@@ -2779,17 +2796,26 @@
     pendingDeleteLog = null;
     closeDeleteLogModal();
 
-    allTrainingLogs = allTrainingLogs.filter(l => !(l.equipo === d.equipo && l.fecha === d.fecha));
-    localStorage.setItem("NVA_TRAINING_LOGS", JSON.stringify(allTrainingLogs));
+    const esPartido = d.kind === 'match';
+    const noEs = l => !(l.equipo === d.equipo && l.fecha === d.fecha);
+    if (esPartido) {
+      allMatchLogs = allMatchLogs.filter(noEs);
+      localStorage.setItem("NVA_MATCH_LOGS", JSON.stringify(allMatchLogs));
+    } else {
+      allTrainingLogs = allTrainingLogs.filter(noEs);
+      localStorage.setItem("NVA_TRAINING_LOGS", JSON.stringify(allTrainingLogs));
+    }
 
     let ok = false;
     try {
-      ok = await githubDeleteTrainingLogFiles(d.equipo, d.fecha);
+      ok = await githubDeleteTrainingLogFiles(d.equipo, d.fecha, d.kind);
     } catch (e) {
       console.error("Error al borrar el registro en GitHub:", e);
     }
-    if (!ok) enqueueOfflineDeleteLog(d.equipo, d.fecha);
+    if (!ok) enqueueOfflineDeleteLog(d.equipo, d.fecha, d.kind);
 
+    if (document.getElementById("modalHistory").classList.contains("active")) renderHistoryList();
+    if (document.getElementById("modalMatchHistory").classList.contains("active")) renderMatchHistoryList();
     renderWeekCalendar();
     alert(ok
       ? "Registro borrado."
@@ -2804,7 +2830,7 @@
     for (const op of offlineQueue) {
       if (op.deleteLog) {
         try {
-          if (!(await githubDeleteTrainingLogFiles(op.equipo, op.fecha))) remaining.push(op);
+          if (!(await githubDeleteTrainingLogFiles(op.equipo, op.fecha, op.kind))) remaining.push(op);
         } catch (e) {
           remaining.push(op);
         }
@@ -4404,7 +4430,10 @@
           </div>
           ${resultHtml}
         </div>
-        <button class="btn-edit-history" onclick="loadMatchRecordForEditing(${jsArg(log.fecha)})">✏️ Cargar/Editar</button>
+        <div class="history-actions">
+          <button class="btn-edit-history" onclick="loadMatchRecordForEditing(${jsArg(log.fecha)})">✏️ Cargar/Editar</button>
+          <button class="btn-delete-history" onclick="openDeleteLogModal(currentTeam, ${jsArg(log.fecha)}, 'match')">🗑️ Borrar</button>
+        </div>
       `;
       container.appendChild(card);
     });
