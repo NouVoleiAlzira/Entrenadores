@@ -173,16 +173,47 @@
     return writeGitHubFile(`${MATCH_LOGS_FOLDER}/Partidos_${sanitizeFileName(p.key)}_${p.fecha}.json`, log, `Resultado partido ${p.key} - ${p.fecha}`);
   }
 
+  // ---------- Primero solo las fechas (sin leer nada todavía) ----------
+  function askDates(tipo, range) {
+    const results = tipo === "resultados";
+    return new Promise((resolve) => {
+      const o = document.createElement("div");
+      o.className = "cp-modal";
+      o.innerHTML = `<div class="cp-modal-box imp-box">
+        <div class="cp-modal-title">${results ? "🏆 Resultados de la semana" : "📅 Partidos de la semana"}</div>
+        <div class="cp-modal-txt">Elige las fechas. Después se cargan los datos${results ? " y las fotos" : ""}.</div>
+        <div class="ca-range">
+          <label>Desde <input type="date" class="ca-from" value="${range.from}"></label>
+          <label>Hasta <input type="date" class="ca-to" value="${range.to}"></label>
+        </div>
+        <div class="cp-modal-row">
+          <button class="cp-modal-btn cp-modal-stop">Cancelar</button>
+          <button class="cp-modal-btn cp-modal-main">Cargar datos</button>
+        </div>
+      </div>`;
+      document.body.appendChild(o);
+      const done = (v) => { o.remove(); resolve(v); };
+      o.querySelector(".cp-modal-stop").onclick = () => done(null);
+      o.querySelector(".cp-modal-main").onclick = () => {
+        const from = o.querySelector(".ca-from").value, to = o.querySelector(".ca-to").value;
+        if (!from || !to) { alert("Elige las dos fechas."); return; }
+        done(from <= to ? { from, to } : { from: to, to: from });
+      };
+    });
+  }
+
   async function run(tipo) {
     const results = tipo === "resultados";
-    // Primero se leen los PDF más nuevos de GitHub (resultados recientes)
+    const range0 = results ? lastWeekend() : ((window.cpGetRange && window.cpGetRange()) || {});
+    if (!range0.from || !range0.to) { const w = lastWeekend(); range0.from = range0.from || w.from; range0.to = range0.to || w.to; }
+    // Primero se eligen las fechas; luego se leen los PDF más nuevos de GitHub
+    const range = await askDates(tipo, range0);
+    if (!range) return;
     if (window.cpRefreshFromGitHub && typeof ghSettings !== "undefined" && ghSettings.token && navigator.onLine) {
       mostrarCargando("Revisando los PDF de fvbcv.com en GitHub...");
       try { await window.cpRefreshFromGitHub(); } catch (e) { console.warn(e); }
       ocultarCargando();
     }
-    const range = results ? lastWeekend() : ((window.cpGetRange && window.cpGetRange()) || {});
-    if (!range.from || !range.to) { const w = lastWeekend(); range.from = range.from || w.from; range.to = range.to || w.to; }
     const ans = await askMatches(tipo, range);
     if (!ans) return;
 
