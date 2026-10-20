@@ -2125,3 +2125,21 @@
 .att-noc { --hx: #0284c7; }
 .att-tot { --hx: #111; }
 @media (max-width: 420px) { .att-hex { width: 28px; height: 25px; font-size: 0.8rem; } }
+
+/* ---------- Selector Entrenamiento / Partido (texto + botón de cambio) ---------- */
+#screenAttendance .controls-bar, #screenMatch .controls-bar { container-type: inline-size; }
+.mode-switch { display: flex; align-items: center; gap: 6px; margin-left: auto; flex-shrink: 0; }
+#screenAttendance .controls-bar .btn-history, #screenMatch .controls-bar .btn-history { margin-left: 0; }
+.mode-label {
+  font-family: var(--font-display); font-style: italic; font-weight: 800;
+  font-size: clamp(0.7rem, 3.3cqi, 1.3rem); line-height: 1; color: var(--tiza); letter-spacing: 0.01em; white-space: nowrap;
+}
+.mode-swap {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 46px; height: 46px; padding: 0; border-radius: 12px; cursor: pointer; color: #fff;
+  background: var(--pista-2); border: 1px solid var(--linea);
+}
+.mode-swap svg { display: block; }
+@media (hover: hover) and (pointer: fine) { .mode-swap:hover { filter: brightness(1.15); } }
+.mode-swap:active { transform: translateY(1px); }
+@media (max-width: 430px) { .mode-swap { width: 38px; height: 38px; } .mode-swap svg { width: 20px; height: 20px; } }

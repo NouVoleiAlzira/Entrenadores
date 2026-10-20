@@ -77,8 +77,8 @@
   </div>
   <!-- ENCABEZADO -->
   <header>
-    <button class="btn-header-icon btn-back" id="btnBack" onclick="withLoading(goBack, 'Sincronizando datos...')" style="display: none; visibility: visible; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; gap: 4px; padding: 12px 10px; min-height: 50px;">
-      <span>↺</span>
+    <button class="btn-header-icon btn-back" id="btnBack" onclick="withLoading(goBack, 'Sincronizando datos...')" style="display: none; visibility: visible; flex-direction: column; align-items: center; justify-content: center; line-height: 1; padding: 0; min-height: 50px;" aria-label="Volver">
+      <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:block; margin:auto;"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3 3v5h5"/></svg>
     </button>  
     <div class="header-title-container">
       <h1>NOU VÒLEI ALZIRA</h1>
@@ -298,7 +298,7 @@
         <label for="sessionDatePicker">📅 Fecha:</label>
         <input type="date" id="sessionDatePicker" class="date-input">
       </div>
-      <button class="btn-history" onclick="goToMatchScreen()">🏐 Partido</button>
+      <div class="mode-switch"><span class="mode-label">ENTRENAMIENTO</span><button type="button" class="mode-swap" onclick="goToMatchScreen()" title="Cambiar a Partido" aria-label="Cambiar a Partido"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.6-4.5L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.6 4.5L20 16"/><path d="M20 21v-5h-5"/></svg></button></div>
       <button class="btn-history" onclick="withLoading(openHistoryModal, 'Cargando historial...')">📜 Historial</button>
     </div>
 
@@ -315,7 +315,7 @@
         <label for="matchDatePicker">📅 Fecha:</label>
         <input type="date" id="matchDatePicker" class="date-input">
       </div>
-      <button class="btn-history" onclick="goToTrainingScreen()">🏋️ Entrenamiento</button>
+      <div class="mode-switch"><span class="mode-label">PARTIDO</span><button type="button" class="mode-swap" onclick="goToTrainingScreen()" title="Cambiar a Entrenamiento" aria-label="Cambiar a Entrenamiento"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.6-4.5L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.6 4.5L20 16"/><path d="M20 21v-5h-5"/></svg></button></div>
       <button class="btn-history" onclick="withLoading(openMatchHistoryModal, 'Cargando historial de partidos...')">📜 Historial</button>
     </div>
 
