@@ -2191,3 +2191,22 @@
 .mode-label { font-size: 16px; line-height: 1; transform: none; text-align: right; white-space: nowrap; }
 .mode-label { position: relative; align-self: stretch; overflow: visible; }
 .mode-label > span { position: absolute; right: 0; top: 50%; display: block; transform-origin: right center; }
+
+/* v96: historial de registros (estrellas, strikes, hexágonos, cargar más) */
+.hist-stats { display: flex; gap: 12px; font-size: 0.78rem; font-weight: 700; color: #334155; margin-top: 2px; }
+.hist-hexes { margin-top: 4px; }
+.att-hex.att-mini { width: 26px; height: 23px; font-size: 0.75rem; }
+.btn-history-more {
+  display: block; width: 100%; margin: 6px 0 4px; padding: 9px; border: none; border-radius: 8px;
+  background: var(--azul-primary, #1d4ed8); color: #fff; font-weight: 700; font-size: 0.85rem; cursor: pointer;
+}
+
+/* v97: fecha ajustada por JS (fitDateInputs) y cabecera de registro fija al hacer scroll */
+#screenAttendance .date-input, #screenMatch .date-input { padding: 4px 3px 4px 5px; box-sizing: content-box; }
+.reg-sticky {
+  position: sticky; top: var(--nva-head-h, 70px); z-index: 15;
+  margin: -14px -16px 8px; padding: 10px 16px 8px;
+  background: linear-gradient(180deg, #0b1a3f 0%, #0d2150 100%);
+  box-shadow: 0 6px 12px -8px rgba(0,0,0,.6);
+}
+.reg-sticky .controls-bar { margin-bottom: 0; }

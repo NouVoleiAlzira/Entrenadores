@@ -295,7 +295,7 @@
 
   <!-- PANTALLA 2: REGISTRO DE ENTRENAMIENTO -->
   <div class="screen" id="screenAttendance">
-    <div class="title-row"><div class="section-title" id="sessionTitle" style="margin-bottom: 4px;">Registro de Entrenamiento</div><div class="att-counters" id="trainCounters"></div></div>
+    <div class="reg-sticky"><div class="title-row"><div class="section-title" id="sessionTitle" style="margin-bottom: 4px;">Registro de Entrenamiento</div><div class="att-counters" id="trainCounters"></div></div>
     
     <div class="controls-bar">
       <div class="date-container">
@@ -305,6 +305,7 @@
       <div class="mode-switch"><span class="mode-label">ENTRENAMIENTO</span><button type="button" class="mode-swap" onclick="goToMatchScreen()" title="Cambiar a Partido" aria-label="Cambiar a Partido"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.6-4.5L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.6 4.5L20 16"/><path d="M20 21v-5h-5"/></svg></button></div>
       <button class="btn-history" onclick="withLoading(openHistoryModal, 'Cargando historial...')">📜<span class="hist-lbl"> Historial</span></button>
     </div>
+    </div>
 
     <div id="playersContainer"></div>
     <button class="btn-save-session" style="padding:12px; font-size:0.9rem;" onclick="withLoading(saveSession, 'Guardando entrenamiento en GitHub...')">💾 Guardar Entrenamiento en GitHub</button>
@@ -312,7 +313,7 @@
 
   <!-- PANTALLA: REGISTRO DE PARTIDO -->
   <div class="screen" id="screenMatch">
-    <div class="title-row"><div class="section-title" id="matchTitle" style="margin-bottom: 4px;">Registro de Partido</div><div class="att-counters" id="matchCounters"></div></div>
+    <div class="reg-sticky"><div class="title-row"><div class="section-title" id="matchTitle" style="margin-bottom: 4px;">Registro de Partido</div><div class="att-counters" id="matchCounters"></div></div>
 
     <div class="controls-bar">
       <div class="date-container">
@@ -321,6 +322,7 @@
       </div>
       <div class="mode-switch"><span class="mode-label">PARTIDO</span><button type="button" class="mode-swap" onclick="goToTrainingScreen()" title="Cambiar a Entrenamiento" aria-label="Cambiar a Entrenamiento"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.6-4.5L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.6 4.5L20 16"/><path d="M20 21v-5h-5"/></svg></button></div>
       <button class="btn-history" onclick="withLoading(openMatchHistoryModal, 'Cargando historial de partidos...')">📜<span class="hist-lbl"> Historial</span></button>
+    </div>
     </div>
 
     <div id="matchScoreboard" class="match-scoreboard"></div>
@@ -495,10 +497,9 @@
   <div class="modal-backdrop" id="modalHistory">
     <div class="modal-box">
       <div class="modal-header">
-        <div class="modal-title">📜 Registros Anteriores</div>
+        <div class="modal-title" id="historyTitle">📜 Entrenamientos</div>
         <button class="btn-close-modal" onclick="closeHistoryModal()">✕</button>
       </div>
-      <p style="font-size:0.75rem; color:#64748b; margin-bottom:10px;">Entrenamientos guardados para este equipo:</p>
       <div id="historyListContainer" style="overflow-y:auto; flex:1;"></div>
     </div>
   </div>
@@ -506,10 +507,9 @@
   <div class="modal-backdrop" id="modalMatchHistory">
     <div class="modal-box">
       <div class="modal-header">
-        <div class="modal-title">📜 Partidos Anteriores</div>
+        <div class="modal-title" id="matchHistoryTitle">📜 Partidos</div>
         <button class="btn-close-modal" onclick="closeMatchHistoryModal()">✕</button>
       </div>
-      <p style="font-size:0.75rem; color:#64748b; margin-bottom:10px;">Partidos guardados para este equipo:</p>
       <div id="matchHistoryListContainer" style="overflow-y:auto; flex:1;"></div>
     </div>
   </div>

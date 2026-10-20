@@ -2143,8 +2143,24 @@
   }
 
   // Ajusta el tamaño de ENTRENAMIENTO / PARTIDO al ancho libre de la barra
+  // Caja de fecha justa: ancho del texto de la fecha + icono del calendario
+  function fitDateInputs() {
+    const cv = fitDateInputs.cv || (fitDateInputs.cv = document.createElement('canvas'));
+    const ctx = cv.getContext('2d');
+    document.querySelectorAll('#sessionDatePicker, #matchDatePicker').forEach(inp => {
+      if (!inp.offsetParent) return;
+      const cs = getComputedStyle(inp);
+      ctx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+      const txt = ctx.measureText('20/10/2026').width;
+      inp.style.setProperty('width', Math.ceil(txt + 24) + 'px', 'important');
+    });
+  }
+
   // ENTRENAMIENTO / PARTIDO: alto fijo ≈85% del botón de cambio; solo se comprime a lo ancho si no cabe
   function fitModeLabels() {
+    fitDateInputs();
+    const head = document.querySelector('header');
+    if (head) document.documentElement.style.setProperty('--nva-head-h', head.offsetHeight + 'px');
     document.querySelectorAll('.mode-label').forEach(el => {
       const avail = el.clientWidth;
       const btn = el.parentElement && el.parentElement.querySelector('.mode-swap');
@@ -2355,7 +2371,48 @@
     await fullSyncFromGitHub(true);
   }
 
+  // --- Historial: título con el equipo, resumen por registro y carga de 6 en 6 ---
+  const HISTORY_PAGE = 6;
+  let historyLimit = HISTORY_PAGE, matchHistoryLimit = HISTORY_PAGE;
+
+  function historyTeamLabel() {
+    const t = (document.getElementById("sessionTitle").innerText || "").trim();
+    return t.replace(/\s+-\s+[^-]*$/, "") || currentTeam || "";
+  }
+
+  // Media de estrellas (solo presentes) + strikes + hexágonos de asistencia
+  function historyLogSummaryHtml(log, kind) {
+    const js = log.jugadores || [];
+    const pres = js.filter(j => j.attendance === 'presente' || !j.attendance);
+    const q = pres.filter(j => j.quality);
+    const media = q.length ? (q.reduce((a, j) => a + j.quality, 0) / q.length).toFixed(1) : "–";
+    const strikes = js.reduce((a, j) => a + (j.strikes || 0), 0);
+    let inj = 0, jus = 0, noc = 0;
+    js.forEach(j => {
+      if (j.attendance === 'no_convocada') noc++;
+      else if (j.attendance === 'falta') ((j.absenceType || 'injustificada') === 'justificada') ? jus++ : inj++;
+    });
+    const hex = (cls, n, t) => `<span class="att-hex att-mini ${cls}" title="${t}">${n}</span>`;
+    const hexes = js.length
+      ? hex('att-pres', pres.length, 'Presentes') + hex('att-inj', inj, 'Faltas injustificadas') + hex('att-jus', jus, 'Faltas justificadas') +
+        (kind === 'match' ? hex('att-noc', noc, 'No convocadas') : '') + hex('att-tot', js.length, 'Total')
+      : `<span style="font-size:0.72rem; color:#64748b;">Sin asistencia registrada</span>`;
+    return `<div class="hist-stats"><span title="Media de estrellas">⭐ ${media}</span><span title="Strikes">❌ ${strikes}</span></div>
+          <div class="att-counters hist-hexes">${hexes}</div>`;
+  }
+
+  function historyMoreButton(container, shown, total, onMore) {
+    if (shown >= total) return;
+    const b = document.createElement("button");
+    b.className = "btn-history-more";
+    b.textContent = `Cargar más registros (${total - shown} más)`;
+    b.onclick = onMore;
+    container.appendChild(b);
+  }
+
   async function openHistoryModal() {
+    historyLimit = HISTORY_PAGE;
+    document.getElementById("historyTitle").innerText = `📜 Entrenamientos ${historyTeamLabel()}`;
     document.getElementById("modalHistory").classList.add("active");
 
     // Refresca los registros desde GitHub antes de listarlos, para que el
@@ -2388,16 +2445,13 @@
     }
 
     teamLogs.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-    teamLogs.forEach((log) => {
+    teamLogs.slice(0, historyLimit).forEach((log) => {
       const card = document.createElement("div");
       card.className = "history-card";
       card.innerHTML = `
         <div>
           <div style="font-weight:700; font-size:0.85rem; color:var(--azul-dark);">📅 ${escapeHtml(log.fecha)}</div>
-          <div style="font-size:0.75rem; color:#64748b;">Entrenador: ${escapeHtml(log.entrenador)}</div>
-          <div style="font-size:0.72rem; color:#0284c7; margin-top:2px;">
-            Jugadoras: ${log.jugadores.filter(j => j.attendance === 'presente').length} Asisten / ${log.jugadores.filter(j => j.attendance === 'falta').length} Faltas
-          </div>
+          ${historyLogSummaryHtml(log, 'train')}
         </div>
         <div class="history-actions">
           <button class="btn-edit-history" onclick="loadRecordForEditing(${jsArg(log.fecha)})">✏️ Cargar/Editar</button>
@@ -2406,6 +2460,7 @@
       `;
       container.appendChild(card);
     });
+    historyMoreButton(container, historyLimit, teamLogs.length, () => { historyLimit += HISTORY_PAGE; renderHistoryList(); });
   }
 
   function loadRecordForEditing(fecha) {
@@ -4458,6 +4513,8 @@
 
   // --- Historial de partidos ---
   async function openMatchHistoryModal() {
+    matchHistoryLimit = HISTORY_PAGE;
+    document.getElementById("matchHistoryTitle").innerText = `📜 Partidos ${historyTeamLabel()}`;
     document.getElementById("modalMatchHistory").classList.add("active");
 
     if (ghSettings.user && ghSettings.repo && navigator.onLine) {
@@ -4485,10 +4542,7 @@
     }
 
     teamLogs.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-    teamLogs.forEach((log) => {
-      const presentes = log.jugadores.filter(j => j.attendance === 'presente').length;
-      const faltas = log.jugadores.filter(j => j.attendance === 'falta').length;
-      const noConv = log.jugadores.filter(j => j.attendance === 'no_convocada').length;
+    teamLogs.slice(0, matchHistoryLimit).forEach((log) => {
       const m = log.marcador;
       const resultHtml = m
         ? `<div style="font-size:0.72rem; color:#0f172a; font-weight:700; margin-top:2px;">${escapeHtmlMatch(m.local || 'Home')} ${m.setsLocal ?? 0} - ${m.setsVisitante ?? 0} ${escapeHtmlMatch(m.visitante || 'VISIT')}</div>`
@@ -4499,10 +4553,7 @@
       card.innerHTML = `
         <div>
           <div style="font-weight:700; font-size:0.85rem; color:var(--azul-dark);">📅 ${escapeHtml(log.fecha)}</div>
-          <div style="font-size:0.75rem; color:#64748b;">Entrenador: ${escapeHtml(log.entrenador)}</div>
-          <div style="font-size:0.72rem; color:#0284c7; margin-top:2px;">
-            ${log.jugadores.length ? `Jugadoras: ${presentes} Presentes / ${faltas} Faltas / ${noConv} No convocadas` : "Solo resultado (sin asistencia registrada)"}
-          </div>
+          ${historyLogSummaryHtml(log, 'match')}
           ${resultHtml}
         </div>
         <div class="history-actions">
@@ -4512,6 +4563,7 @@
       `;
       container.appendChild(card);
     });
+    historyMoreButton(container, matchHistoryLimit, teamLogs.length, () => { matchHistoryLimit += HISTORY_PAGE; renderMatchHistoryList(); });
   }
 
   function loadMatchRecordForEditing(fecha) {
