@@ -172,6 +172,9 @@
 
     <div class="section-subtitle">Horarios de entrenamiento</div>
     <button class="btn-pdf-mode2" style="margin-bottom:20px;" onclick="openHorarios()">🗓️ Horarios</button>
+
+    <div class="section-subtitle">Historial de cambios</div>
+    <button class="btn-pdf-mode2" style="margin-bottom:20px;" onclick="openHistorial()">📜 Historial de cambios</button>
     </div>
 
     <!-- ===== Sección plegable: Redes Sociales (Carteles para todos; Reels y Stories solo con el token de Instagram) ===== -->
@@ -299,7 +302,7 @@
         <input type="date" id="sessionDatePicker" class="date-input">
       </div>
       <div class="mode-switch"><span class="mode-label">ENTRENAMIENTO</span><button type="button" class="mode-swap" onclick="goToMatchScreen()" title="Cambiar a Partido" aria-label="Cambiar a Partido"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.6-4.5L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.6 4.5L20 16"/><path d="M20 21v-5h-5"/></svg></button></div>
-      <button class="btn-history" onclick="withLoading(openHistoryModal, 'Cargando historial...')">📜<span class="hist-txt"> Historial</span></button>
+      <button class="btn-history" onclick="withLoading(openHistoryModal, 'Cargando historial...')">📜<span class="hist-lbl"> Historial</span></button>
     </div>
 
     <div id="playersContainer"></div>
@@ -316,7 +319,7 @@
         <input type="date" id="matchDatePicker" class="date-input">
       </div>
       <div class="mode-switch"><span class="mode-label">PARTIDO</span><button type="button" class="mode-swap" onclick="goToTrainingScreen()" title="Cambiar a Entrenamiento" aria-label="Cambiar a Entrenamiento"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.6-4.5L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.6 4.5L20 16"/><path d="M20 21v-5h-5"/></svg></button></div>
-      <button class="btn-history" onclick="withLoading(openMatchHistoryModal, 'Cargando historial de partidos...')">📜<span class="hist-txt"> Historial</span></button>
+      <button class="btn-history" onclick="withLoading(openMatchHistoryModal, 'Cargando historial de partidos...')">📜<span class="hist-lbl"> Historial</span></button>
     </div>
 
     <div id="matchScoreboard" class="match-scoreboard"></div>
@@ -534,6 +537,24 @@
       </div>
       <button type="button" class="app-input" style="text-align:left; cursor:pointer; margin-bottom:8px; font-weight:700; color:#b91c1c; border-color:#fca5a5; background:#fef2f2;" onclick="resetLeagueTeams()">↩ Cancelar selección (volver a HOME / VISIT)</button>
       <div id="leagueTeamsContainer" style="display:flex; flex-direction:column; gap:6px; overflow-y:auto; max-height:60vh;"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: HISTORIAL DE CAMBIOS (registro.js) -->
+  <div class="modal-backdrop" id="modalHistorial" onclick="if(event.target===this)closeHistorial()">
+    <div class="modal-box hist-box">
+      <div class="modal-header">
+        <div class="modal-title">📜 Historial de cambios</div>
+        <button class="hist-cerrar" onclick="closeHistorial()" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="hist-filtros">
+        <button class="hist-chip on" onclick="histFiltro('todo',this)">Todo</button>
+        <button class="hist-chip" onclick="histFiltro('guardado',this)">💾 Guardados</button>
+        <button class="hist-chip" onclick="histFiltro('accion',this)">👆 Acciones</button>
+      </div>
+      <input class="app-input hist-buscar" id="histBuscar" type="search" placeholder="Buscar (texto o entrenador)…" oninput="histBuscar()">
+      <div class="hist-estado" id="histEstado"></div>
+      <div class="hist-list" id="histList"></div>
     </div>
   </div>
 
@@ -835,6 +856,7 @@
      terminar de parsear la página (mismo momento que antes, cuando el
      script iba embebido al final del body, pero sin bloquear la descarga). -->
 <script src="app.js" defer></script>
+<script src="registro.js" defer></script>
 <script src="calendario-partidos.js" defer></script>
 <script src="importar-datos.js" defer></script>
 <script src="carteles-auto.js" defer></script>

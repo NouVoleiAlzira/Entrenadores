@@ -2092,14 +2092,20 @@
   }
 
   // Ajusta el tamaño de ENTRENAMIENTO / PARTIDO al ancho libre de la barra
+  // ENTRENAMIENTO / PARTIDO: alto fijo ≈85% del botón de cambio; solo se comprime a lo ancho si no cabe
   function fitModeLabels() {
     document.querySelectorAll('.mode-label').forEach(el => {
       const avail = el.clientWidth;
-      if (!avail) return;
-      el.style.fontSize = '20px';
-      const r = document.createRange(); r.selectNodeContents(el);
-      const natural = r.getBoundingClientRect().width || 1;
-      el.style.fontSize = Math.max(7, Math.min(22, 20 * avail / natural * 0.97)) + 'px';
+      const btn = el.parentElement && el.parentElement.querySelector('.mode-swap');
+      if (!avail || !btn) return;
+      let sp = el.firstElementChild;
+      if (!sp) { sp = document.createElement('span'); sp.textContent = el.textContent; el.textContent = ''; el.appendChild(sp); }
+      sp.style.transform = 'translateY(-50%)';
+      const r = sp.getBoundingClientRect();
+      const capH = parseFloat(getComputedStyle(el).fontSize) * 0.72;   // alto de las mayúsculas
+      const sy = (btn.offsetHeight * 0.85) / capH;
+      const sx = Math.min(sy, avail / (r.width || 1));
+      sp.style.transform = `translateY(-50%) scale(${sx.toFixed(3)}, ${sy.toFixed(3)})`;
     });
   }
   window.addEventListener('resize', fitModeLabels);

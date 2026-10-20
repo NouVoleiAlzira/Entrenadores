@@ -2165,4 +2165,29 @@
   flex-direction: row !important; flex-shrink: 0; white-space: nowrap; align-items: center;
 }
 #screenAttendance .date-input, #screenMatch .date-input { width: auto !important; }
-@media (max-width: 430px) { #screenAttendance .hist-txt, #screenMatch .hist-txt { display: none; } #screenAttendance .controls-bar .btn-history, #screenMatch .controls-bar .btn-history { padding: 8px 10px; font-size: 1rem; } .mode-swap { width: 32px; height: 32px; } .mode-swap svg { width: 17px; height: 17px; } }
+@media (max-width: 430px) { #screenAttendance .hist-lbl, #screenMatch .hist-lbl { display: none; } #screenAttendance .controls-bar .btn-history, #screenMatch .controls-bar .btn-history { padding: 8px 10px; font-size: 1rem; } .mode-swap { width: 32px; height: 32px; } .mode-swap svg { width: 17px; height: 17px; } }
+
+/* ===== Historial de cambios (registro.js) ===== */
+.hist-box { max-width: 560px; width: 94vw; max-height: 88vh; display: flex; flex-direction: column; }
+.hist-box .modal-header { display: flex; align-items: center; justify-content: space-between; }
+.hist-cerrar { background: none; border: 0; font-size: 1.3em; cursor: pointer; color: var(--text-dark); padding: 4px 8px; }
+.hist-filtros { display: flex; gap: 6px; margin: 6px 0 8px; flex-wrap: wrap; }
+.hist-chip { border: 1px solid #cbd5e1; background: #fff; color: #1e293b; border-radius: 999px; padding: 5px 12px; font-size: .85em; cursor: pointer; }
+.hist-chip.on { background: var(--azul-primary, #1d4ed8); color: #fff; border-color: transparent; }
+.hist-buscar { margin-bottom: 6px; }
+.hist-estado { font-size: .8em; color: #64748b; min-height: 1em; margin-bottom: 4px; }
+.hist-list { overflow-y: auto; flex: 1; min-height: 120px; }
+.hist-dia { position: sticky; top: 0; background: #f1f5f9; color: #0f172a; font-weight: 700; font-size: .85em; padding: 6px 8px; margin-top: 8px; border-radius: 6px; z-index: 1; }
+.hist-item { display: flex; gap: 10px; padding: 7px 4px; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-size: .9em; }
+.hist-hora { font-variant-numeric: tabular-nums; color: #475569; flex: none; width: 64px; }
+.hist-txt { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.hist-guardado .hist-txt { font-weight: 600; }
+.hist-quien { font-size: .78em; color: #64748b; font-weight: 400; margin-top: 2px; }
+.hist-vacio { color: #64748b; text-align: center; padding: 20px 0; }
+
+/* v93: fecha ajustada a su contenido; texto del selector con alto fijo (≈85% del botón), solo se comprime a lo ancho */
+#screenAttendance .date-container, #screenMatch .date-container { gap: 4px; padding: 4px 6px; width: auto; }
+#screenAttendance .date-input, #screenMatch .date-input { width: calc(10ch + 34px) !important; min-width: 0; padding: 4px 4px; box-sizing: content-box; font-variant-numeric: tabular-nums; }
+.mode-label { font-size: 16px; line-height: 1; transform: none; text-align: right; white-space: nowrap; }
+.mode-label { position: relative; align-self: stretch; overflow: visible; }
+.mode-label > span { position: absolute; right: 0; top: 50%; display: block; transform-origin: right center; }
