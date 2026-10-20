@@ -579,7 +579,9 @@
       type: tempQueryType,
       options: tempQueryOptions,
       teams: selectedTeams,
-      responses: {}
+      createdAt: new Date().toISOString(),
+      responses: {},
+      responseTimes: {}
     };
 
     queriesData.push(newQuery);
@@ -604,6 +606,9 @@
 
     if (!q.responses) q.responses = {};
     q.responses[playerName] = option;
+    // Día y hora de cada respuesta (se muestra en el PDF de la consulta)
+    if (!q.responseTimes) q.responseTimes = {};
+    q.responseTimes[playerName] = new Date().toISOString();
 
     let allAnswered = true;
     q.teams.forEach(teamKey => {
@@ -641,16 +646,55 @@
         const btn = document.createElement("button");
         btn.className = "team-btn";
         btn.style.borderLeft = `4px solid ${safeColor(q.color, "#0284c7")}`;
-        btn.innerHTML = `<span>${escapeHtml(q.text)}</span> <span style="font-size:0.75rem; color:#64748b;">Generar PDF →</span>`;
+        btn.style.flex = "1";
+        btn.style.minWidth = "0";
+        if (q.hidden) btn.style.opacity = "0.6";
+        btn.innerHTML = `<span>${escapeHtml(q.text)}${q.hidden ? ' <small style="color:#64748b;">(oculta)</small>' : ''}</span> <span style="font-size:0.75rem; color:#64748b;">Generar PDF →</span>`;
         btn.onclick = () => {
           closeSelectQueryPdfModal();
           generateQueryPDF(q.id);
         };
-        container.appendChild(btn);
+        const row = document.createElement("div");
+        row.style.cssText = "display:flex; gap:6px; align-items:stretch;";
+        row.appendChild(btn);
+        if (!q.hidden) {
+          const del = document.createElement("button");
+          del.className = "query-hide-btn";
+          del.style.cssText = "flex:0 0 auto; width:40px; border:1px solid #fecaca; background:#fef2f2; color:#b91c1c; border-radius:8px; font-size:1rem; cursor:pointer;";
+          del.title = "Dejar de mostrar en los equipos";
+          del.textContent = "🗑";
+          del.onclick = () => hideQuery(q.id);
+          row.appendChild(del);
+        }
+        container.appendChild(row);
       });
     }
 
     document.getElementById("modalSelectQueryPdf").classList.add("active");
+  }
+
+  // Oculta una consulta en los equipos (no borra las respuestas ya tomadas;
+  // sigue disponible para generar su PDF).
+  async function hideQuery(queryId) {
+    const q = queriesData.find(x => x.id === queryId);
+    if (!q) return;
+    if (!confirm(`¿Dejar de mostrar la consulta "${q.text}" en los equipos?\n\nLas respuestas ya registradas se conservan.`)) return;
+    q.hidden = true;
+    q.hiddenAt = new Date().toISOString();
+    const colorTag = q.color === '#0284c7' ? '🔵' : (q.color === '#7e22ce' ? '🟣' : '🟠');
+    const queryNotice = `${colorTag} CONSULTA: ${q.text}`;
+    const lines = (tablonData.tablonText || "").split('\n');
+    const kept = lines.filter(l => l.trim() !== queryNotice.trim());
+    if (kept.length !== lines.length) {
+      tablonData.tablonText = kept.join('\n');
+      const tablonEl = document.getElementById("tablonTextarea");
+      if (tablonEl) { tablonEl.value = tablonData.tablonText; autoResizeTablon(tablonEl); }
+      saveTablonToGitHub();
+    }
+    saveQueriesToLocalStorage();
+    openSelectQueryPdfModal();
+    if (typeof renderPlayersMain === "function") try { renderPlayersMain(); } catch (e) {}
+    await saveQueriesToGitHub();
   }
 
   function closeSelectQueryPdfModal() {
@@ -663,8 +707,13 @@
 
     const color = safeColor(q.color, "#1B3A8C");
     document.getElementById("pdfQueryTextHeader").innerText = q.text;
-    const fechaQ = q.id && !isNaN(Number(q.id)) && Number(q.id) > 1e11 ? new Date(Number(q.id)) : new Date();
-    document.getElementById("pdfQueryDate").innerText = fechaQ.toLocaleDateString("es-ES");
+    const fechaQ = q.createdAt ? new Date(q.createdAt) : (q.id && !isNaN(Number(q.id)) && Number(q.id) > 1e11 ? new Date(Number(q.id)) : new Date());
+    document.getElementById("pdfQueryDate").innerText = fechaQ.toLocaleDateString("es-ES") + " " + fechaQ.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+    const fmtResp = (iso) => {
+      if (!iso) return "-";
+      const d = new Date(iso);
+      return isNaN(d) ? "-" : d.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "2-digit" }) + " " + d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+    };
     const container = document.getElementById("pdfQueryTeamsContent");
     container.innerHTML = "";
 
@@ -685,6 +734,7 @@
         rowsHtml += `
           <tr>
             <td class="nva-name">${escapeHtml(p)}</td>
+            <td style="white-space:nowrap; color:#64748b; font-size:0.85em;">${resp ? fmtResp(q.responseTimes && q.responseTimes[p]) : "-"}</td>
             <td style="text-align:right;">${badge}</td>
           </tr>
         `;
@@ -707,11 +757,12 @@
           <thead>
             <tr>
               <th>Jugadora</th>
+              <th style="width:130px;">Día y hora</th>
               <th style="text-align:right; width:180px;">Respuesta</th>
             </tr>
           </thead>
           <tbody>
-            ${rowsHtml || `<tr><td colspan="2" class="nva-na" style="text-align:center;">Sin jugadoras</td></tr>`}
+            ${rowsHtml || `<tr><td colspan="3" class="nva-na" style="text-align:center;">Sin jugadoras</td></tr>`}
           </tbody>
         </table>
       `;
@@ -2189,7 +2240,7 @@
         : `<div class="player-name" title="${escapeHtml(player.name)}">${escapeHtml(player.name)}</div>`;
 
       let queryHtml = "";
-      const pendingQuery = queriesData.find(q => q.teams && q.teams.includes(currentTeam) && (!q.responses || !q.responses[player.name]));
+      const pendingQuery = queriesData.find(q => !q.hidden && q.teams && q.teams.includes(currentTeam) && (!q.responses || !q.responses[player.name]));
       if (pendingQuery) {
         const opts = (pendingQuery.options && pendingQuery.options.length > 0) ? pendingQuery.options : ['V', 'X'];
         const btnsHtml = opts.map(opt => {
@@ -4241,7 +4292,7 @@
         : `<div class="player-name" title="${escapeHtml(player.name)}">${escapeHtml(player.name)}</div>`;
 
       let queryHtml = "";
-      const pendingQuery = queriesData.find(q => q.teams && q.teams.includes(currentTeam) && (!q.responses || !q.responses[player.name]));
+      const pendingQuery = queriesData.find(q => !q.hidden && q.teams && q.teams.includes(currentTeam) && (!q.responses || !q.responses[player.name]));
       if (pendingQuery) {
         const opts = (pendingQuery.options && pendingQuery.options.length > 0) ? pendingQuery.options : ['V', 'X'];
         const btnsHtml = opts.map(opt => {
