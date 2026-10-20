@@ -2074,6 +2074,23 @@
 
   // Ciclo del borde lateral: Presente (verde) -> Falta Injustificada (rojo)
   // -> Falta Justificada (amarillo) -> Presente...
+  // Contadores hexagonales junto al título: verde presentes, rojo faltas
+  // injustificadas, naranja justificadas, azul no convocadas (partido), negro total.
+  function updateAttendanceCounters(kind, list) {
+    const box = document.getElementById(kind === 'match' ? 'matchCounters' : 'trainCounters');
+    if (!box) return;
+    let pres = 0, inj = 0, jus = 0, noc = 0;
+    (list || []).forEach(p => {
+      if (p.attendance === 'no_convocada') noc++;
+      else if (p.attendance === 'falta') ((p.absenceType || 'injustificada') === 'justificada') ? jus++ : inj++;
+      else pres++;
+    });
+    const hex = (cls, n, t) => `<span class="att-hex ${cls}" title="${t}">${n}</span>`;
+    box.innerHTML = hex('att-pres', pres, 'Presentes') + hex('att-inj', inj, 'Faltas injustificadas') +
+      hex('att-jus', jus, 'Faltas justificadas') + (kind === 'match' ? hex('att-noc', noc, 'No convocadas') : '') +
+      hex('att-tot', (list || []).length, 'Total');
+  }
+
   function cycleAttendanceState(index) {
     const player = sessionData[index];
     if (player.attendance !== 'falta') {
@@ -2132,6 +2149,7 @@
   function renderPlayersMain() {
     const container = document.getElementById("playersContainer");
     container.innerHTML = "";
+    updateAttendanceCounters('train', sessionData);
 
     sessionData.forEach((player, index) => {
       const card = document.createElement("div");
@@ -3988,7 +4006,7 @@
   //  desplegadas.
   // =====================================================================
   const SECTIONS_KEY = "NVA_SECTIONS_STATE";
-  const SECTION_IDS = ["wk", "trainings", "tablon", "direccion"];
+  const SECTION_IDS = ["wk", "trainings", "tablon", "direccion", "instagram"];
 
   function loadSectionsState() {
     try { return JSON.parse(localStorage.getItem(SECTIONS_KEY)) || {}; } catch (e) { return {}; }
@@ -4157,6 +4175,7 @@
   function renderMatchPlayers() {
     const container = document.getElementById("matchPlayersContainer");
     container.innerHTML = "";
+    updateAttendanceCounters('match', matchData);
 
     matchData.forEach((player, index) => {
       const card = document.createElement("div");

@@ -2102,3 +2102,26 @@
 /* Redes Sociales: «Publicados» es una subsección dentro de Reels / Stories */
 .cp-sub-head.ig-pub-head { margin: 12px 0 0 12px; padding: 8px 10px; border-left: 2px solid var(--niebla); border-radius: 0 8px 8px 0; background: rgba(233,238,250,0.06); font-family: inherit; font-style: normal; font-weight: 700; font-size: 0.82rem; text-transform: none; letter-spacing: 0; color: var(--tiza, #e9eefa); }
 .cp-sub-body.ig-pub-body { margin-left: 12px; padding: 8px 0 0 10px; border-left: 2px solid rgba(233,238,250,0.15); }
+
+/* ---------- Contadores de asistencia (hexágonos junto al título) ---------- */
+.title-row { display: flex; align-items: center; gap: 6px; margin: 4px 0 4px; }
+.title-row > .section-title { flex: 1; min-width: 0; margin: 0 !important; }
+.att-counters { display: flex; gap: 3px; flex-shrink: 0; }
+.att-counters:empty { display: none; }
+.att-hex {
+  position: relative; display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 30px; font-family: var(--font-display); font-style: italic;
+  font-weight: 800; font-size: 0.95rem; color: #fff; z-index: 0;
+}
+.att-hex::before, .att-hex::after {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+}
+.att-hex::before { background: #fff; }
+.att-hex::after { inset: 2px; background: var(--hx); }
+.att-pres { --hx: #16a34a; }
+.att-inj { --hx: #dc2626; }
+.att-jus { --hx: #f59e0b; color: #1a1a1a; }
+.att-noc { --hx: #0284c7; }
+.att-tot { --hx: #111; }
+@media (max-width: 420px) { .att-hex { width: 28px; height: 25px; font-size: 0.8rem; } }

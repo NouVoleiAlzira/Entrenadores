@@ -33,6 +33,7 @@
   <link rel="preload" href="fonts/barlow-condensed-latin-800-italic.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="animaciones.css">
+  <link rel="stylesheet" href="inicio.css">
   <!-- Intro de marca: solo la primera vez en cada sesión -->
   <script>
     try {
@@ -290,7 +291,7 @@
 
   <!-- PANTALLA 2: REGISTRO DE ENTRENAMIENTO -->
   <div class="screen" id="screenAttendance">
-    <div class="section-title" id="sessionTitle" style="margin-bottom: 4px;">Registro de Entrenamiento</div>
+    <div class="title-row"><div class="section-title" id="sessionTitle" style="margin-bottom: 4px;">Registro de Entrenamiento</div><div class="att-counters" id="trainCounters"></div></div>
     
     <div class="controls-bar">
       <div class="date-container">
@@ -307,7 +308,7 @@
 
   <!-- PANTALLA: REGISTRO DE PARTIDO -->
   <div class="screen" id="screenMatch">
-    <div class="section-title" id="matchTitle" style="margin-bottom: 4px;">Registro de Partido</div>
+    <div class="title-row"><div class="section-title" id="matchTitle" style="margin-bottom: 4px;">Registro de Partido</div><div class="att-counters" id="matchCounters"></div></div>
 
     <div class="controls-bar">
       <div class="date-container">
@@ -840,6 +841,7 @@
 <script src="cuadrante-pdf.js" defer></script>
 <script src="kilometraje.js" defer></script>
 <script src="animaciones.js" defer></script>
+<script src="inicio.js" defer></script>
 <script src="historia-editor.js" defer></script>
 <script src="instagram.js" defer></script>
 

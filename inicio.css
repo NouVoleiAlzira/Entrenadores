@@ -1,0 +1,503 @@
+/* =====================================================================
+   PANTALLA PRINCIPAL — rediseño visual (va después de animaciones.css)
+   Solo apariencia: cada sección pasa a ser una tarjeta de cristal con
+   su icono de color, botones con relieve y onda al pulsar, fondo con
+   halos que se mueven despacio y entrada de las tarjetas al hacer scroll.
+   La onda y la entrada al hacer scroll las pone inicio.js.
+   Afecta solo a la cabecera y a #screenCoachTeam.
+   ===================================================================== */
+
+:root {
+  --nv-card: rgba(21, 41, 106, 0.55);
+  --nv-card-top: rgba(36, 80, 200, 0.20);
+  --nv-borde: rgba(233, 238, 250, 0.11);
+  --nv-radio: 20px;
+  --nv-spring: cubic-bezier(0.34, 1.45, 0.64, 1);
+}
+
+/* ---------------------------------------------------------------------
+   Fondo: dos halos (azul y rojo del club) que derivan muy despacio
+   --------------------------------------------------------------------- */
+.app-container::after {
+  content: "";
+  position: absolute;
+  left: -40%; right: -40%; top: -10%;
+  height: 1100px;
+  background:
+    radial-gradient(38% 30% at 30% 20%, rgba(47, 91, 224, 0.30), transparent 70%),
+    radial-gradient(30% 24% at 78% 46%, rgba(214, 40, 57, 0.16), transparent 70%),
+    radial-gradient(26% 20% at 22% 74%, rgba(245, 197, 24, 0.07), transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+  animation: nvDrift 22s ease-in-out infinite alternate;
+}
+@keyframes nvDrift {
+  from { transform: translate3d(-4%, 0, 0) rotate(0deg); }
+  to   { transform: translate3d(4%, 3%, 0) rotate(6deg); }
+}
+
+/* ---------------------------------------------------------------------
+   Cabecera
+   --------------------------------------------------------------------- */
+header {
+  background: linear-gradient(180deg, rgba(13, 27, 69, 0.96), rgba(13, 27, 69, 0.88));
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
+}
+/* línea inferior: rojo-amarillo-rojo que fluye */
+header::after {
+  height: 3px;
+  background: linear-gradient(90deg, var(--alzira), #FF5A6B, var(--balon), #FF5A6B, var(--alzira));
+  background-size: 200% 100%;
+  animation: nvLineFlow 7s linear infinite;
+}
+@keyframes nvLineFlow {
+  from { background-position: 0% 0; }
+  to   { background-position: 200% 0; }
+}
+/* escudo con halo amarillo */
+.header-title-container::before {
+  filter: drop-shadow(0 0 10px rgba(245, 197, 24, 0.35)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+}
+header h1 { text-shadow: none; }
+
+.btn-header-icon {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  background: rgba(233, 238, 250, 0.07);
+  box-shadow: inset 0 0 0 1px var(--nv-borde);
+  min-width: 44px;
+  min-height: 44px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn-header-icon:hover { background: rgba(233, 238, 250, 0.14); }
+}
+
+/* indicador Online: el punto late suavemente */
+.network-online::before { animation: nvPulse 2.4s ease-out infinite; }
+@keyframes nvPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(123, 224, 171, 0.7); }
+  70%  { box-shadow: 0 0 0 6px rgba(123, 224, 171, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(123, 224, 171, 0); }
+}
+
+/* ---------------------------------------------------------------------
+   Secciones = tarjetas de cristal (título arriba, cuerpo abajo)
+   --------------------------------------------------------------------- */
+#screenCoachTeam { padding: 10px 14px 32px; }
+
+#screenCoachTeam .section-toggle {
+  position: relative;
+  overflow: hidden;
+  gap: 12px;
+  margin: 14px 0 0 !important;
+  padding: 12px 12px 12px 12px;
+  font-size: 1.32rem;
+  letter-spacing: 0.01em;
+  background: linear-gradient(180deg, var(--nv-card-top), var(--nv-card));
+  border: 1px solid var(--nv-borde);
+  border-bottom-color: transparent;
+  border-radius: var(--nv-radio) var(--nv-radio) 0 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  transition:
+    border-radius 240ms var(--ease-out),
+    border-color 200ms ease,
+    box-shadow 240ms ease,
+    transform 160ms var(--ease-out);
+}
+#screenCoachTeam #secHead_wk { margin-top: 2px !important; }
+
+/* plegada: tarjeta cerrada con su propia sombra */
+#screenCoachTeam .section-toggle.collapsed {
+  border-radius: var(--nv-radio);
+  border-bottom-color: var(--nv-borde);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 14px 30px -14px rgba(0, 0, 0, 0.7);
+}
+/* mientras el cuerpo se pliega, el título mantiene las esquinas de arriba */
+#screenCoachTeam .section-toggle.collapsed:has(+ .anim-closing) {
+  border-radius: var(--nv-radio) var(--nv-radio) 0 0;
+  border-bottom-color: transparent;
+}
+
+#screenCoachTeam .section-toggle + .section-body {
+  position: relative;
+  padding: 6px 14px 16px;
+  background: var(--nv-card);
+  border: 1px solid var(--nv-borde);
+  border-top: 0;
+  border-radius: 0 0 var(--nv-radio) var(--nv-radio);
+  box-shadow: 0 16px 34px -16px rgba(0, 0, 0, 0.75);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+/* el último elemento no deja hueco extra al pie de la tarjeta */
+#screenCoachTeam .section-body > :last-child { margin-bottom: 0 !important; }
+/* fina línea de tiza que separa título y cuerpo */
+#screenCoachTeam .section-toggle + .section-body::before {
+  content: "";
+  position: absolute;
+  left: 14px; right: 14px; top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(233, 238, 250, 0.16), transparent);
+}
+
+/* La flecha va a la derecha; la línea de tiza del título ya no hace falta */
+#screenCoachTeam .section-toggle .sec-arrow {
+  margin-left: auto;
+  width: 32px; height: 32px;
+  background: rgba(233, 238, 250, 0.08);
+  box-shadow: inset 0 0 0 1px var(--nv-borde);
+  color: var(--tiza);
+  font-size: 1rem;
+}
+#screenCoachTeam .section-toggle:not(.collapsed) .sec-arrow {
+  background: rgba(245, 197, 24, 0.16);
+  color: var(--balon);
+}
+
+/* Icono de cada sección: pastilla de color con símbolo dibujado */
+#screenCoachTeam .section-toggle::before {
+  content: "";
+  flex: none;
+  width: 38px; height: 38px;
+  border-radius: 12px;
+  background: var(--nv-ico) center / 20px no-repeat, var(--nv-acc);
+  box-shadow: 0 6px 14px -4px var(--nv-glow), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  animation: nvChipClose 300ms var(--ease-out);
+}
+#screenCoachTeam .section-toggle:not(.collapsed)::before {
+  animation: nvChipOpen 520ms var(--nv-spring);
+}
+@keyframes nvChipOpen {
+  0%   { transform: scale(0.82) rotate(-10deg); }
+  100% { transform: none; }
+}
+@keyframes nvChipClose {
+  0%   { transform: scale(0.9); }
+  100% { transform: none; }
+}
+
+#secHead_wk {
+  --nv-acc: linear-gradient(135deg, #4F7BFF, #2450C8);
+  --nv-glow: rgba(79, 123, 255, 0.6);
+  --nv-ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='3'/%3E%3Cpath d='M3 10h18M8 3v4M16 3v4'/%3E%3C/svg%3E");
+}
+#secHead_trainings {
+  --nv-acc: linear-gradient(135deg, #FF5A6B, #D62839);
+  --nv-glow: rgba(214, 40, 57, 0.6);
+  --nv-ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 3a9 9 0 0 1 4 8M12 12c-3 1-6 0-8.5-2.5M12 12c1 3 4 5.5 7.5 6'/%3E%3C/svg%3E");
+}
+#secHead_tablon {
+  --nv-acc: linear-gradient(135deg, #34C784, #1E8A57);
+  --nv-glow: rgba(52, 199, 132, 0.5);
+  --nv-ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z'/%3E%3Cpath d='M8.5 10.5h7M8.5 14h4'/%3E%3C/svg%3E");
+}
+#secHead_cal {
+  --nv-acc: linear-gradient(135deg, #FFD84D, #F5A818);
+  --nv-glow: rgba(245, 197, 24, 0.5);
+  --nv-ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230D1B45' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 4h10v5a5 5 0 0 1-10 0V4z'/%3E%3Cpath d='M17 6h3v1a3 3 0 0 1-3 3M7 6H4v1a3 3 0 0 0 3 3M12 14v3M8 21h8M9 17h6v4H9z'/%3E%3C/svg%3E");
+}
+#secHead_direccion {
+  --nv-acc: linear-gradient(135deg, #A47BFF, #6D3FE0);
+  --nv-glow: rgba(140, 100, 255, 0.55);
+  --nv-ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3l8 3v5c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-3z'/%3E%3Cpath d='M8.5 12l2.5 2.5 4.5-5'/%3E%3C/svg%3E");
+}
+#secHead_instagram {
+  --nv-acc: linear-gradient(135deg, #FEDA75 0%, #FA7E1E 30%, #D62976 65%, #962FBF 100%);
+  --nv-glow: rgba(214, 41, 118, 0.55);
+  --nv-ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='5'/%3E%3Ccircle cx='12' cy='12' r='4'/%3E%3Ccircle cx='17.3' cy='6.7' r='0.6' fill='white'/%3E%3C/svg%3E");
+}
+
+@media (hover: hover) and (pointer: fine) {
+  #screenCoachTeam .section-toggle:hover { border-color: rgba(233, 238, 250, 0.2); }
+  #screenCoachTeam .section-toggle:hover::before {
+    transform: scale(1.06) rotate(-4deg);
+    transition: transform 240ms var(--nv-spring);
+  }
+}
+#screenCoachTeam .section-toggle:active { transform: scale(0.985); }
+
+/* ---------------------------------------------------------------------
+   Subtítulos y subsecciones dentro de las tarjetas
+   --------------------------------------------------------------------- */
+#screenCoachTeam .section-subtitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-left: 0;
+  padding-left: 0;
+  font-family: var(--font-body);
+  font-style: normal;
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  color: var(--niebla);
+  margin: 18px 0 10px;
+}
+#screenCoachTeam .section-subtitle::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(233, 238, 250, 0.2), transparent);
+}
+
+#screenCoachTeam .cp-sub-head {
+  position: relative;
+  overflow: hidden;
+  margin: 10px 0 8px;
+  padding: 10px 10px 10px 14px;
+  border-left: 0;
+  border-radius: 14px;
+  background: rgba(233, 238, 250, 0.05);
+  box-shadow: inset 3px 0 0 var(--balon), inset 0 0 0 1px rgba(233, 238, 250, 0.07);
+  font-size: 1rem;
+  transition: background-color 180ms ease, transform 160ms var(--ease-out);
+}
+#screenCoachTeam .cp-sub-head .sec-arrow { width: 26px; height: 26px; font-size: 0.9rem; }
+@media (hover: hover) and (pointer: fine) {
+  #screenCoachTeam .cp-sub-head:hover { background: rgba(233, 238, 250, 0.09); }
+}
+#screenCoachTeam .cp-sub-head:active { transform: scale(0.985); }
+
+#screenCoachTeam .cartel-sub { color: var(--niebla); letter-spacing: 0.02em; }
+#screenCoachTeam .ig-info { color: var(--niebla); line-height: 1.45; }
+
+/* ---------------------------------------------------------------------
+   Entrenadores y equipos
+   --------------------------------------------------------------------- */
+#screenCoachTeam .coach-btn {
+  min-height: 56px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(36, 80, 200, 0.28), rgba(21, 41, 106, 0.85));
+  border: 1px solid var(--nv-borde);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 10px 22px -12px rgba(0, 0, 0, 0.7);
+  transition:
+    transform 200ms var(--ease-out),
+    border-color 200ms ease,
+    box-shadow 250ms ease,
+    background-color 200ms ease;
+}
+#screenCoachTeam .coach-btn > span:last-child {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  min-width: 32px; height: 32px;
+  border-radius: 50%;
+  background: rgba(233, 238, 250, 0.08);
+  font-size: 0.85rem;
+  transition: transform 260ms var(--nv-spring), background-color 200ms ease;
+}
+#screenCoachTeam .coach-btn.selected {
+  border-color: rgba(245, 197, 24, 0.75);
+  box-shadow: 0 0 0 3px rgba(245, 197, 24, 0.14), 0 14px 28px -12px rgba(0, 0, 0, 0.75);
+}
+#screenCoachTeam .coach-btn.selected > span:last-child { background: rgba(245, 197, 24, 0.18); }
+#screenCoachTeam .coach-btn.otros-nuevo { background: transparent; }
+
+#screenCoachTeam .teams-container {
+  border-left: 2px solid transparent;
+  border-image: linear-gradient(180deg, var(--balon), rgba(245, 197, 24, 0)) 1;
+  gap: 8px;
+}
+#screenCoachTeam .team-btn {
+  min-height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #FFFFFF, #E3E9F8);
+  box-shadow: inset 0 -2px 0 rgba(13, 27, 69, 0.08), 0 8px 18px -10px rgba(0, 0, 0, 0.7);
+  transition: transform 200ms var(--ease-out), box-shadow 200ms ease;
+}
+#screenCoachTeam .team-btn-all { background: linear-gradient(135deg, #FFE070, var(--balon)); }
+
+@media (hover: hover) and (pointer: fine) {
+  #screenCoachTeam .coach-btn:hover {
+    transform: translateY(-2px);
+    border-color: rgba(233, 238, 250, 0.24);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 16px 28px -12px rgba(0, 0, 0, 0.8);
+  }
+  #screenCoachTeam .coach-btn:hover > span:last-child { transform: translateX(3px); }
+  #screenCoachTeam .team-btn:hover { transform: translateX(4px); background: linear-gradient(180deg, #FFFFFF, #EEF2FC); }
+}
+
+/* ---------------------------------------------------------------------
+   Botones de acción: relieve, degradado y brillo al pasar el ratón
+   --------------------------------------------------------------------- */
+#screenCoachTeam :is(.btn-pdf-mode, .btn-pdf-mode2, .btn-save-session) {
+  position: relative;
+  overflow: hidden;
+  min-height: 46px;
+  border-radius: 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 10px 20px -10px rgba(0, 0, 0, 0.7);
+  transition:
+    transform 200ms var(--ease-out),
+    box-shadow 220ms ease,
+    border-color 200ms ease,
+    filter 150ms ease;
+}
+#screenCoachTeam .btn-pdf-mode {
+  background: rgba(233, 238, 250, 0.07);
+  border: 1px solid rgba(233, 238, 250, 0.15);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+#screenCoachTeam .btn-pdf-mode2 {
+  background: linear-gradient(135deg, #3B67EC, #1B3A8C);
+}
+/* el rojo por defecto (Guardar, Resultados) lleva degradado; los que
+   tienen otro color puesto en el HTML lo mantienen */
+#screenCoachTeam .btn-save-session {
+  background-image: linear-gradient(135deg, #F04A5D, #B81C30);
+}
+#screenCoachTeam .btn-save-session[style*="background"] { background-image: none; }
+
+/* brillo diagonal que cruza el botón (solo con ratón) */
+#screenCoachTeam :is(.btn-pdf-mode, .btn-pdf-mode2, .btn-save-session)::before {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0; left: 0;
+  width: 60%;
+  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.22), transparent);
+  transform: translateX(-120%) skewX(-12deg);
+  pointer-events: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  #screenCoachTeam :is(.btn-pdf-mode, .btn-pdf-mode2, .btn-save-session):hover {
+    transform: translateY(-2px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 16px 26px -12px rgba(0, 0, 0, 0.8);
+    filter: brightness(1.08);
+  }
+  #screenCoachTeam .btn-pdf-mode:hover { border-color: rgba(245, 197, 24, 0.55); }
+  #screenCoachTeam :is(.btn-pdf-mode, .btn-pdf-mode2, .btn-save-session):hover::before {
+    transform: translateX(230%) skewX(-12deg);
+    transition: transform 700ms var(--ease-out);
+  }
+}
+/* al pulsar se hunde (va después del hover para ganarle) */
+#screenCoachTeam :is(.coach-btn, .team-btn, .btn-pdf-mode, .btn-pdf-mode2, .btn-save-session):not(:disabled):active {
+  transform: scale(0.96);
+  transition-duration: 90ms;
+}
+
+/* ---------------------------------------------------------------------
+   Calendario semanal y tablón
+   --------------------------------------------------------------------- */
+#screenCoachTeam .wk-canvas-wrap { margin-top: 6px; }
+#screenCoachTeam .wk-canvas {
+  border-radius: 16px;
+  box-shadow: 0 0 0 1px rgba(233, 238, 250, 0.12), 0 14px 30px -12px rgba(0, 0, 0, 0.75);
+}
+#screenCoachTeam .wk-nav-btn {
+  border-radius: 50%;
+  width: 36px; height: 36px;
+  background: rgba(13, 27, 69, 0.55);
+  border-color: rgba(233, 238, 250, 0.3);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  text-shadow: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  #screenCoachTeam .wk-nav-btn:hover { background: rgba(36, 80, 200, 0.85); }
+}
+#screenCoachTeam .wk-legend span { display: inline-flex; align-items: center; }
+
+#screenCoachTeam #tablonTextarea {
+  border-radius: 16px;
+  background: rgba(7, 15, 43, 0.35);
+  transition: border-color 200ms ease, box-shadow 250ms ease, background-color 200ms ease;
+}
+#screenCoachTeam #tablonTextarea:focus {
+  box-shadow: 0 0 0 4px rgba(245, 197, 24, 0.16);
+}
+
+#screenCoachTeam .cp-range {
+  border-radius: 14px;
+  background: rgba(233, 238, 250, 0.06);
+}
+
+#screenCoachTeam .pdf-mode-banner {
+  border-radius: 16px;
+  box-shadow: 0 10px 24px -10px rgba(245, 197, 24, 0.6);
+  animation: nvBannerIn 420ms var(--nv-spring);
+}
+@keyframes nvBannerIn {
+  from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---------------------------------------------------------------------
+   Onda al pulsar (inicio.js pone --rx/--ry/--rs y la clase nv-rip)
+   --------------------------------------------------------------------- */
+#screenCoachTeam :is(.coach-btn, .team-btn, .btn-pdf-mode, .btn-pdf-mode2, .btn-save-session, .section-toggle, .cp-sub-head)::after,
+header .btn-header-icon::after {
+  content: "";
+  position: absolute;
+  left: var(--rx, 50%); top: var(--ry, 50%);
+  width: var(--rs, 100px); height: var(--rs, 100px);
+  min-width: 0; flex: none;
+  margin: calc(var(--rs, 100px) / -2) 0 0 calc(var(--rs, 100px) / -2);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.12) 45%, transparent 70%);
+  transform: scale(0);
+  opacity: 0;
+  pointer-events: none;
+}
+#screenCoachTeam .team-btn::after { background: radial-gradient(circle, rgba(36, 80, 200, 0.22) 0%, transparent 70%); }
+#screenCoachTeam .nv-rip::after,
+header .nv-rip::after { animation: nvRipple 620ms var(--ease-out); }
+@keyframes nvRipple {
+  0%   { transform: scale(0); opacity: 1; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
+/* ---------------------------------------------------------------------
+   Entrada al hacer scroll (inicio.js): tarjetas que aún no se han visto
+   --------------------------------------------------------------------- */
+.nv-wait { opacity: 0; }
+
+/* ---------------------------------------------------------------------
+   Movimiento reducido: sin derivas, latidos ni rebotes
+   --------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .app-container::after,
+  header::after,
+  .network-online::before,
+  #screenCoachTeam .section-toggle::before,
+  #screenCoachTeam .pdf-mode-banner,
+  #screenCoachTeam .nv-rip::after,
+  header .nv-rip::after { animation: none; }
+  #screenCoachTeam :is(.coach-btn, .team-btn, .btn-pdf-mode, .btn-pdf-mode2, .btn-save-session, .section-toggle, .cp-sub-head):is(:hover, :active),
+  #screenCoachTeam .section-toggle:hover::before,
+  #screenCoachTeam .coach-btn:hover > span:last-child { transform: none; }
+  #screenCoachTeam :is(.btn-pdf-mode, .btn-pdf-mode2, .btn-save-session)::before { display: none; }
+  .nv-wait { opacity: 1; }
+}
+
+/* v87: «Publicados» es un submenú de Reels y de Stories: sangrado, más pequeño y colgando de una guía */
+#screenCoachTeam .cp-sub-head.ig-pub-head {
+  margin: 10px 0 6px 22px;
+  padding: 7px 10px 7px 12px;
+  border-radius: 10px;
+  background: rgba(233, 238, 250, 0.03);
+  box-shadow: inset 0 0 0 1px rgba(233, 238, 250, 0.10);
+  font-family: inherit;
+  font-style: normal;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--niebla, #93a3cf);
+  overflow: visible;
+}
+#screenCoachTeam .cp-sub-head.ig-pub-head::before {
+  content: "";
+  position: absolute;
+  left: -14px;
+  top: -10px;
+  width: 12px;
+  height: calc(50% + 10px);
+  border-left: 2px solid rgba(233, 238, 250, 0.22);
+  border-bottom: 2px solid rgba(233, 238, 250, 0.22);
+  border-bottom-left-radius: 8px;
+}
+#screenCoachTeam .cp-sub-head.ig-pub-head .sec-arrow { width: 22px; height: 22px; font-size: 0.75rem; }
+#screenCoachTeam .cp-sub-body.ig-pub-body { margin-left: 22px; padding-left: 12px; border-left: 2px solid rgba(233, 238, 250, 0.12); }
