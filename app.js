@@ -2091,6 +2091,24 @@
       hex('att-tot', (list || []).length, 'Total');
   }
 
+  // Ajusta el tamaño de ENTRENAMIENTO / PARTIDO al ancho libre de la barra
+  function fitModeLabels() {
+    document.querySelectorAll('.mode-label').forEach(el => {
+      const avail = el.clientWidth;
+      if (!avail) return;
+      el.style.fontSize = '20px';
+      const r = document.createRange(); r.selectNodeContents(el);
+      const natural = r.getBoundingClientRect().width || 1;
+      el.style.fontSize = Math.max(7, Math.min(22, 20 * avail / natural * 0.97)) + 'px';
+    });
+  }
+  window.addEventListener('resize', fitModeLabels);
+  if (window.ResizeObserver) {
+    const roMode = new ResizeObserver(fitModeLabels);
+    document.addEventListener('DOMContentLoaded', () => document.querySelectorAll('.mode-label').forEach(el => roMode.observe(el)));
+  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitModeLabels);
+
   function cycleAttendanceState(index) {
     const player = sessionData[index];
     if (player.attendance !== 'falta') {

@@ -299,7 +299,7 @@
         <input type="date" id="sessionDatePicker" class="date-input">
       </div>
       <div class="mode-switch"><span class="mode-label">ENTRENAMIENTO</span><button type="button" class="mode-swap" onclick="goToMatchScreen()" title="Cambiar a Partido" aria-label="Cambiar a Partido"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.6-4.5L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.6 4.5L20 16"/><path d="M20 21v-5h-5"/></svg></button></div>
-      <button class="btn-history" onclick="withLoading(openHistoryModal, 'Cargando historial...')">📜 Historial</button>
+      <button class="btn-history" onclick="withLoading(openHistoryModal, 'Cargando historial...')">📜<span class="hist-txt"> Historial</span></button>
     </div>
 
     <div id="playersContainer"></div>
@@ -316,7 +316,7 @@
         <input type="date" id="matchDatePicker" class="date-input">
       </div>
       <div class="mode-switch"><span class="mode-label">PARTIDO</span><button type="button" class="mode-swap" onclick="goToTrainingScreen()" title="Cambiar a Entrenamiento" aria-label="Cambiar a Entrenamiento"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.6-4.5L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.6 4.5L20 16"/><path d="M20 21v-5h-5"/></svg></button></div>
-      <button class="btn-history" onclick="withLoading(openMatchHistoryModal, 'Cargando historial de partidos...')">📜 Historial</button>
+      <button class="btn-history" onclick="withLoading(openMatchHistoryModal, 'Cargando historial de partidos...')">📜<span class="hist-txt"> Historial</span></button>
     </div>
 
     <div id="matchScoreboard" class="match-scoreboard"></div>

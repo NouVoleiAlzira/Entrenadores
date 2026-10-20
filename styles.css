@@ -2152,3 +2152,17 @@
   font-size: 0.78rem; font-weight: 700; cursor: pointer;
 }
 .btn-delete-history:active { transform: translateY(1px); }
+
+/* v91: selector más compacto; texto estirado ×1.7 en vertical y ajustado al hueco libre (fitModeLabels en app.js) */
+.mode-switch { flex: 1 1 0; min-width: 0; gap: 6px; }
+.mode-label {
+  flex: 1 1 0; min-width: 0; overflow: visible; text-align: right;
+  font-size: 16px; transform: scaleY(1.7); transform-origin: center;
+}
+.mode-swap, .mode-swap { width: 34px; height: 34px; border-radius: 10px; }
+.mode-swap svg { width: 18px; height: 18px; }
+#screenAttendance .date-container, #screenMatch .date-container {
+  flex-direction: row !important; flex-shrink: 0; white-space: nowrap; align-items: center;
+}
+#screenAttendance .date-input, #screenMatch .date-input { width: auto !important; }
+@media (max-width: 430px) { #screenAttendance .hist-txt, #screenMatch .hist-txt { display: none; } #screenAttendance .controls-bar .btn-history, #screenMatch .controls-bar .btn-history { padding: 8px 10px; font-size: 1rem; } .mode-swap { width: 32px; height: 32px; } .mode-swap svg { width: 17px; height: 17px; } }
