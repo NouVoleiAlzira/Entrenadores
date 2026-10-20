@@ -547,11 +547,6 @@
         <div class="modal-title">📜 Historial de cambios</div>
         <button class="hist-cerrar" onclick="closeHistorial()" aria-label="Cerrar">✕</button>
       </div>
-      <div class="hist-filtros">
-        <button class="hist-chip on" onclick="histFiltro('todo',this)">Todo</button>
-        <button class="hist-chip" onclick="histFiltro('guardado',this)">💾 Guardados</button>
-        <button class="hist-chip" onclick="histFiltro('accion',this)">👆 Acciones</button>
-      </div>
       <input class="app-input hist-buscar" id="histBuscar" type="search" placeholder="Buscar (texto o entrenador)…" oninput="histBuscar()">
       <div class="hist-estado" id="histEstado"></div>
       <div class="hist-list" id="histList"></div>

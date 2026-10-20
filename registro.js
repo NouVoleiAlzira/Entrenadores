@@ -1,5 +1,5 @@
 // ===== Historial de cambios (registro cronológico de acciones) =====
-// Anota cada acción de la app (botones pulsados y guardados en GitHub) con
+// Anota cada cambio que crea, modifica o borra registros (guardados en GitHub) con
 // día, hora, descripción y quién la hizo. Se guarda primero en el dispositivo
 // y se envía a GitHub en Historial/historial_<AAAA-MM>.json para que se vea
 // lo de todos los entrenadores y dispositivos.
@@ -58,27 +58,12 @@
         try { msg = JSON.parse(init.body).message || ""; } catch (e) {}
         const ruta = decodeURIComponent(url.split("/contents/")[1] || "").split("?")[0];
         const p = origFetch(input, init);
-        p.then(r => { if (r.ok) registrar("guardado", (method === "DELETE" ? "🗑 Borrado: " : "💾 ") + (msg || ruta)); }).catch(() => {});
+        p.then(r => { if (r.ok) registrar("guardado", (method === "DELETE" ? "🗑 Borrado: " : "") + (msg || ruta)); }).catch(() => {});
         return p;
       }
     } catch (e) {}
     return origFetch(input, init);
   };
-
-  // --- Acciones: cualquier botón pulsado ---
-  let ultimo = { k: "", t: 0 };
-  document.addEventListener("click", function (ev) {
-    const el = ev.target.closest && ev.target.closest("button, [role=button], .coach-btn, a[href]");
-    if (!el || el.closest("#modalHistorial")) return;
-    let txt = (el.getAttribute("aria-label") || el.textContent || el.title || "").replace(/[▾➤]/g, "").trim();
-    if (!txt) return;
-    if (txt.length > 80) txt = txt.slice(0, 80) + "…";
-    const now = Date.now();
-    if (ultimo.k === txt && now - ultimo.t < 800) return;
-    ultimo = { k: txt, t: now };
-    const p = pantalla();
-    registrar("accion", "Pulsó «" + txt + "»" + (p ? " en " + p : ""));
-  }, true);
 
   // --- Envío a GitHub ---
   let timer = null, enviando = false;
@@ -138,7 +123,7 @@
   }
 
   // --- Pantalla del historial ---
-  let filtro = "todo";
+  const filtro = "guardado"; // solo cambios en registros (las acciones antiguas de clics se ocultan)
   function esc(s) { return String(s || "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
 
   function pintar(lista, estado) {
@@ -147,7 +132,7 @@
     document.getElementById("histEstado").textContent = estado || "";
     const q = (document.getElementById("histBuscar").value || "").toLowerCase();
     const items = lista.filter(e => (filtro === "todo" || e.tipo === filtro) && (!q || (e.texto + " " + e.quien).toLowerCase().includes(q)));
-    if (!items.length) { box.innerHTML = '<p class="hist-vacio">No hay acciones registradas.</p>'; return; }
+    if (!items.length) { box.innerHTML = '<p class="hist-vacio">No hay cambios registrados.</p>'; return; }
     let html = "", dia = "";
     items.forEach(e => {
       const d = new Date(e.t);
@@ -179,13 +164,7 @@
     } catch (e) { pintar(ultimaLista, "No se pudo leer GitHub: se muestra lo guardado en este dispositivo."); }
   };
   window.closeHistorial = function () { document.getElementById("modalHistorial").classList.remove("active"); };
-  window.histFiltro = function (f, btn) {
-    filtro = f;
-    document.querySelectorAll(".hist-chip").forEach(b => b.classList.toggle("on", b === btn));
-    pintar(ultimaLista, document.getElementById("histEstado").textContent);
-  };
   window.histBuscar = function () { pintar(ultimaLista, document.getElementById("histEstado").textContent); };
 
-  registrar("accion", "Abrió la app");
   programarEnvio(5000);
 })();
