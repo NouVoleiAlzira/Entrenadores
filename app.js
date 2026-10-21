@@ -718,9 +718,16 @@
     container.innerHTML = "";
 
     let tSi = 0, tNo = 0, tPend = 0, tOtro = 0;
+    // Consulta personalizada: el conteo es por cada opción disponible, no Sí/No.
+    const customOpts = (Array.isArray(q.options) ? q.options : []).filter(o => o !== 'V' && o !== 'X');
+    const isCustom = q.type === 'custom' || customOpts.length > 0;
+    const optTotals = {};
+    customOpts.forEach(o => optTotals[o] = 0);
     q.teams.forEach(teamKey => {
       const players = getPlayersForTeamKey(teamKey);
       let si = 0, no = 0, pend = 0, otro = 0;
+      const optCounts = {};
+      customOpts.forEach(o => optCounts[o] = 0);
 
       let rowsHtml = "";
       players.forEach(p => {
@@ -728,7 +735,11 @@
         let badge = `<span class="nva-chip grey">Pendiente</span>`;
         if (resp === 'V') { badge = `<span class="nva-chip green">✔ Sí</span>`; si++; }
         else if (resp === 'X') { badge = `<span class="nva-chip red">✖ No</span>`; no++; }
-        else if (resp) { badge = `<span class="nva-chip blue">${escapeHtml(resp)}</span>`; otro++; }
+        else if (resp) {
+          badge = `<span class="nva-chip blue">${escapeHtml(resp)}</span>`; otro++;
+          optCounts[resp] = (optCounts[resp] || 0) + 1;
+          optTotals[resp] = (optTotals[resp] || 0) + 1;
+        }
         else pend++;
 
         rowsHtml += `
@@ -747,9 +758,11 @@
         <div class="nva-team-head">
           <h4 style="--q:${color}"><i></i>${escapeHtml(teamKey)}</h4>
           <div class="nva-team-sum">
-            <span class="nva-chip green">✔ ${si}</span>
+            ${isCustom
+              ? Object.keys(optCounts).map(o => `<span class="nva-chip blue">${escapeHtml(o)} ${optCounts[o]}</span>`).join("")
+              : `<span class="nva-chip green">✔ ${si}</span>
             <span class="nva-chip red">✖ ${no}</span>
-            ${otro ? `<span class="nva-chip blue">Otras ${otro}</span>` : ""}
+            ${otro ? `<span class="nva-chip blue">Otras ${otro}</span>` : ""}`}
             <span class="nva-chip grey">Pend. ${pend}</span>
           </div>
         </div>
@@ -771,6 +784,13 @@
 
     const total = tSi + tNo + tPend + tOtro;
     const pct = (n) => total ? Math.round(n * 100 / total) + "%" : "-";
+    const optCols = [NVA_PDF_COL.verde, NVA_PDF_COL.alzira, NVA_PDF_COL.pista, NVA_PDF_COL.balon];
+    if (isCustom) {
+      document.getElementById("pdfQueryKpis").innerHTML =
+        nvaKpi("Convocadas", total, `${q.teams.length} equipo${q.teams.length === 1 ? "" : "s"}`, NVA_PDF_COL.pista) +
+        Object.keys(optTotals).map((o, i) => nvaKpi(escapeHtml(o), optTotals[o], pct(optTotals[o]) + " del total", optCols[i % optCols.length])).join("") +
+        nvaKpi("Pendientes", tPend, pct(tPend) + " sin responder", NVA_PDF_COL.balon);
+    } else
     document.getElementById("pdfQueryKpis").innerHTML =
       nvaKpi("Convocadas", total, `${q.teams.length} equipo${q.teams.length === 1 ? "" : "s"}`, NVA_PDF_COL.pista) +
       nvaKpi("Sí", tSi, pct(tSi) + " del total", NVA_PDF_COL.verde) +
