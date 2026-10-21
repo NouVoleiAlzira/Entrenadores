@@ -146,8 +146,23 @@
 
   // --- Nombres de dispositivos (Historial/dispositivos.json, compartido) ---
   const NOM_KEY = "NVA_DISP_NOMBRES";
+  const ENT_KEY = "NVA_DISP_ENTRENADORES";
   let nombres = lsGet(NOM_KEY, {});
+  let entrenDisp = lsGet(ENT_KEY, {});   // código de dispositivo -> id del entrenador
   function nombreDisp(c) { return nombres[c] || c || ""; }
+  // dispositivos.json: { <código>: <nombre>, ..., "__entrenadores": { <código>: <id entrenador> } }
+  function cargarDisp(data) {
+    data = Object.assign({}, data || {});
+    entrenDisp = data.__entrenadores || {};
+    delete data.__entrenadores;
+    nombres = data;
+    lsSet(NOM_KEY, nombres); lsSet(ENT_KEY, entrenDisp);
+  }
+  function coachesLista() { try { return (typeof appData !== "undefined" && appData.coaches) || []; } catch (e) { return []; } }
+  window.nvaDispositivo = () => deviceId;
+  window.nvaEntrenadorDelDispositivo = () => entrenDisp[deviceId];
+  window.nvaEntrenadoresAsignados = () => entrenDisp;
+  window.nvaRecargarDispositivos = async () => { const g = gh(); if (g && g.user && g.token) cargarDisp((await leerNombres(g)).data); };
   function urlNombres(g) { return `https://api.github.com/repos/${g.user}/${g.repo}/contents/${FOLDER}/dispositivos.json`; }
   async function leerNombres(g) {
     const r = await origFetch(urlNombres(g), { headers: { Authorization: `token ${g.token}` }, cache: "no-store" });
@@ -163,27 +178,32 @@
     document.getElementById("histConfig").hidden = !abrir;
     document.getElementById("histPrincipal").hidden = abrir;
     if (!abrir) return;
-    const cods = [...new Set(ultimaLista.map(e => e.disp).filter(Boolean).concat(Object.keys(nombres), [deviceId]))].sort();
-    document.getElementById("histDispList").innerHTML = cods.map(c =>
-      `<label class="hist-disp"><span class="hist-disp-cod">${esc(c)}${c === deviceId ? " (este)" : ""}</span><input class="app-input" data-cod="${esc(c)}" value="${esc(nombres[c] || "")}" placeholder="Nombre del dispositivo"></label>`).join("");
+    const cods = [...new Set(ultimaLista.map(e => e.disp).filter(Boolean).concat(Object.keys(nombres), Object.keys(entrenDisp), [deviceId]))].sort();
+    const coaches = coachesLista();
+    document.getElementById("histDispList").innerHTML = '<div class="hist-disp-cab"><span>Código</span><span>Nombre</span><span>Entrenador</span></div>' + cods.map(c =>
+      `<label class="hist-disp"><span class="hist-disp-cod">${esc(c)}${c === deviceId ? " (este)" : ""}</span><input class="app-input" data-cod="${esc(c)}" value="${esc(nombres[c] || "")}" placeholder="Nombre del dispositivo"><select class="app-input hist-disp-ent" data-cod="${esc(c)}"><option value="">— Entrenador —</option>${coaches.map(x => `<option value="${esc(x.id)}"${String(entrenDisp[c]) === String(x.id) ? " selected" : ""}>${esc(x.name)}</option>`).join("")}</select></label>`).join("");
     document.getElementById("histConfEstado").textContent = "";
   };
   window.histGuardarNombres = async function () {
     const est = document.getElementById("histConfEstado");
     const nuevos = {};
+    const ents = {};
     document.querySelectorAll("#histDispList input").forEach(i => { const v = i.value.trim(); if (v) nuevos[i.dataset.cod] = v; });
+    document.querySelectorAll("#histDispList select").forEach(i => { if (i.value) ents[i.dataset.cod] = i.value; });
     const g = gh();
     est.textContent = "Guardando…";
     try {
       if (!navigator.onLine || !g || !g.user || !g.token) throw new Error("offline");
       for (let intento = 0; intento < 3; intento++) {
         const { sha, data } = await leerNombres(g);
-        document.querySelectorAll("#histDispList input").forEach(i => { delete data[i.dataset.cod]; });
+        const entPrev = data.__entrenadores || {};
+        document.querySelectorAll("#histDispList input").forEach(i => { delete data[i.dataset.cod]; delete entPrev[i.dataset.cod]; });
         Object.assign(data, nuevos);
+        data.__entrenadores = Object.assign(entPrev, ents);
         const body = { message: "Nombres de dispositivos del historial", content: b64enc(JSON.stringify(data, null, 1)) };
         if (sha) body.sha = sha;
         const r = await origFetch(urlNombres(g), { method: "PUT", headers: { Authorization: `token ${g.token}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
-        if (r.ok) { nombres = data; lsSet(NOM_KEY, nombres); histConfig(false); pintar(ultimaLista, ""); return; }
+        if (r.ok) { cargarDisp(data); histConfig(false); pintar(ultimaLista, ""); return; }
         if (r.status !== 409 && r.status !== 422) break;
       }
       est.textContent = "No se pudo guardar en GitHub. Inténtalo de nuevo.";
@@ -206,7 +226,7 @@
       const meses = [0, 1].map(i => { const d = new Date(now.getFullYear(), now.getMonth() - i, 1); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); });
       let todos = [];
       for (const m of meses) todos = todos.concat((await leerMes(g, m)).items);
-      try { nombres = (await leerNombres(g)).data; lsSet(NOM_KEY, nombres); } catch (e) {}
+      try { cargarDisp((await leerNombres(g)).data); } catch (e) {}
       ultimaLista = mezclar(guardarCache(todos));
       pintar(ultimaLista, "");
     } catch (e) { pintar(ultimaLista, "No se pudo leer GitHub: se muestra lo guardado en este dispositivo."); }

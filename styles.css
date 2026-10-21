@@ -2221,4 +2221,23 @@
 .hist-disp { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; color: #1e293b; }
 .hist-disp-cod { flex: none; width: 96px; font-size: .85em; font-variant-numeric: tabular-nums; }
 .hist-disp .app-input { flex: 1; min-width: 0; margin: 0; }
+.hist-disp, .hist-disp-cab { display: grid; grid-template-columns: 74px 1fr 1fr; gap: 6px; align-items: center; }
+.hist-disp-cab { font-size: .75em; font-weight: 700; color: #475569; margin-bottom: 4px; }
+.hist-disp .hist-disp-cod { width: auto; font-size: .75em; overflow-wrap: anywhere; }
+.hist-disp .app-input { padding-left: 6px; padding-right: 4px; font-size: .85em; }
 .hist-conf-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+
+/* ===== Mensaje de aviso (avisos.js) ===== */
+.av-semanas { display: flex; gap: 6px; margin-bottom: 8px; }
+.av-semanas .hist-chip { flex: 1; }
+.av-dias { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.av-dia { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; border: 1px solid #cbd5e1; border-radius: 8px; color: #1e293b; font-size: .72em; cursor: pointer; }
+.av-dia small { display: block; text-align: center; color: #64748b; }
+.av-dia span { display: flex; flex-direction: column; align-items: center; }
+.av-fut { opacity: .4; cursor: default; }
+.av-coach { border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; margin-top: 8px; color: #1e293b; font-size: .9em; }
+.av-coach ul, .av-aviso ul { margin: 6px 0 0 18px; padding: 0; }
+.av-coach li, .av-aviso li { margin-bottom: 3px; }
+.av-sin { color: #b45309; font-size: .85em; }
+.av-ok { color: #15803d; font-size: .85em; margin-top: 8px; }
+.av-aviso { color: #1e293b; }
