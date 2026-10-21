@@ -425,6 +425,11 @@
       <label class="ig-label">Colores del estilo</label>
       <div id="igEstColores" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:4px;"></div>
       <small class="ig-info" id="igEstColInfo"></small>
+      <label class="ig-label" style="margin-top:10px;">Música</label>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <span id="igEstMusica" style="flex:1; min-width:0; font-size:.85rem; color:#1e293b; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
+        <button type="button" data-est="musica" style="border:1px solid #cbd5e1; background:#fff; border-radius:8px; padding:4px 10px; cursor:pointer; color:#1e293b;">🎵 Elegir</button>
+      </div>
       ${PARTES.map(([k, nombre, durs]) => `
       <div class="ig-est-parte" data-parte="${k}" style="margin-top:10px;">
         <label class="ig-label">${nombre}</label>
@@ -466,6 +471,7 @@
         div.querySelector(".ig-est-anim").value = e[k].anim;
       });
       pintarColores();
+      m.querySelector("#igEstMusica").textContent = textoMusica(e.musica);
     };
     marcar();
     return new Promise(resolve => {
@@ -476,6 +482,7 @@
         if (!b) return;
         if (b.dataset.est === "cancelar") return fin(null);
         if (b.dataset.est === "colreset") { e.colores = {}; return marcar(); }
+        if (b.dataset.est === "musica") { elegirMusica(e.musica).then(mu => { if (mu !== undefined) { e.musica = mu; marcar(); } }); return; }
         if (b.dataset.est === "ok") {
           PARTES.forEach(([k]) => { e[k].tipo = e.tipo; });
           e.acento = e.colores.ac || ""; e.fondo = e.colores.fondo || "";
@@ -493,6 +500,119 @@
       });
     });
   }
+
+
+  /* ---------- Música (v89): elegir canción de Reels/musica y el segundo en que empieza ----------
+     El catálogo lo escribe el Action «Descargar música» (Reels/musica/catalogo.json). */
+  const DIR_M = "Reels/musica";
+  const audios = {};   // archivo -> objectURL
+  const mmss = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
+
+  // Devuelve una promesa: {archivo, titulo, inicio, duracion}, null = al azar, undefined = cancelar
+  function elegirMusica(inicial, sinMusica) {
+    let sel = inicial && inicial.archivo ? Object.assign({}, inicial) : null;
+    document.getElementById("modalIgMusica")?.remove();
+    document.body.insertAdjacentHTML("beforeend", `
+  <div class="modal-backdrop active" id="modalIgMusica" style="z-index:3100;">
+    <div class="modal-box" style="max-width:440px; max-height:92vh; overflow:auto;">
+      <div class="modal-header">
+        <div class="modal-title">🎵 Música</div>
+        <button class="btn-close-modal" type="button" data-mu="cancelar">✕</button>
+      </div>
+      <div id="igMuLista" style="display:flex; flex-direction:column; gap:6px; max-height:42vh; overflow:auto;"><p class="ig-info">Cargando canciones…</p></div>
+      <div id="igMuInicio" style="margin-top:10px;" hidden>
+        <label class="ig-label">Momento de la canción: empieza en <b id="igMuSeg">0:00</b></label>
+        <input type="range" id="igMuRango" min="0" max="0" step="0.5" value="0" style="width:100%;">
+        <button class="btn-save-session" type="button" data-mu="escuchar" style="width:100%; margin-top:6px; background:var(--azul-primary);">▶️ Escuchar desde aquí</button>
+      </div>
+      <small class="ig-info" id="igMuEstado"></small>
+      <button type="button" data-mu="mas" style="display:block; width:100%; margin-top:8px; border:1px dashed #94a3b8; background:#fff; color:#1e293b; border-radius:10px; padding:8px; cursor:pointer;">⬇️ Descargar más canciones libres</button>
+      <div style="display:flex; gap:8px; margin-top:12px;">
+        <button class="btn-save-session" type="button" data-mu="cancelar" style="flex:1; background:#64748b;">Cancelar</button>
+        <button class="btn-save-session" type="button" data-mu="ok" style="flex:2;">✅ Usar esta música</button>
+      </div>
+    </div>
+  </div>`);
+    const m = document.getElementById("modalIgMusica");
+    const audio = new Audio();
+    let canciones = [], paraEn = null;
+    const parar = () => { audio.pause(); clearTimeout(paraEn); m.querySelectorAll("[data-play]").forEach(b => b.textContent = "▶️"); };
+    const pintar = () => {
+      const lista = m.querySelector("#igMuLista");
+      lista.innerHTML = [`<label style="display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:8px; border:2px solid ${sel ? "#e2e8f0" : "#2563eb"}; cursor:pointer; color:#1e293b;">
+          <input type="radio" name="igMu" value="" ${sel ? "" : "checked"}> <span style="flex:1;">${sinMusica ? "🔇 Sin música" : "🎲 Al azar"}</span></label>`]
+        .concat(canciones.map(c => `<label style="display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:8px; border:2px solid ${sel && sel.archivo === c.archivo ? "#2563eb" : "#e2e8f0"}; cursor:pointer; color:#1e293b;">
+          <input type="radio" name="igMu" value="${esc(c.archivo)}" ${sel && sel.archivo === c.archivo ? "checked" : ""}>
+          <button type="button" data-play="${esc(c.archivo)}" title="Escuchar" style="border:0; background:#eef2ff; border-radius:50%; width:32px; height:32px; cursor:pointer;">▶️</button>
+          <span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(c.titulo)}</span>
+          <small style="color:#64748b;">${c.duracion ? mmss(c.duracion) : ""}</small></label>`)).join("");
+      const ini = m.querySelector("#igMuInicio");
+      ini.hidden = !sel;
+      if (sel) {
+        const c = canciones.find(x => x.archivo === sel.archivo) || sel;
+        const r = m.querySelector("#igMuRango");
+        r.max = String(Math.max(0, Math.floor((c.duracion || sel.duracion || 60) - 10)));
+        r.value = String(sel.inicio || 0);
+        m.querySelector("#igMuSeg").textContent = mmss(+r.value);
+      }
+    };
+    async function sonar(archivo, desde, segundos) {
+      parar();
+      const est = m.querySelector("#igMuEstado");
+      try {
+        if (!audios[archivo]) { est.textContent = "Descargando la canción…"; audios[archivo] = await blobUrl(`${DIR_M}/${archivo}`); }
+        est.textContent = "";
+        audio.src = audios[archivo];
+        audio.currentTime = desde || 0;
+        await audio.play();
+        const b = m.querySelector(`[data-play="${CSS.escape(archivo)}"]`); if (b) b.textContent = "⏸️";
+        if (segundos) paraEn = setTimeout(parar, segundos * 1000);
+      } catch (e) { est.textContent = `No se puede reproducir (${e.message}).`; }
+    }
+    getJson(`${DIR_M}/catalogo.json`).then(cat => {
+      canciones = (cat && cat.canciones) || [];
+      if (!canciones.length) m.querySelector("#igMuEstado").textContent = "Aún no hay canciones guardadas. Pulsa «Descargar más canciones libres».";
+      pintar();
+    }).catch(e => { m.querySelector("#igMuEstado").textContent = `No se ha podido leer el catálogo (${e.message}).`; pintar(); });
+    return new Promise(resolve => {
+      const fin = (v) => { parar(); m.remove(); resolve(v); };
+      m.addEventListener("click", async (ev) => {
+        if (ev.target === m) return fin(undefined);
+        const b = ev.target.closest("button");
+        if (!b) return;
+        if (b.dataset.play) {
+          ev.preventDefault();
+          if (!audio.paused && audio.src === audios[b.dataset.play]) return parar();
+          return sonar(b.dataset.play, sel && sel.archivo === b.dataset.play ? sel.inicio : 0);
+        }
+        const mu = b.dataset.mu;
+        if (mu === "cancelar") return fin(undefined);
+        if (mu === "ok") return fin(sel);
+        if (mu === "escuchar" && sel) return sonar(sel.archivo, sel.inicio || 0, 15);
+        if (mu === "mas") {
+          b.disabled = true;
+          try {
+            await putJson(`${DIR_M}/solicitud.json`, { max: 20, pedido: new Date().toISOString() }, "Pedir más música");
+            m.querySelector("#igMuEstado").textContent = "Pedido. En unos minutos aparecerán más canciones; vuelve a abrir esta ventana.";
+          } catch (e) { m.querySelector("#igMuEstado").textContent = e.message; b.disabled = false; }
+        }
+      });
+      m.addEventListener("change", (ev) => {
+        const t = ev.target;
+        if (t.name === "igMu") {
+          const c = canciones.find(x => x.archivo === t.value);
+          if (c) { if (!sel || sel.archivo !== c.archivo) sel = ({ archivo: c.archivo, titulo: c.titulo, duracion: c.duracion, inicio: 0 }); }
+          else sel = null;
+          parar(); pintar();
+        }
+        if (t.id === "igMuRango" && sel) { sel.inicio = +t.value; m.querySelector("#igMuSeg").textContent = mmss(sel.inicio); }
+      });
+      m.addEventListener("input", (ev) => {
+        if (ev.target.id === "igMuRango" && sel) { sel.inicio = +ev.target.value; m.querySelector("#igMuSeg").textContent = mmss(sel.inicio); }
+      });
+    });
+  }
+  const textoMusica = (mu) => mu && mu.archivo ? `${mu.titulo || mu.archivo} · desde ${mmss(mu.inicio || 0)}` : "🎲 Al azar";
 
   /* ---------- Menú «Generar ahora» (resultados, próximos o evento manual) ---------- */
   const MAX_FOTOS = 10;
@@ -1140,6 +1260,11 @@
           <select class="ig-duracion app-input" style="width:auto; flex:none;" ${puedeAjustar ? "" : "disabled"}>
             ${window.nvaStory.DURACIONES.map(d => `<option value="${d}" ${d === dur ? "selected" : ""}>${d} s</option>`).join("")}
           </select></label>
+        <div style="display:flex; gap:8px; align-items:center; margin-top:6px;">
+          <span class="ig-label" style="margin:0;">🎵 Música</span>
+          <span class="ig-mu-txt" style="flex:1; min-width:0; font-size:.85rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(meta.musica && meta.musica.archivo ? textoMusica(meta.musica) : "Sin música")}</span>
+          ${puedeAjustar ? `<button type="button" class="ig-mu-btn" style="border:1px solid #cbd5e1; background:#fff; border-radius:8px; padding:4px 10px; cursor:pointer; color:#1e293b;">Elegir</button>` : ""}
+        </div>
         <small class="ig-info">${puedeAjustar ? "Toca una story para acercarla, alejarla o moverla. " : ""}${meta.confirmadoPor ? `Confirmado por ${esc(meta.confirmadoPor)}` : ""}</small>
         ${puedeAjustar ? `<div style="display:flex; gap:8px; margin-top:10px;">
           <button class="btn-save-session ig-descartar" style="flex:1; background:#64748b;">🗑️ Descartar</button>
@@ -1152,6 +1277,13 @@
       if (!puedeAjustar) return;
       det.querySelectorAll("[data-h]").forEach(im => im.onclick = () => ajustarEnBorrador(id, meta, im.dataset.h, im));
       det.querySelector(".ig-descartar").onclick = () => estadoHistoria(id, meta, "descartado");
+      det.querySelector(".ig-mu-btn").onclick = async () => {
+        const mu = await elegirMusica(meta.musica, true);
+        if (mu === undefined) return;
+        meta.musica = mu;   // null = sin música (en stories no hay «al azar»)
+        det.querySelector(".ig-mu-txt").textContent = mu ? textoMusica(mu) : "Sin música";
+        try { await putJson(`${DIR_H}/${id}/meta.json`, meta, `Stories ${id}: música`); } catch (e) { alert(e.message); }
+      };
       det.querySelector(".ig-confirmar").onclick = () => {
         meta.duracion = +det.querySelector(".ig-duracion").value || 5;
         confirmarHistoria(id, meta);

@@ -210,9 +210,13 @@
     const range = await askDates(tipo, range0);
     if (!range) return;
     if (window.cpRefreshFromGitHub && typeof ghSettings !== "undefined" && ghSettings.token && navigator.onLine) {
-      mostrarCargando("Revisando los PDF de fvbcv.com en GitHub...");
+      mostrarCargando("Revisando los PDF guardados en GitHub...");
+      // La revisión oculta la pantalla de carga entre PDF y PDF: se mantiene visible hasta terminar
+      const ov = document.getElementById("loadingOverlay");
+      const keep = new MutationObserver(() => { if (ov && !ov.classList.contains("active")) ov.classList.add("active"); });
+      if (ov) keep.observe(ov, { attributes: true, attributeFilter: ["class"] });
       try { await window.cpRefreshFromGitHub(); } catch (e) { console.warn(e); }
-      ocultarCargando();
+      finally { keep.disconnect(); ocultarCargando(); }
     }
     const ans = await askMatches(tipo, range);
     if (!ans) return;
