@@ -131,7 +131,7 @@
     if (!box) return;
     document.getElementById("histEstado").textContent = estado || "";
     const q = (document.getElementById("histBuscar").value || "").toLowerCase();
-    const items = lista.filter(e => (filtro === "todo" || e.tipo === filtro) && (!q || (e.texto + " " + e.quien).toLowerCase().includes(q)));
+    const items = lista.filter(e => (filtro === "todo" || e.tipo === filtro) && (!q || (e.texto + " " + nombreDisp(e.disp)).toLowerCase().includes(q)));
     if (!items.length) { box.innerHTML = '<p class="hist-vacio">No hay cambios registrados.</p>'; return; }
     let html = "", dia = "";
     items.forEach(e => {
@@ -139,14 +139,61 @@
       const k = d.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
       if (k !== dia) { dia = k; html += `<div class="hist-dia">${esc(k.charAt(0).toUpperCase() + k.slice(1))}</div>`; }
       const hora = d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-      html += `<div class="hist-item hist-${e.tipo}"><div class="hist-hora">${hora}</div><div class="hist-txt">${esc(e.texto)}<div class="hist-quien">${esc(e.quien || "Sin entrenador seleccionado")} · ${esc(e.disp)}${e.pend ? " · ⏳ pendiente de enviar" : ""}</div></div></div>`;
+      html += `<div class="hist-item hist-${e.tipo}"><div class="hist-hora">${hora}</div><div class="hist-txt">${esc(e.texto)}<div class="hist-quien">${esc(nombreDisp(e.disp))}${e.pend ? " · ⏳ pendiente de enviar" : ""}</div></div></div>`;
     });
     box.innerHTML = html;
   }
 
+  // --- Nombres de dispositivos (Historial/dispositivos.json, compartido) ---
+  const NOM_KEY = "NVA_DISP_NOMBRES";
+  let nombres = lsGet(NOM_KEY, {});
+  function nombreDisp(c) { return nombres[c] || c || ""; }
+  function urlNombres(g) { return `https://api.github.com/repos/${g.user}/${g.repo}/contents/${FOLDER}/dispositivos.json`; }
+  async function leerNombres(g) {
+    const r = await origFetch(urlNombres(g), { headers: { Authorization: `token ${g.token}` }, cache: "no-store" });
+    if (r.status === 404) return { sha: "", data: {} };
+    if (!r.ok) throw new Error("GET " + r.status);
+    const j = await r.json();
+    let data = {};
+    try { data = JSON.parse(b64dec(j.content)) || {}; } catch (e) {}
+    return { sha: j.sha, data };
+  }
+
+  window.histConfig = function (abrir) {
+    document.getElementById("histConfig").hidden = !abrir;
+    document.getElementById("histPrincipal").hidden = abrir;
+    if (!abrir) return;
+    const cods = [...new Set(ultimaLista.map(e => e.disp).filter(Boolean).concat(Object.keys(nombres), [deviceId]))].sort();
+    document.getElementById("histDispList").innerHTML = cods.map(c =>
+      `<label class="hist-disp"><span class="hist-disp-cod">${esc(c)}${c === deviceId ? " (este)" : ""}</span><input class="app-input" data-cod="${esc(c)}" value="${esc(nombres[c] || "")}" placeholder="Nombre del dispositivo"></label>`).join("");
+    document.getElementById("histConfEstado").textContent = "";
+  };
+  window.histGuardarNombres = async function () {
+    const est = document.getElementById("histConfEstado");
+    const nuevos = {};
+    document.querySelectorAll("#histDispList input").forEach(i => { const v = i.value.trim(); if (v) nuevos[i.dataset.cod] = v; });
+    const g = gh();
+    est.textContent = "Guardando…";
+    try {
+      if (!navigator.onLine || !g || !g.user || !g.token) throw new Error("offline");
+      for (let intento = 0; intento < 3; intento++) {
+        const { sha, data } = await leerNombres(g);
+        document.querySelectorAll("#histDispList input").forEach(i => { delete data[i.dataset.cod]; });
+        Object.assign(data, nuevos);
+        const body = { message: "Nombres de dispositivos del historial", content: b64enc(JSON.stringify(data, null, 1)) };
+        if (sha) body.sha = sha;
+        const r = await origFetch(urlNombres(g), { method: "PUT", headers: { Authorization: `token ${g.token}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        if (r.ok) { nombres = data; lsSet(NOM_KEY, nombres); histConfig(false); pintar(ultimaLista, ""); return; }
+        if (r.status !== 409 && r.status !== 422) break;
+      }
+      est.textContent = "No se pudo guardar en GitHub. Inténtalo de nuevo.";
+    } catch (e) { est.textContent = "Sin conexión: no se pudo guardar en GitHub."; }
+  };
+
   let ultimaLista = [];
   window.openHistorial = async function () {
     document.getElementById("modalHistorial").classList.add("active");
+    histConfig(false);
     const pendientes = () => lsGet(PEND_KEY, []).map(e => Object.assign({}, e, { pend: true }));
     const mezclar = base => { const m = new Map(base.map(x => [x.id, x])); pendientes().forEach(x => m.set(x.id, x)); return [...m.values()].sort((a, b) => a.t < b.t ? 1 : -1); };
     ultimaLista = mezclar(lsGet(CACHE_KEY, []));
@@ -159,6 +206,7 @@
       const meses = [0, 1].map(i => { const d = new Date(now.getFullYear(), now.getMonth() - i, 1); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); });
       let todos = [];
       for (const m of meses) todos = todos.concat((await leerMes(g, m)).items);
+      try { nombres = (await leerNombres(g)).data; lsSet(NOM_KEY, nombres); } catch (e) {}
       ultimaLista = mezclar(guardarCache(todos));
       pintar(ultimaLista, "");
     } catch (e) { pintar(ultimaLista, "No se pudo leer GitHub: se muestra lo guardado en este dispositivo."); }

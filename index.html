@@ -548,9 +548,23 @@
         <div class="modal-title">📜 Historial de cambios</div>
         <button class="hist-cerrar" onclick="closeHistorial()" aria-label="Cerrar">✕</button>
       </div>
-      <input class="app-input hist-buscar" id="histBuscar" type="search" placeholder="Buscar (texto o entrenador)…" oninput="histBuscar()">
-      <div class="hist-estado" id="histEstado"></div>
-      <div class="hist-list" id="histList"></div>
+      <div class="hist-principal" id="histPrincipal">
+        <div class="hist-barra">
+          <input class="app-input hist-buscar" id="histBuscar" type="search" placeholder="Buscar (texto o dispositivo)…" oninput="histBuscar()">
+          <button class="hist-engranaje" onclick="histConfig(true)" title="Configuración" aria-label="Configuración">⚙️</button>
+        </div>
+        <div class="hist-estado" id="histEstado"></div>
+        <div class="hist-list" id="histList"></div>
+      </div>
+      <div class="hist-config" id="histConfig" hidden>
+        <div class="hist-conf-tit">⚙️ Nombres de los dispositivos</div>
+        <div class="hist-disp-list" id="histDispList"></div>
+        <div class="hist-estado" id="histConfEstado"></div>
+        <div class="hist-conf-btns">
+          <button class="hist-chip" onclick="histConfig(false)">Cancelar</button>
+          <button class="hist-chip on" onclick="histGuardarNombres()">💾 Guardar</button>
+        </div>
+      </div>
     </div>
   </div>
 

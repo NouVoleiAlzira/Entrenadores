@@ -2210,3 +2210,15 @@
   box-shadow: 0 6px 12px -8px rgba(0,0,0,.6);
 }
 .reg-sticky .controls-bar { margin-bottom: 0; }
+
+.hist-principal, .hist-config { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.hist-principal[hidden], .hist-config[hidden] { display: none; }
+.hist-barra { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+.hist-barra .hist-buscar { flex: 1; min-width: 0; margin-bottom: 0; }
+.hist-engranaje { flex: none; width: 42px; height: 42px; border: 1px solid #cbd5e1; background: #fff; border-radius: 10px; font-size: 1.2em; cursor: pointer; }
+.hist-conf-tit { font-weight: 700; color: #0f172a; margin: 4px 0 8px; }
+.hist-disp-list { overflow-y: auto; flex: 1; }
+.hist-disp { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; color: #1e293b; }
+.hist-disp-cod { flex: none; width: 96px; font-size: .85em; font-variant-numeric: tabular-nums; }
+.hist-disp .app-input { flex: 1; min-width: 0; margin: 0; }
+.hist-conf-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
