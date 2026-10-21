@@ -214,5 +214,29 @@
   window.closeHistorial = function () { document.getElementById("modalHistorial").classList.remove("active"); };
   window.histBuscar = function () { pintar(ultimaLista, document.getElementById("histEstado").textContent); };
 
+  // --- Apartado oculto: se muestra/oculta en este dispositivo tocando
+  // 5 veces seguidas el logo de la cabecera en menos de 2 segundos ---
+  const VIS_KEY = "NVA_HIST_VISIBLE";
+  function aplicarVisible() {
+    const sec = document.getElementById("histSeccion");
+    if (sec) sec.hidden = (function () { try { return localStorage.getItem(VIS_KEY) !== "1"; } catch (e) { return true; } })();
+  }
+  let toques = [];
+  document.addEventListener("click", e => {
+    const hd = e.target.closest && e.target.closest("header");
+    if (!hd || e.target.closest("button, a, input")) return;
+    const r = hd.getBoundingClientRect();   // el escudo está centrado en la cabecera (230px)
+    if (Math.hypot(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height / 2)) > 120) return;
+    const now = Date.now();
+    toques = toques.filter(t => now - t < 2000);
+    toques.push(now);
+    if (toques.length < 5) return;
+    toques = [];
+    try { localStorage.setItem(VIS_KEY, localStorage.getItem(VIS_KEY) === "1" ? "0" : "1"); } catch (e) {}
+    aplicarVisible();
+    if (navigator.vibrate) navigator.vibrate(80);
+  }, true);
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", aplicarVisible); else aplicarVisible();
+
   programarEnvio(5000);
 })();
