@@ -458,9 +458,13 @@
       }
     });
   }
+  let warnResizeTimer = null;   // se agrupa: solo se recalcula al terminar de cambiar el tamaño
   window.addEventListener("resize", () => {
-    const el = document.getElementById("screenWarnings");
-    if (el && el.classList.contains("active")) setupWarningMarquees();
+    clearTimeout(warnResizeTimer);
+    warnResizeTimer = setTimeout(() => {
+      const el = document.getElementById("screenWarnings");
+      if (el && el.classList.contains("active")) setupWarningMarquees();
+    }, 150);
   });
 
   function toggleWarningPlayer(playerName) {
@@ -3277,6 +3281,33 @@
     return null;
   }
 
+  // Lee el JSON de un fichero que viene de listGitHubFolder. El listado trae
+  // el "sha" (huella) de cada fichero: si ya se descargó esa misma versión,
+  // se usa la copia guardada en el dispositivo y no se pide a GitHub. Así cada
+  // sincronización solo descarga los ficheros nuevos o modificados.
+  // Devuelve null si GitHub responde con error (igual que antes).
+  const GH_SHA_CACHE = "ghsha-v1";   // sin prefijo "nva-": sw.js no la borra al cambiar de versión
+  async function readListedGitHubJson(file, headers) {
+    const key = file.sha ? `https://nva-cache.local/sha/${file.sha}` : null;
+    let cache = null;
+    if (key && typeof caches !== "undefined") {
+      try {
+        cache = await caches.open(GH_SHA_CACHE);
+        const hit = await cache.match(key);
+        if (hit) return JSON.parse(await hit.text());
+      } catch (e) { cache = null; }
+    }
+    const res = await fetch(file.url, { headers, cache: "no-store" });
+    if (!res.ok) return null;
+    const json = await res.json();
+    const text = b64_to_utf8(json.content);
+    const parsed = JSON.parse(text);
+    if (cache && json.sha === file.sha) {
+      try { await cache.put(key, new Response(text, { headers: { "Content-Type": "application/json" } })); } catch (e) {}
+    }
+    return parsed;
+  }
+
   // Los entrenamientos se guardan como un fichero por equipo y por fecha
   // dentro de la carpeta "registros/" (p.ej. Entrenamientos_NVA_Alevin_2026-09-15.json).
   // En lugar de intentar adivinar el nombre exacto del fichero a partir del
@@ -3299,10 +3330,7 @@
     const relevantFiles = files.filter(file => file.name && file.name.startsWith("Entrenamientos_") && file.name.endsWith(".json"));
     const results = await Promise.all(relevantFiles.map(async file => {
       try {
-        const res = await fetch(file.url, { headers, cache: "no-store" });
-        if (!res.ok) return null;
-        const json = await res.json();
-        return JSON.parse(b64_to_utf8(json.content));
+        return await readListedGitHubJson(file, headers);
       } catch (e) {
         console.error(`Error al leer ${file.name}:`, e);
         return null;
@@ -3404,10 +3432,8 @@
 
     const warningResults = await Promise.all(relevantWarningFiles.map(async file => {
       try {
-        const res = await fetch(file.url, { headers, cache: "no-store" });
-        if (!res.ok) return { ok: false };
-        const json = await res.json();
-        const teamWarnings = JSON.parse(b64_to_utf8(json.content));
+        const teamWarnings = await readListedGitHubJson(file, headers);
+        if (teamWarnings === null) return { ok: false };
         return { ok: true, teamWarnings };
       } catch (e) {
         console.error(`Error al leer ${file.name}:`, e);
@@ -4185,7 +4211,9 @@
       const m = wkMarkFor(x, opts._mon, opts._logSet, opts._now);
       if (m === "V") ok++; else if (m === "X") miss++;
     });
-    document.getElementById("wkSummary").innerHTML = `Con registro: <b>${ok}</b> · Sin registro: <b>${miss}</b>`;
+    const nOk = document.getElementById("wkCountV"), nMiss = document.getElementById("wkCountX");
+    if (nOk) nOk.textContent = ok;
+    if (nMiss) nMiss.textContent = miss;
   }
   function wkMove(delta) { wkOffset += delta; renderWeekCalendar(); }
 
@@ -4617,10 +4645,7 @@
     const relevantMatchFiles = files.filter(file => file.name && file.name.startsWith("Partidos_") && file.name.endsWith(".json"));
     const matchResults = await Promise.all(relevantMatchFiles.map(async file => {
       try {
-        const res = await fetch(file.url, { headers, cache: "no-store" });
-        if (!res.ok) return null;
-        const json = await res.json();
-        return JSON.parse(b64_to_utf8(json.content));
+        return await readListedGitHubJson(file, headers);
       } catch (e) {
         console.error(`Error al leer ${file.name}:`, e);
         return null;

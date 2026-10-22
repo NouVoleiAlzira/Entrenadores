@@ -105,11 +105,10 @@
         <button class="wk-nav-btn wk-nav-prev" onclick="wkMove(-1)" aria-label="Semana anterior">‹</button>
         <button class="wk-nav-btn wk-nav-next" onclick="wkMove(1)" aria-label="Semana siguiente">›</button>
       </div>
-      <div class="wk-legend">
-        <span><b class="wk-mark wk-v">V</b> con registro</span>
-        <span><b class="wk-mark wk-x">X</b> sin registro</span>
+      <div class="wk-legend" id="wkSummary">
+        <span><b class="wk-mark wk-v">V</b> con registro:&nbsp;<b id="wkCountV">0</b></span>
+        <span><b class="wk-mark wk-x">X</b> sin registro:&nbsp;<b id="wkCountX">0</b></span>
       </div>
-      <div class="wk-summary" id="wkSummary"></div>
     </div>
 
     <!-- ===== Sección plegable: Entrenamientos y Partidos ===== -->
