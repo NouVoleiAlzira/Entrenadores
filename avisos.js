@@ -142,7 +142,8 @@
     const g = gh();
     const sel = [...document.querySelectorAll("#avRes input[data-id]:checked")].map(i => i.dataset.id);
     if (!sel.length) { est.textContent = "No hay ningún entrenador marcado."; return; }
-    est.textContent = "Guardando avisos…";
+    est.textContent = "Enviando avisos…";
+    document.getElementById("avEnviar").disabled = true;
     try {
       for (let intento = 0; intento < 3; intento++) {
         const { sha, data } = await leer(g, AV_FILE);
@@ -152,11 +153,21 @@
         const body = { message: "Avisos de registros pendientes", content: b64enc(JSON.stringify({ avisos: av }, null, 1)) };
         if (sha) body.sha = sha;
         const r = await fetch(url(g, AV_FILE), { method: "PUT", headers: { Authorization: `token ${g.token}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
-        if (r.ok) { est.textContent = "✅ Aviso guardado para: " + sel.map(id => resultado[id].nombre).join(", ") + ". Les saldrá al abrir la app en su dispositivo."; document.getElementById("avEnviar").hidden = true; return; }
+        if (r.ok) {
+          const nombresSel = sel.map(id => resultado[id].nombre).join(", ");
+          est.textContent = "";
+          document.getElementById("avEnviar").hidden = true;
+          document.getElementById("avRes").innerHTML = `<div style="margin-top:10px;padding:14px;border-radius:10px;background:#dcfce7;color:#14532d;border:1px solid #86efac;text-align:center;font-size:1em;">✅ <b>Aviso enviado</b><br>Para: ${esc(nombresSel)}.<br>Les saldrá al abrir la app en su dispositivo.</div>`;
+          document.getElementById("avRes").scrollIntoView({ block: "nearest" });
+          alert("✅ Aviso enviado a: " + nombresSel);
+          return;
+        }
         if (r.status !== 409 && r.status !== 422) break;
       }
-      est.textContent = "No se pudo guardar en GitHub. Inténtalo de nuevo.";
-    } catch (e) { est.textContent = "No se pudo guardar: " + e.message; }
+      est.textContent = "";
+      alert("❌ No se pudo enviar el aviso. Inténtalo de nuevo.");
+    } catch (e) { est.textContent = ""; alert("❌ No se pudo enviar el aviso: " + e.message); }
+    finally { document.getElementById("avEnviar").disabled = false; }
   };
 
   // ---------- Al abrir la app: aviso al entrenador de este dispositivo ----------

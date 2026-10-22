@@ -2421,6 +2421,84 @@
           <div class="att-counters hist-hexes">${hexes}</div>`;
   }
 
+  // ---- Fechas de registro / modificación de cada registro ----
+  // Se guardan en el JSON (registrado, modificado). Para registros antiguos sin
+  // esas fechas se deducen del historial de commits del fichero en GitHub.
+  function stampLogDates(entry, prev) {
+    const now = new Date().toISOString();
+    if (prev && prev.registrado) {
+      entry.registrado = prev.registrado;
+      entry.modificado = now;
+    } else if (prev) {
+      entry.modificado = now; // registro antiguo: la creación sale de GitHub
+    } else {
+      entry.registrado = now;
+    }
+  }
+
+  (function () {
+    const st = document.createElement("style");
+    st.textContent = ".hist-fecha-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.hist-reg-fechas{font-size:0.68rem;line-height:1.3;color:#475569;font-weight:500}";
+    document.head.appendChild(st);
+  })();
+
+  function fmtLogDate(iso) {
+    const d = new Date(iso);
+    if (isNaN(d)) return "";
+    const p = n => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}H`;
+  }
+
+  function logDatesKey(log, kind) { return `${kind}|${log.equipo}|${log.fecha}`; }
+  function logDatesCache() { try { return JSON.parse(localStorage.getItem("NVA_REG_FECHAS") || "{}"); } catch (e) { return {}; } }
+
+  function logDatesResolved(log, kind) {
+    const c = logDatesCache()[logDatesKey(log, kind)] || {};
+    const reg = log.registrado || c.registrado || "";
+    let mod = log.modificado || "";
+    if (c.modificado && (!mod || c.modificado > mod)) mod = c.modificado;
+    if (mod && reg && Math.abs(new Date(mod) - new Date(reg)) < 60000) mod = "";
+    return { reg, mod };
+  }
+
+  function logDatesInner(log, kind) {
+    const { reg, mod } = logDatesResolved(log, kind);
+    return (reg ? `<div>Registro: ${fmtLogDate(reg)}</div>` : "") + (mod ? `<div>Modificado: ${fmtLogDate(mod)}</div>` : "");
+  }
+
+  function logDatesHtml(log, kind) {
+    return `<div class="hist-reg-fechas" data-regkey="${escapeHtml(logDatesKey(log, kind))}">${logDatesInner(log, kind)}</div>`;
+  }
+
+  async function fillLogDatesFromCommits(logs, kind) {
+    if (!ghSettings.user || !ghSettings.repo || !navigator.onLine) return;
+    const cache = logDatesCache();
+    const pending = logs.filter(l => !l.registrado && !cache[logDatesKey(l, kind)]);
+    if (!pending.length) return;
+    const headers = {};
+    if (ghSettings.token) headers["Authorization"] = `token ${ghSettings.token}`;
+    await Promise.all(pending.map(async log => {
+      const path = kind === "match"
+        ? `${MATCH_LOGS_FOLDER}/Partidos_${sanitizeFileName(log.equipo)}_${log.fecha}.json`
+        : `${TRAINING_LOGS_FOLDER}/Entrenamientos_${sanitizeFileName(log.equipo)}_${log.fecha}.json`;
+      try {
+        const r = await fetch(`https://api.github.com/repos/${ghSettings.user}/${ghSettings.repo}/commits?path=${encodeURIComponent(path)}&per_page=100`, { headers, cache: "no-store" });
+        if (!r.ok) return;
+        const commits = await r.json();
+        if (!Array.isArray(commits) || !commits.length) return;
+        const dateOf = c => (c.commit && (c.commit.author || c.commit.committer) || {}).date;
+        const info = { registrado: dateOf(commits[commits.length - 1]) };
+        if (commits.length > 1) info.modificado = dateOf(commits[0]);
+        cache[logDatesKey(log, kind)] = info;
+      } catch (e) { /* sin conexión: se intentará otra vez */ }
+    }));
+    try { localStorage.setItem("NVA_REG_FECHAS", JSON.stringify(cache)); } catch (e) {}
+    pending.forEach(log => {
+      const el = document.querySelector(`.hist-reg-fechas[data-regkey="${CSS.escape(logDatesKey(log, kind))}"]`);
+      if (el) el.innerHTML = logDatesInner(log, kind);
+    });
+  }
+
   function historyMoreButton(container, shown, total, onMore) {
     if (shown >= total) return;
     const b = document.createElement("button");
@@ -2470,7 +2548,7 @@
       card.className = "history-card";
       card.innerHTML = `
         <div>
-          <div style="font-weight:700; font-size:0.85rem; color:var(--azul-dark);">📅 ${escapeHtml(log.fecha)}</div>
+          <div class="hist-fecha-row"><div style="font-weight:700; font-size:0.85rem; color:var(--azul-dark);">📅 ${escapeHtml(log.fecha)}</div>${logDatesHtml(log, 'train')}</div>
           ${historyLogSummaryHtml(log, 'train')}
         </div>
         <div class="history-actions">
@@ -2481,6 +2559,7 @@
       container.appendChild(card);
     });
     historyMoreButton(container, historyLimit, teamLogs.length, () => { historyLimit += HISTORY_PAGE; renderHistoryList(); });
+    fillLogDatesFromCommits(teamLogs.slice(0, historyLimit), 'train');
   }
 
   function loadRecordForEditing(fecha) {
@@ -3155,6 +3234,7 @@
       entrenador: currentCoach ? currentCoach.name : "",
       jugadores: playersForSave(sessionData)
     };
+    stampLogDates(logEntry, allTrainingLogs.find(l => l.equipo === currentTeam && l.fecha === dateVal));
 
     const existingIndex = allTrainingLogs.findIndex(l => l.equipo === currentTeam && l.fecha === dateVal);
     if (existingIndex >= 0) {
@@ -4472,6 +4552,7 @@
       jugadores: playersForSave(matchData),
       marcador: marcador
     };
+    stampLogDates(logEntry, prevLog);
 
     const existingIndex = allMatchLogs.findIndex(l => l.equipo === currentTeam && l.fecha === dateVal);
     if (existingIndex >= 0) {
@@ -4572,7 +4653,7 @@
       card.className = "history-card";
       card.innerHTML = `
         <div>
-          <div style="font-weight:700; font-size:0.85rem; color:var(--azul-dark);">📅 ${escapeHtml(log.fecha)}</div>
+          <div class="hist-fecha-row"><div style="font-weight:700; font-size:0.85rem; color:var(--azul-dark);">📅 ${escapeHtml(log.fecha)}</div>${logDatesHtml(log, 'match')}</div>
           ${historyLogSummaryHtml(log, 'match')}
           ${resultHtml}
         </div>
@@ -4584,6 +4665,7 @@
       container.appendChild(card);
     });
     historyMoreButton(container, matchHistoryLimit, teamLogs.length, () => { matchHistoryLimit += HISTORY_PAGE; renderMatchHistoryList(); });
+    fillLogDatesFromCommits(teamLogs.slice(0, matchHistoryLimit), 'match');
   }
 
   function loadMatchRecordForEditing(fecha) {

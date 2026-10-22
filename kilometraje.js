@@ -16,7 +16,7 @@
   // ---------- Campo del partido -> fila de la matriz (búsqueda flexible) ----------
   const VACIAS = new Set(["pab", "pav", "pabellon", "pavello", "mun", "municipal", "polid", "polideportivo", "poliesportiu", "de", "del", "la", "el", "l", "d", "les", "els", "c", "e", "p", "m", "ies", "col", "colegio", "cp", "y", "i", "pista", "pistas", "gimnasio"]);
   const fichas = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ").split(" ").filter(w => w.length > 1 && !VACIAS.has(w));
+    .replace(/ny/g, "n").replace(/[^a-z0-9]+/g, " ").split(" ").filter(w => w.length > 1 && !VACIAS.has(w));
   let FICHAS_CAMPOS = CAMPOS.map(fichas);
 
   // ---------- Matriz actualizada desde el Excel (opcional) ----------
@@ -112,10 +112,11 @@
       const t = cp.teams[e.teamKey];
       (t && t.matches || []).forEach(m => {
         if (!dentro(m.date) || /DESCANSA/i.test(m.rival || "")) return;
-        const home = m.home === true || /PALAU/i.test(m.venue || "");
+        // Los km salen del pabellón del partido, no de si el PDF lo pone como local
+        const home = m.venue ? /PALAU/i.test(m.venue) : m.home === true;
         const c = campoDe(Object.assign({}, m, { home }));
         out.push({ id: e.teamKey + "|" + m.date + "|" + m.time + "|" + m.rival, key: e.teamKey, coach: coach.name, sust: !propio, equipo: e.name,
-          date: m.date, time: m.time && m.time !== "00:00" ? m.time : "", rival: m.rival || "", home, venue: home ? CAMPOS[CASA] : (m.venue || ""),
+          date: m.date, time: m.time && m.time !== "00:00" ? m.time : "", rival: m.rival || "", home, local: m.home === true, venue: home ? CAMPOS[CASA] : (m.venue || ""),
           campo: c, kmMano: "", sel: propio, chain: false, salida: CASA });
       });
     });
@@ -254,7 +255,7 @@
         <span title="Sin registro del partido">🔒</span>
         <div>
           <div class="km-t"><b>${esc(fmtDia(f.date))}${f.time ? " · " + esc(f.time) : ""}</b> · ${esc(f.equipo)}</div>
-          <div class="km-t">${f.home ? "🏠 vs " : "🚌 en "}${esc(f.rival)}${f.sust ? ` (sustituyendo a ${esc(f.coach)})` : ""}</div>
+          <div class="km-t">${(f.local ?? f.home) ? "🏠 vs " : "🚌 en "}${esc(f.rival)}${f.sust ? ` (sustituyendo a ${esc(f.coach)})` : ""}</div>
           <div class="km-s">Sin registro del partido: sus km no cuentan.</div>
           <button type="button" class="km-reg">📝 Hacer registro</button>
         </div>
@@ -266,7 +267,7 @@
         <input type="checkbox" class="km-sel" ${f.sel ? "checked" : ""}>
         <div>
           <div class="km-t"><b>${esc(fmtDia(f.date))}${f.time ? " · " + esc(f.time) : ""}</b> · ${esc(f.equipo)}</div>
-          ${f.evento ? `<div class="km-t">📌 ${esc(f.concepto)}${f.campo < 0 && f.ciudad ? " · " + esc(f.ciudad) : ""} <button type="button" class="km-ev-del" title="Quitar evento" style="background:none;border:0;color:var(--niebla);cursor:pointer;font-size:0.75rem">✕</button></div>` : `<div class="km-t">${f.home ? "🏠 vs " : "🚌 en "}${esc(f.rival)}${f.sust ? ` <span class="km-aviso">(sustituyendo a ${esc(f.coach)})</span>` : ""}</div>`}
+          ${f.evento ? `<div class="km-t">📌 ${esc(f.concepto)}${f.campo < 0 && f.ciudad ? " · " + esc(f.ciudad) : ""} <button type="button" class="km-ev-del" title="Quitar evento" style="background:none;border:0;color:var(--niebla);cursor:pointer;font-size:0.75rem">✕</button></div>` : `<div class="km-t">${(f.local ?? f.home) ? "🏠 vs " : "🚌 en "}${esc(f.rival)}${f.sust ? ` <span class="km-aviso">(sustituyendo a ${esc(f.coach)})</span>` : ""}</div>`}
           ${f.home ? "" : `<select class="km-campo" title="Campo del partido">${opcionesCampos(f.campo, true)}</select>${f.campo < 0 && f.venue ? `<div class="km-s">PDF: ${esc(f.venue)}</div>` : ""}`}
           ${f.sel && !f._encadenado ? `<div class="km-s">Salida: <select class="km-salida">${opcionesCampos(f.salida, false)}</select></div>` : ""}
           ${f.sel ? `<div class="km-s">${f._ruta.map(esc).join(" → ")}</div>` : ""}
@@ -471,7 +472,7 @@
       let yy = filaCab(36);
       pdf.setFontSize(8);
       s.forEach((f, i) => {
-        const partido = f.evento ? f.concepto : (f.home ? "vs " : "en ") + f.rival + (f.sust ? ` (sust. a ${f.coach})` : "");
+        const partido = f.evento ? f.concepto : ((f.local ?? f.home) ? "vs " : "en ") + f.rival + (f.sust ? ` (sust. a ${f.coach})` : "");
         const celdas = [new Date(f.date + "T12:00:00").toLocaleDateString("es-ES"), f.time || "-", f.equipo, partido, f._ruta.join(" > "), f._km.toFixed(1).replace(".", ",")];
         const lineas = celdas.map((t, k) => pdf.splitTextToSize(String(t), cols[k].w - 3));
         const h = Math.max(...lineas.map(l => l.length)) * 3.6 + 2.4;
