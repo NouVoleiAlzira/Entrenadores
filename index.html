@@ -99,6 +99,7 @@
     <!-- ===== Sección plegable: Calendario semanal ===== -->
     <div class="section-title section-toggle" id="secHead_wk" role="button" tabindex="0" aria-expanded="true" aria-controls="secBody_wk" onclick="toggleSection('wk')" onkeydown="sectionKey(event,'wk')">Calendario semanal <span class="sec-arrow">▾</span></div>
     <div class="section-body" id="secBody_wk">
+      <div class="anul-barra" id="anulBarra" hidden>🚫 <span>Modo anulación: toca un entrenamiento o la cabecera de un día para anularlo o reactivarlo.</span> <button onclick="nvaDeselEntrenos()">Terminar</button></div>
       <div class="wk-canvas-wrap">
         <canvas id="wkCanvas" class="wk-canvas" onclick="wkCanvasClick(event)" oncontextmenu="return false;" title="Toca un entrenamiento para abrir su registro. Mantén pulsado para borrarlo."></canvas>
         <button class="wk-nav-btn wk-nav-prev" onclick="wkMove(-1)" aria-label="Semana anterior">‹</button>
@@ -175,9 +176,13 @@
     <button class="btn-pdf-mode2" style="margin-bottom:20px;" onclick="openHorarios()">🗓️ Horarios</button>
 
     <div id="histSeccion" hidden>
-    <div class="section-subtitle">Historial de cambios</div>
+    <div class="section-subtitle">Control de registros</div>
     <button class="btn-pdf-mode2" style="margin-bottom:10px;" onclick="openHistorial()">📜 Historial de cambios</button>
-    <button class="btn-pdf-mode2" style="margin-bottom:20px;" onclick="openAvisos()">⚠️ Mensaje de aviso</button>
+    <button class="btn-pdf-mode2" style="margin-bottom:10px;" onclick="openAvisos()">⚠️ Mensaje de aviso</button>
+    <div style="display:flex; gap:8px; margin-bottom:20px;">
+      <button class="btn-pdf-mode2" id="btnDeselEntrenos" style="flex:1; min-width:0; margin-bottom:0;" onclick="nvaDeselEntrenos()">🚫 Deselección entrenamientos</button>
+      <button class="btn-pdf-mode2" style="flex:1; min-width:0; margin-bottom:0;" onclick="openDeselPartidos()">🚫 Deselección partidos</button>
+    </div>
     </div>
     </div>
 
@@ -544,6 +549,23 @@
     </div>
   </div>
 
+  <!-- MODAL: DESELECCIÓN DE PARTIDOS (anulaciones.js) -->
+  <div class="modal-backdrop" id="modalDeselPartidos" onclick="if(event.target===this)closeDeselPartidos()">
+    <div class="modal-box hist-box">
+      <div class="modal-header">
+        <div class="modal-title">🚫 Deselección partidos</div>
+        <button class="hist-cerrar" onclick="closeDeselPartidos()" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="av-semanas">
+        <button class="hist-chip anul-sem" data-s="-1" onclick="anulSemana(-1)">◀ Semana anterior</button>
+        <button class="hist-chip anul-sem on" data-s="0" onclick="anulSemana(0)">Esta semana</button>
+      </div>
+      <div class="hist-estado" id="anulSemTxt"></div>
+      <p class="hist-estado">Marca los partidos que se han anulado: no se pedirá su registro.</p>
+      <div class="hist-list" id="anulPartidos"></div>
+    </div>
+  </div>
+
   <!-- MODAL: MENSAJE DE AVISO (avisos.js) -->
   <div class="modal-backdrop" id="modalAvisos" onclick="if(event.target===this)closeAvisos()">
     <div class="modal-box hist-box">
@@ -903,6 +925,7 @@
 <script src="app.js" defer></script>
 <script src="registro.js" defer></script>
 <script src="avisos.js" defer></script>
+<script src="anulaciones.js" defer></script>
 <script src="calendario-partidos.js" defer></script>
 <script src="importar-datos.js" defer></script>
 <script src="carteles-auto.js" defer></script>

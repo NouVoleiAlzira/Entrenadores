@@ -2241,3 +2241,19 @@
 .av-sin { color: #b45309; font-size: .85em; }
 .av-ok { color: #15803d; font-size: .85em; margin-top: 8px; }
 .av-aviso { color: #1e293b; }
+
+/* ===== Anulaciones (anulaciones.js) ===== */
+.anul-barra { display: flex; align-items: center; gap: 8px; background: #fef3c7; color: #78350f; border: 1px solid #f59e0b; border-radius: 10px; padding: 8px 10px; margin-bottom: 8px; font-size: .85em; }
+.anul-barra span { flex: 1; }
+.anul-barra button { background: #b45309; color: #fff; border: 0; border-radius: 8px; padding: 6px 10px; font-weight: 700; cursor: pointer; }
+.anul-barra[hidden] { display: none; }
+#btnDeselEntrenos.anul-on { outline: 3px solid #f59e0b; }
+.anul-part { display: flex; gap: 10px; align-items: flex-start; padding: 8px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 6px; color: #1e293b; font-size: .88em; cursor: pointer; }
+.anul-part input { margin-top: 3px; transform: scale(1.2); }
+.anul-part em { font-style: normal; color: #15803d; font-size: .9em; }
+.anul-part .anul-tag { color: #b91c1c; font-weight: 700; }
+.anul-si { background: repeating-linear-gradient(45deg, #fff, #fff 8px, #f1f5f9 8px, #f1f5f9 16px); }
+.anul-reg { opacity: .6; }
+.hist-deshacer { margin-top: 4px; background: #fff; border: 1px solid #cbd5e1; color: #1e293b; border-radius: 999px; padding: 3px 10px; font-size: .8em; cursor: pointer; }
+.hist-deshecho { margin-top: 4px; font-size: .78em; color: #64748b; font-style: italic; }
+.hist-anulacion .hist-txt { font-weight: 600; }

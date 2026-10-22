@@ -21,6 +21,9 @@
     try { if (typeof getCoachTeamEntries === "function") return getCoachTeamEntries(c); } catch (e) {}
     return (c.teams || []).map(t => ({ teamKey: t, name: t }));
   }
+  // Entrenamientos y partidos anulados (anulaciones.js) no cuentan
+  function anulE(team, date) { return !!(window.nvaEntrenoAnulado && window.nvaEntrenoAnulado(team, date)); }
+  function anulP(team, date, rival) { return !!(window.nvaPartidoAnulado && window.nvaPartidoAnulado(team, date, rival)); }
   function url(g, path) { return `https://api.github.com/repos/${g.user}/${g.repo}/contents/${path}`; }
 
   // Devuelve el fichero JSON (o null si no existe)
@@ -98,8 +101,8 @@
         fechas.forEach(f => {
           const dow = (new Date(f + "T12:00:00").getDay() + 6) % 7 + 1;   // 1 = lunes
           const tr = (hz[e.teamKey] || []).filter(t => Number(t.day) === dow).sort((a, b) => a.start < b.start ? -1 : 1);
-          if (tr.length) items.push({ tipo: "train", team: e.teamKey, equipo: e.name, date: f, hora: tr[0].start });
-          ((teams[e.teamKey] || {}).matches || []).filter(m => m.date === f && !/DESCANSA/i.test(m.rival || "")).forEach(m =>
+          if (tr.length && !anulE(e.teamKey, f)) items.push({ tipo: "train", team: e.teamKey, equipo: e.name, date: f, hora: tr[0].start });
+          ((teams[e.teamKey] || {}).matches || []).filter(m => m.date === f && !/DESCANSA/i.test(m.rival || "") && !anulP(e.teamKey, f, m.rival || "")).forEach(m =>
             items.push({ tipo: "match", team: e.teamKey, equipo: e.name, date: f, hora: m.time && m.time !== "00:00" ? m.time : "", rival: m.rival || "" }));
         });
         tareas.push(...items);
@@ -177,13 +180,14 @@
     if (!navigator.onLine || !g || !g.user || !g.token) return;
     try {
       if (window.nvaRecargarDispositivos) await window.nvaRecargarDispositivos();
+      if (window.nvaRecargarAnulaciones) await window.nvaRecargarAnulaciones();
       const id = window.nvaEntrenadorDelDispositivo && window.nvaEntrenadorDelDispositivo();
       if (id == null || id === "") return;
       const { data } = await leer(g, AV_FILE);
       const av = data && data.avisos && data.avisos[id];
       if (!av || !(av.items || []).length) return;
       const ok = await enLotes(av.items, it => registrado(g, it).catch(() => false), 6);
-      const pend = av.items.filter((it, i) => !ok[i]);
+      const pend = av.items.filter((it, i) => !ok[i] && !(it.tipo === "match" ? anulP(it.team, it.date, it.rival || "") : anulE(it.team, it.date)));
       if (!pend.length) return;
       const c = coaches().find(x => String(x.id) === String(id));
       document.getElementById("avAvisoTxt").innerHTML =

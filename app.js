@@ -4130,12 +4130,28 @@
     d.setDate(d.getDate() - ((d.getDay() + 6) % 7) + offset * 7);
     return d;
   }
+  // Rayas diagonales sobre un polígono (entrenamiento o día anulado)
+  function wkStripes(ctx, pts) {
+    ctx.save();
+    ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.clip();
+    const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+    const x = Math.min(...xs), y = Math.min(...ys), w = Math.max(...xs) - x, h = Math.max(...ys) - y;
+    ctx.fillStyle = "rgba(255,255,255,0.45)"; ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = "rgba(0,0,0,0.75)"; ctx.lineWidth = 5;
+    ctx.beginPath();
+    for (let k = -h; k < w + h; k += 22) { ctx.moveTo(x + k, y + h); ctx.lineTo(x + k + h, y); }
+    ctx.stroke();
+    ctx.restore();
+  }
+  function wkAnulado(key, dateStr) { return !!(window.nvaEntrenoAnulado && window.nvaEntrenoAnulado(key, dateStr)); }
   function wkMarkFor(x, mon, logSet, now) {
     const d = new Date(mon); d.setDate(mon.getDate() + x.day - 1);
+    if (wkAnulado(x.key, wkFmt(d))) return null;
     if (logSet.has(`${x.key}|${wkFmt(d)}`)) return "V";
     const end = new Date(d); end.setHours(Math.floor(x.e / 60), x.e % 60, 0, 0);
     return end <= now ? "X" : null;
   }
+  let wkDayHits = [];     // cabeceras de los días (modo anulación)
   let wkHits = [];        // geometría de los entrenamientos dibujados (para detectar el toque)
   let wkShownMonday = null;
 
@@ -4149,7 +4165,9 @@
       subtitle: `Semana del ${mon.getDate()} ${WK_MONTHS[mon.getMonth()]} al ${fri.getDate()} ${WK_MONTHS[fri.getMonth()]} ${fri.getFullYear()}`,
       dayLabels,
       mark: x => wkMarkFor(x, mon, logSet, now),
-      hits: [],
+      anulado: x => { const d = new Date(mon); d.setDate(mon.getDate() + x.day - 1); return wkAnulado(x.key, wkFmt(d)); },
+      diaAnulado: day => { const d = new Date(mon); d.setDate(mon.getDate() + day - 1); return !!(window.nvaDiaAnulado && window.nvaDiaAnulado(wkFmt(d))); },
+      hits: [], dayHits: [],
       _mon: mon, _logSet: logSet, _now: now
     };
   }
@@ -4160,6 +4178,7 @@
     const opts = wkOpts();
     hzDrawSchedule(canvas, opts);
     wkHits = opts.hits;
+    wkDayHits = opts.dayHits;
     wkShownMonday = opts._mon;
     let ok = 0, miss = 0;
     hzBuildModel().sessions.forEach(x => {
@@ -4200,6 +4219,17 @@
   // Toque sobre la imagen: si cae en un entrenamiento, se abre su registro
   function wkCanvasClick(ev) {
     if (wkSuppressClick) { wkSuppressClick = false; return; }
+    // Modo «Deselección entrenamientos» (anulaciones.js): toque = anular / reactivar
+    if (window.nvaModoAnular && window.nvaModoAnular()) {
+      const canvas = document.getElementById("wkCanvas");
+      const r = canvas.getBoundingClientRect();
+      const px = (ev.clientX - r.left) * canvas.width / r.width, py = (ev.clientY - r.top) * canvas.height / r.height;
+      const dh = wkDayHits.find(h => px >= h.x && px <= h.x + h.w && py >= h.y && py <= h.y + h.h);
+      if (dh) { const d = new Date(wkShownMonday); d.setDate(d.getDate() + dh.day - 1); window.nvaToggleDia(wkFmt(d)); return; }
+      const hit = wkHitFromPoint(ev.clientX, ev.clientY);
+      if (hit) window.nvaToggleEntreno(hit.key, hit.date);
+      return;
+    }
     const hit = wkHitFromPoint(ev.clientX, ev.clientY);
     if (hit) wkOpenTraining(hit.key, hit.date);
   }
@@ -4219,6 +4249,7 @@
       start = { x: ev.clientX, y: ev.clientY };
       timer = setTimeout(() => {
         timer = null;
+        if (window.nvaModoAnular && window.nvaModoAnular()) return;
         const hit = wkHitFromPoint(start.x, start.y);
         if (!hit) return;
         wkSuppressClick = true;
@@ -5899,6 +5930,8 @@
       const n = colsPerDay[di], x0 = xOfCol(ci), w = n * colW;
       cell(x0, tableY, w, hDay, "#a6a6a6");
       cellText(HZ_DAYS[di].toUpperCase() + (opts.dayLabels ? " " + opts.dayLabels[di] : ""), x0, tableY, w, hDay, 46, 800);
+      if (opts.dayHits) opts.dayHits.push({ x: x0, y: tableY, w, h: hDay, day: di + 1 });
+      if (opts.diaAnulado && opts.diaAnulado(di + 1)) wkStripes(ctx, [[x0, tableY], [x0 + w, tableY], [x0 + w, tableY + hDay], [x0, tableY + hDay]]);
       if (!d.cols.length) {
         cell(x0, tableY + hDay, w, hVen + hCrt, "#cfcfcf");
         cellText("SIN PISTA", x0, tableY + hDay, w, hVen + hCrt, 26, 700);
@@ -5981,8 +6014,12 @@
           parts.push({ text: `(${hzM2T(x.s)}-${hzM2T(x.e)})`, mult: 0.72, weight: 700 });
           if (opts.hits) opts.hits.push({ pts: [[x0, yTL], [x1, yTR], [x1, yBR], [x0, yBL]], key: x.key, day: x.day });
 
+          // Entrenamiento anulado (anulaciones.js): rayas diagonales y sin marca
+          const anul = opts.anulado ? opts.anulado(x) : false;
+          if (anul) wkStripes(ctx, [[x0, yTL], [x1, yTR], [x1, yBR], [x0, yBL]]);
+
           // Marca V / X (solo en el calendario semanal de la página principal)
-          const markCh = opts.mark ? opts.mark(x) : null;
+          const markCh = opts.mark && !anul ? opts.mark(x) : null;
           const mr = markCh ? Math.max(12, Math.min(28, (yBR - yTL) * 0.22)) : 0;
           const reserve = markCh && (bBot - bTop) > 2 * mr + 70 ? 2 * mr + 6 : 0;
           const fit = hzFitText(ctx, parts, bW, bBot - bTop - 6 - reserve, 46, 11);

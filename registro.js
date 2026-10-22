@@ -39,12 +39,13 @@
     return s ? s.textContent.replace(/[▾➤]/g, "").trim() : "";
   }
 
-  function registrar(tipo, texto) {
+  function registrar(tipo, texto, extra) {
     texto = String(texto || "").replace(/\s+/g, " ").trim();
     if (!texto) return;
     const e = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), t: new Date().toISOString(), tipo, texto: texto.slice(0, 200), quien: quien(), disp: deviceId, pant: pantalla() };
+    if (extra) e.extra = extra;
     const pend = lsGet(PEND_KEY, []); pend.push(e); lsSet(PEND_KEY, pend);
-    programarEnvio();
+    programarEnvio(tipo === "anulacion" ? 3000 : undefined);
   }
   window.nvaRegistrar = registrar;
 
@@ -126,12 +127,26 @@
   const filtro = "guardado"; // solo cambios en registros (las acciones antiguas de clics se ocultan)
   function esc(s) { return String(s || "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
 
+  // Botón «Deshacer» en los cambios de anulación (anulaciones.js)
+  let porId = {};
+  function deshacerHtml(e) {
+    if (!e.extra || !e.extra.deshacer) return "";
+    porId[e.id] = e;
+    if (window.nvaAccionDeshecha && window.nvaAccionDeshecha(e.id)) return '<div class="hist-deshecho">↩ Deshecho</div>';
+    return `<button class="hist-deshacer" onclick="histDeshacer('${e.id}')">↩ Deshacer</button>`;
+  }
+  window.histDeshacer = async function (id) {
+    if (!window.nvaDeshacer || !porId[id]) return;
+    window.nvaDeshacer(porId[id]);
+    setTimeout(() => pintar(ultimaLista.concat(lsGet(PEND_KEY, []).map(x => Object.assign({}, x, { pend: true }))).filter((x, i, a) => a.findIndex(y => y.id === x.id) === i).sort((a, b) => a.t < b.t ? 1 : -1), ""), 300);
+  };
+
   function pintar(lista, estado) {
     const box = document.getElementById("histList");
     if (!box) return;
     document.getElementById("histEstado").textContent = estado || "";
     const q = (document.getElementById("histBuscar").value || "").toLowerCase();
-    const items = lista.filter(e => (filtro === "todo" || e.tipo === filtro) && (!q || (e.texto + " " + nombreDisp(e.disp)).toLowerCase().includes(q)));
+    const items = lista.filter(e => (e.tipo === filtro || e.tipo === "anulacion") && (!q || (e.texto + " " + nombreDisp(e.disp)).toLowerCase().includes(q)));
     if (!items.length) { box.innerHTML = '<p class="hist-vacio">No hay cambios registrados.</p>'; return; }
     let html = "", dia = "";
     items.forEach(e => {
@@ -139,7 +154,7 @@
       const k = d.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
       if (k !== dia) { dia = k; html += `<div class="hist-dia">${esc(k.charAt(0).toUpperCase() + k.slice(1))}</div>`; }
       const hora = d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-      html += `<div class="hist-item hist-${e.tipo}"><div class="hist-hora">${hora}</div><div class="hist-txt">${esc(e.texto)}<div class="hist-quien">${esc(nombreDisp(e.disp))}${e.pend ? " · ⏳ pendiente de enviar" : ""}</div></div></div>`;
+      html += `<div class="hist-item hist-${e.tipo}"><div class="hist-hora">${hora}</div><div class="hist-txt">${esc(e.texto)}<div class="hist-quien">${esc(nombreDisp(e.disp))}${e.pend ? " · ⏳ pendiente de enviar" : ""}</div>${deshacerHtml(e)}</div></div>`;
     });
     box.innerHTML = html;
   }
@@ -227,6 +242,7 @@
       let todos = [];
       for (const m of meses) todos = todos.concat((await leerMes(g, m)).items);
       try { cargarDisp((await leerNombres(g)).data); } catch (e) {}
+      try { if (window.nvaRecargarAnulaciones) await window.nvaRecargarAnulaciones(); } catch (e) {}
       ultimaLista = mezclar(guardarCache(todos));
       pintar(ultimaLista, "");
     } catch (e) { pintar(ultimaLista, "No se pudo leer GitHub: se muestra lo guardado en este dispositivo."); }
